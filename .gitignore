@@ -33,6 +33,7 @@ bin/
 # Ignore the generated protobuf files.
 svc-gateway/internal/pb/*/*.pb.go
 svc-recommender/gen/*/*.py
+svc-recommender/gen/*/*.pyi
 
 # Configuration (Global)
 config.yaml

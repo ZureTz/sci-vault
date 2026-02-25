@@ -1,5 +1,5 @@
 # ── Proto generation stage ──────────────────────────────────────────────────
-FROM python:3.11-slim AS proto-gen
+FROM python:3.14.3-slim AS proto-gen
 
 WORKDIR /proto-gen
 
@@ -13,10 +13,11 @@ RUN mkdir gen
 RUN python -m grpc_tools.protoc \
     -I./proto \
     --python_out=gen \
+    --pyi_out=gen \
     ./proto/health/health.proto
 
 # ── Build stage ─────────────────────────────────────────────────────────────
-FROM python:3.11-slim AS builder
+FROM python:3.14.3-slim AS builder
 
 WORKDIR /app
 
@@ -37,7 +38,7 @@ COPY svc-recommender/main.py ./
 COPY svc-recommender/config.yaml ./
 
 # ── Runtime stage ────────────────────────────────────────────────────────────
-FROM python:3.11-slim
+FROM python:3.14.3-slim
 
 WORKDIR /app
 
