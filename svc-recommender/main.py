@@ -18,7 +18,7 @@ import yaml
 from kafka import KafkaConsumer
 from kafka.errors import NoBrokersAvailable
 
-from gen.health.health_pb2 import HealthEvent # type: ignore
+from gen.health.health_pb2 import HealthEvent
 
 # ---------------------------------------------------------------------------
 # Logging

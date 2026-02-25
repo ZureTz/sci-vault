@@ -3,7 +3,7 @@ name = "svc-recommender"
 version = "0.1.0"
 description = "Kafka consumer for sci-vault health events (protobuf)"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 dependencies = [
     "kafka-python>=2.3.0",
     "protobuf>=6.33.5",

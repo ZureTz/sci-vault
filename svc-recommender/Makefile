@@ -6,6 +6,7 @@ proto:
 	uv run python -m grpc_tools.protoc \
 		-I../proto \
 		--python_out=gen \
+		--pyi_out=gen \
 		../proto/health/health.proto
 
 ## Run the consumer locally
