@@ -1,5 +1,0 @@
-# Ignore the config file that contains sensitive information like Kafka broker addresses.
-config.yaml
-
-# Ignore the generated protobuf files.
-internal/pb/*/*.pb.go

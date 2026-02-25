@@ -44,8 +44,8 @@ services:
 
   svc-recommender:
     build:
-      context: ./svc-recommender
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: svc-recommender/Dockerfile
     container_name: sci-vault-recommender
     restart: unless-stopped
     depends_on:

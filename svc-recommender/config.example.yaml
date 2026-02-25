@@ -1,0 +1,5 @@
+kafka:
+  brokers:
+    - "localhost:9092"
+  topic: "health-events"
+  group_id: "svc-recommender"

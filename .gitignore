@@ -1,0 +1,45 @@
+# General
+.DS_Store
+.vscode/
+.idea/
+
+# Python (Service Recommender)
+__pycache__/
+*.py[cod]
+
+
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+*.egg-info/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Node (Frontend)
+node_modules/
+dist/
+.npm/
+
+# Go (Service Gateway)
+bin/
+*.exe
+*.test
+*.out
+
+# Ignore the generated protobuf files.
+svc-gateway/internal/pb/*/*.pb.go
+svc-recommender/gen/*/*.py
+
+# Configuration (Global)
+config.yaml
+config.json
+.env
+secret.yaml
+!config.example.yaml
+!config.example.json
+!.env.example
+
