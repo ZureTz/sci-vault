@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "frontend"
+		},
+		{
+			"path": "svc-recommender"
+		},
+		{
+			"path": "svc-gateway"
+		}
+	],
+	"settings": {}
+}

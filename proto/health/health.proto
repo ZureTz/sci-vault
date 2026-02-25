@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package health;
+
+option go_package = "gateway/internal/pb/health";
+
+// HealthEvent is produced by the gateway when the health-protobuf endpoint is hit.
+message HealthEvent {
+  string status    = 1;
+  string service   = 2;
+  int64  timestamp = 3;
+}
