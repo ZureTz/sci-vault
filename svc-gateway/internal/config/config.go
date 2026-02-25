@@ -7,9 +7,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+type KafkaConfig struct {
+	Brokers []string `mapstructure:"brokers"`
+	Topic   string   `mapstructure:"topic"`
+}
+
 type Config struct {
-	Host string `mapstructure:"host"`
-	Port string `mapstructure:"port"`
+	Host  string      `mapstructure:"host"`
+	Port  string      `mapstructure:"port"`
+	Kafka KafkaConfig `mapstructure:"kafka"`
 }
 
 func Load() *Config {
@@ -18,6 +24,8 @@ func Load() *Config {
 	// Set Defaults
 	v.SetDefault("host", "0.0.0.0")
 	v.SetDefault("port", "8080")
+	v.SetDefault("kafka.brokers", []string{"localhost:9092"})
+	v.SetDefault("kafka.topic", "health-events")
 
 	// Read from Environment Variables
 	v.AutomaticEnv()

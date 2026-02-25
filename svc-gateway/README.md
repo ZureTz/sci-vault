@@ -10,6 +10,9 @@ svc-gateway/
 │   ├── config/       # Configuration loading logic (Viper)
 │   ├── handler/      # Request handlers
 │   ├── middleware/   # Gin middleware (Logger, Recovery)
+│   ├── pb/           # Protobuf generated code
+│   │   └── health/   # Generated from proto/health/health.proto
+│   ├── producer/     # Kafka producer (protobuf serialization)
 │   └── router/       # Route definitions
 ├── config.example.yaml # Configuration template
 ├── config.yaml         # Local configuration file (ignored by git)
@@ -22,6 +25,25 @@ svc-gateway/
 ### Prerequisites
 
 - Go 1.25+
+- [protoc](https://grpc.io/docs/protoc-installation/) (Protocol Buffers compiler)
+- `protoc-gen-go` plugin:
+  ```bash
+  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+  ```
+- A running Kafka broker (default: `localhost:9092`)
+
+### Compile Protobuf
+
+Run this from the **repository root** whenever `.proto` files change:
+
+```bash
+# from sci-vault/
+protoc \
+  --proto_path=proto \
+  --go_out=svc-gateway/internal/pb \
+  --go_opt=paths=source_relative \
+  proto/health/health.proto
+```
 
 ### Install Dependencies
 
@@ -55,11 +77,17 @@ The service attempts to load configuration in the following order of priority:
 ```yaml
 host: "0.0.0.0"
 port: "8080"
+
+kafka:
+  brokers:
+    - "localhost:9092"
+  topic: "health-events"
 ```
 
 ## API Endpoints
 
-- `GET /health`: Health check endpoint.
+- `GET /health`: Health check endpoint (plain JSON).
+- `GET /health-protobuf`: Health check endpoint that publishes a `HealthEvent` protobuf message to Kafka and returns a JSON acknowledgement.
 - `GET /api/v1/...`: Reserved for business API routes.
 
 ## License
