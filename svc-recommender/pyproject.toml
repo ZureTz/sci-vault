@@ -1,0 +1,22 @@
+[project]
+name = "svc-recommender"
+version = "0.1.0"
+description = "Kafka consumer for sci-vault health events (protobuf)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "kafka-python>=2.3.0",
+    "protobuf>=6.33.5",
+    "pyyaml>=6.0.3",
+]
+
+[project.scripts]
+start = "main:main"
+
+[dependency-groups]
+dev = [
+    "grpcio-tools>=1.78.1",
+]
+
+[tool.uv]
+package = false
