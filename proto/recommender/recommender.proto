@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package recommender.v1;
+
+option go_package = "gateway/internal/pb/recommender";
+
+// RecommenderService exposes operations of the recommendation engine.
+service RecommenderService {
+  // Health returns the liveness status of the recommender service.
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+// HealthRequest is an empty message used for health check requests.
+message HealthRequest {}
+
+// HealthResponse contains the status of the recommender service.
+message HealthResponse {
+  // status is "ok" when the service is healthy.
+  string status = 1;
+  // service identifies the responding service.
+  string service = 2;
+}
