@@ -11,13 +11,25 @@ import (
 	"time"
 
 	"gateway/internal/config"
+	"gateway/internal/grpcclient"
 	"gateway/internal/router"
 )
 
 func main() {
 	cfg := config.Load()
 
-	r := router.New()
+	rc, err := grpcclient.NewRecommenderClient(cfg.RecommenderAddr)
+	if err != nil {
+		slog.Error("failed to create recommender gRPC client", "err", err)
+		os.Exit(1)
+	}
+	defer func() {
+		if err := rc.Close(); err != nil {
+			slog.Warn("error closing recommender gRPC client", "err", err)
+		}
+	}()
+
+	r := router.New(rc)
 
 	srv := &http.Server{
 		Addr:    cfg.Addr(),

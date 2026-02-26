@@ -1,1 +1,5 @@
+# Configurations
 config.yaml
+
+# Generated Protobuf Code
+internal/pb/

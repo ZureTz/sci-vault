@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	Host string `mapstructure:"host"`
-	Port string `mapstructure:"port"`
+	Host            string `mapstructure:"host"`
+	Port            string `mapstructure:"port"`
+	RecommenderAddr string `mapstructure:"recommender_addr"`
 }
 
 func Load() *Config {
@@ -18,6 +19,7 @@ func Load() *Config {
 	// Set Defaults
 	v.SetDefault("host", "0.0.0.0")
 	v.SetDefault("port", "8080")
+	v.SetDefault("recommender_addr", "localhost:50051")
 
 	// Read from Environment Variables
 	v.AutomaticEnv()
