@@ -11,21 +11,13 @@ import (
 	"time"
 
 	"gateway/internal/config"
-	"gateway/internal/producer"
 	"gateway/internal/router"
 )
 
 func main() {
 	cfg := config.Load()
 
-	p := producer.New(cfg.Kafka.Brokers, cfg.Kafka.Topic)
-	defer func() {
-		if err := p.Close(); err != nil {
-			slog.Error("failed to close kafka producer", "err", err)
-		}
-	}()
-
-	r := router.New(p)
+	r := router.New()
 
 	srv := &http.Server{
 		Addr:    cfg.Addr(),
