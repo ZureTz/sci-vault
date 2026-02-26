@@ -1,0 +1,21 @@
+version: v2
+plugins:
+  # Go – svc-gateway)
+  - remote: buf.build/protocolbuffers/go
+    out: svc-gateway/internal/pb
+    opt:
+      - paths=source_relative
+  - remote: buf.build/grpc/go
+    out: svc-gateway/internal/pb
+    opt:
+      - paths=source_relative
+
+  # Python – svc-recommender
+  # Output lands at svc-recommender/src/pb/recommender/recommender_pb2*.py
+  # (gitignored – regenerate with: buf generate)
+  - remote: buf.build/protocolbuffers/python
+    out: svc-recommender/src/pb
+  - remote: buf.build/protocolbuffers/pyi
+    out: svc-recommender/src/pb
+  - remote: buf.build/grpc/python
+    out: svc-recommender/src/pb

@@ -1,6 +1,11 @@
 {
   "cSpell.words": [
     "gonic",
-    "grpcclient"
+    "grpcclient",
+    "protocolbuffers"
+  ],
+  "python.analysis.extraPaths": [
+    "./svc-recommender/src",
+    "./svc-recommender/src/pb"
   ]
 }

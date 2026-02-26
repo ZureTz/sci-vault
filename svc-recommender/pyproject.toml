@@ -1,0 +1,14 @@
+[project]
+name = "svc-recommender"
+version = "0.1.0"
+description = "Recommendation engine gRPC service"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "grpcio>=1.78.1",
+    "protobuf>=6.33.5",
+    "pyyaml>=6.0",
+]
+
+# src/ and src/pb/ are added to sys.path by main.py at runtime;
+# no installable package is needed for this service.

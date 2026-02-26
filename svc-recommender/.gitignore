@@ -1,0 +1,11 @@
+### Python ###
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+### Generated protobuf / gRPC stubs ###
+src/pb/
+
+# configuration files
+config.yaml
