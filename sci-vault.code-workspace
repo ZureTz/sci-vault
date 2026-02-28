@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"name": "sci-vault",
+			"path": "."
+		},
+		{
+			"name": "frontend",
+			"path": "frontend"
+		},
+		{
+			"name": "svc-gateway",
+			"path": "svc-gateway"
+		},
+		{
+			"name": "svc-recommender",
+			"path": "svc-recommender"
+		}
+	],
+	"settings": {
+		"cSpell.words": [
+			"pgvector"
+		]
+	}
+}

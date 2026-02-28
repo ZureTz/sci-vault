@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     # Skip grpcio 1.78.1 due to safety issue
-    "grpcio==1.78.0", 
+    "grpcio==1.78.0",
     "protobuf>=7.34.0",
     "pyyaml>=6.0",
 ]
