@@ -30,12 +30,33 @@ def create_server(cfg: Config) -> grpc.Server:
     return server
 
 
+class ColoredFormatter(logging.Formatter):
+    COLORS = {
+        logging.DEBUG: "\033[36m",  # Cyan
+        logging.INFO: "\033[32m",  # Green
+        logging.WARNING: "\033[33m",  # Yellow
+        logging.ERROR: "\033[31m",  # Red
+        logging.CRITICAL: "\033[1;31m",  # Bold Red
+    }
+    RESET = "\033[0m"
+
+    def format(self, record: logging.LogRecord) -> str:
+        color = self.COLORS.get(record.levelno, self.RESET)
+        # Create a copy so we don't mutate the original record for other handlers
+        record_copy = logging.makeLogRecord(record.__dict__)
+        record_copy.levelname = f"{color}{record_copy.levelname}{self.RESET}"
+        return super().format(record_copy)
+
+
 def serve(cfg: Config | None = None) -> None:
     """Start the gRPC server and block until a shutdown signal is received."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
+    fmt = "%(asctime)s %(levelname)s %(name)s: %(message)s"
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(ColoredFormatter(fmt))
+
+    # Remove existing handlers explicitly if basicConfig was already called
+    logging.root.handlers.clear()
+    logging.basicConfig(level=logging.INFO, handlers=[handler])
 
     if cfg is None:
         cfg = Config.load()
