@@ -8,14 +8,14 @@ import (
 	"gateway/internal/grpcclient"
 )
 
-func HealthCheck(rc *grpcclient.RecommenderClient) gin.HandlerFunc {
+func HealthCheck(recommenderClient *grpcclient.RecommenderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		services := gin.H{
 			"status":  "ok",
 			"service": "svc-gateway",
 		}
 
-		resp, err := rc.Health(c.Request.Context())
+		resp, err := recommenderClient.Health(c.Request.Context())
 		if err != nil {
 			services["svc-recommender"] = gin.H{"status": "unreachable", "error": err.Error()}
 			c.JSON(http.StatusServiceUnavailable, services)
