@@ -1,6 +1,47 @@
-# SVC Gateway
+# SVC-Gateway
 
-`svc-gateway` is the API gateway service for the `sci-vault` application. It is built using the [Gin](https://github.com/gin-gonic/gin) framework and uses [Viper](https://github.com/spf13/viper) for configuration management.
+`svc-gateway` is the API gateway service for the `sci-vault` application. It acts as the primary entry point for client requests, routing them to the appropriate backend microservices (such as the gRPC-based `svc-recommender`). The gateway is built with performance and reliability in mind, utilizing the [Gin](https://github.com/gin-gonic/gin) web framework and [Viper](https://github.com/spf13/viper) for robust configuration management.
+
+## Getting Started
+
+Follow the instructions below to set up and run the `svc-gateway` service locally.
+
+### Prerequisites
+
+- [Go](https://go.dev/doc/install) 1.25+
+
+### Install Dependencies
+
+Navigate to the project directory and download the required Go modules:
+
+```bash
+go mod tidy
+```
+
+### Configuration
+
+The service loads configurations prioritized in the following order: environment variables, the local `config.yaml` file, and finally fallback defaults (e.g., Host `0.0.0.0`, Port `8080`).
+
+Copy the example configuration file to create your local `config.yaml` file:
+
+```bash
+cp config.example.yaml config.yaml
+```
+
+Update the `config.yaml` file with your specific environment details, such as target gRPC ports, host bindings, and API configurations.
+
+### Run the Service
+
+Start the API gateway directly using Go:
+
+```bash
+go run .
+```
+
+## API Endpoints
+
+- `GET /health`: Health check endpoint.
+- `GET /api/v1/...`: Reserved for business API routes.
 
 ## Directory Structure
 
@@ -17,51 +58,10 @@ svc-gateway/
 └── go.mod              # Dependency management
 ```
 
-## Quick Start
+## Roadmap: Docker Integration
 
-### Prerequisites
-
-- Go 1.25+
-
-### Install Dependencies
-
-```bash
-go mod tidy
-```
-
-### Run the Service
-
-```bash
-# Run directly
-go run .
-
-# Or use custom configuration
-PORT=9090 go run .
-```
-
-## Configuration Details
-
-The service attempts to load configuration in the following order of priority:
-
-1.  **Environment Variables**: Highest priority (e.g., `HOST`, `PORT`).
-2.  **Configuration File**: Reads `config.yaml` in the current directory.
-3.  **Defaults**: HOST defaults to `0.0.0.0`, PORT defaults to `8080`.
-
-### Using Local Configuration
-
-1.  Copy `config.example.yaml` to `config.yaml`.
-2.  Modify the contents of `config.yaml` as needed.
-
-```yaml
-host: "0.0.0.0"
-port: "8080"
-```
-
-## API Endpoints
-
-- `GET /health`: Health check endpoint.
-- `GET /api/v1/...`: Reserved for business API routes.
+Similar to other services in this architecture, Docker support will be added in the future to simplify containerized deployments and orchestrate the entire microservices stack locally.
 
 ## License
 
-This project is licensed under the [LICENSE](../../LICENSE) file in the root directory.
+This project is licensed under the [LICENSE](../LICENSE) file in the root directory.
