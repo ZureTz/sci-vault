@@ -2,7 +2,6 @@ package config
 
 import (
 	"log/slog"
-	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -20,10 +19,6 @@ func Load() *Config {
 	v.SetDefault("host", "0.0.0.0")
 	v.SetDefault("port", "8080")
 	v.SetDefault("recommender_addr", "localhost:50051")
-
-	// Read from Environment Variables
-	v.AutomaticEnv()
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	// Config file support (optional)
 	v.SetConfigName("config")
