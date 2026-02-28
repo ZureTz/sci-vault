@@ -5,8 +5,9 @@ description = "Recommendation engine gRPC service"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "grpcio>=1.78.1",
-    "protobuf>=6.33.5",
+    # Skip grpcio 1.78.1 due to safety issue
+    "grpcio==1.78.0", 
+    "protobuf>=7.34.0",
     "pyyaml>=6.0",
 ]
 
