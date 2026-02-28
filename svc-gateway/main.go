@@ -18,18 +18,18 @@ import (
 func main() {
 	cfg := config.Load()
 
-	rc, err := grpcclient.NewRecommenderClient(cfg.RecommenderAddr)
+	recommenderClient, err := grpcclient.NewRecommenderClient(cfg.RecommenderAddr)
 	if err != nil {
 		slog.Error("failed to create recommender gRPC client", "err", err)
 		os.Exit(1)
 	}
 	defer func() {
-		if err := rc.Close(); err != nil {
+		if err := recommenderClient.Close(); err != nil {
 			slog.Warn("error closing recommender gRPC client", "err", err)
 		}
 	}()
 
-	r := router.New(rc)
+	r := router.New(recommenderClient)
 
 	srv := &http.Server{
 		Addr:    cfg.Addr(),
