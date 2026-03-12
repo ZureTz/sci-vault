@@ -6,8 +6,8 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 
-	"gateway/internal/grpcclient"
 	"gateway/internal/handler"
+	"gateway/pkg/grpcclient"
 	customValidator "gateway/pkg/validator"
 )
 

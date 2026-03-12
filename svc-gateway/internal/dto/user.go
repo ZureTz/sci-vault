@@ -1,6 +1,6 @@
-package model
+package dto
 
-// Models for user authentication (login and registration)
+// DTOs for user authentication (login and registration)
 
 type LoginRequest struct {
 	Username string `json:"username" binding:"required,min=3,max=20,custom_username_validator"`
