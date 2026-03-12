@@ -10,8 +10,14 @@ type Config struct {
 	Host            string         `mapstructure:"host"`
 	Port            string         `mapstructure:"port"`
 	RecommenderAddr string         `mapstructure:"recommender_addr"`
+	Log             LogConfig      `mapstructure:"log"`
 	Redis           RedisConfig    `mapstructure:"redis"`
 	Database        DatabaseConfig `mapstructure:"database"`
+}
+
+type LogConfig struct {
+	Level  string `mapstructure:"level"`
+	Format string `mapstructure:"format"`
 }
 
 type DatabaseConfig struct {

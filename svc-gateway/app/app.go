@@ -12,12 +12,14 @@ import (
 
 	"gateway/internal/config"
 	"gateway/internal/handler"
+	"gateway/internal/model"
 	"gateway/internal/repo"
 	"gateway/internal/router"
 	"gateway/internal/service"
 	"gateway/pkg/cache"
 	"gateway/pkg/database"
 	"gateway/pkg/grpcclient"
+	"gateway/pkg/logger"
 )
 
 // App holds all dependencies and the HTTP server for the gateway application.
@@ -38,6 +40,9 @@ type App struct {
 func New() (*App, error) {
 	cfg := config.Load()
 
+	// 0. Set up the global slog logger as early as possible
+	logger.Setup(cfg.Log.Level, cfg.Log.Format)
+
 	// 1. Initialize low-level dependencies (Databases, Redis, gRPC Clients)
 	recommenderClient, err := grpcclient.NewRecommenderClient(cfg.RecommenderAddr)
 	if err != nil {
@@ -47,6 +52,10 @@ func New() (*App, error) {
 	db, err := database.New(&cfg.Database)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create database connection: %w", err)
+	}
+
+	if err := db.AutoMigrate(&model.User{}); err != nil {
+		return nil, fmt.Errorf("failed to auto migrate database: %w", err)
 	}
 
 	cacheConn := cache.NewCacheConnector(cfg.Redis.Addr, cfg.Redis.Password, cfg.Redis.DB)

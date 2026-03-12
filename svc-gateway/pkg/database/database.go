@@ -2,11 +2,12 @@ package database
 
 import (
 	"fmt"
-	"gateway/internal/config"
 	"log/slog"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	"gateway/internal/config"
 )
 
 func getDSN(c *config.DatabaseConfig) string {
