@@ -32,7 +32,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 	response, err := h.userService.Login(c.Request.Context(), req)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, response)
