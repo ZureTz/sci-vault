@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"gateway/internal/grpcclient"
+	"gateway/pkg/grpcclient"
 )
 
 func HealthCheck(recommenderClient *grpcclient.RecommenderClient) gin.HandlerFunc {
