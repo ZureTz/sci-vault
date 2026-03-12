@@ -1,0 +1,27 @@
+package database
+
+import (
+	"fmt"
+	"gateway/internal/config"
+	"log/slog"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+)
+
+func getDSN(c *config.DatabaseConfig) string {
+	return fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
+		c.Host, c.Port, c.User, c.Password, c.DBName, c.SSLMode, c.TimeZone,
+	)
+}
+
+func New(cfg *config.DatabaseConfig) (*gorm.DB, error) {
+	db, err := gorm.Open(postgres.Open(getDSN(cfg)), &gorm.Config{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	slog.Info("database connected", "host", cfg.Host, "dbname", cfg.DBName)
+	return db, nil
+}

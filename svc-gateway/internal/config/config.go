@@ -7,18 +7,31 @@ import (
 )
 
 type Config struct {
-	Host            string `mapstructure:"host"`
-	Port            string `mapstructure:"port"`
-	RecommenderAddr string `mapstructure:"recommender_addr"`
+	Host            string         `mapstructure:"host"`
+	Port            string         `mapstructure:"port"`
+	RecommenderAddr string         `mapstructure:"recommender_addr"`
+	Redis           RedisConfig    `mapstructure:"redis"`
+	Database        DatabaseConfig `mapstructure:"database"`
+}
+
+type DatabaseConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	DBName   string `mapstructure:"db_name"`
+	SSLMode  string `mapstructure:"ssl_mode"`
+	TimeZone string `mapstructure:"timezone"`
+}
+
+type RedisConfig struct {
+	Addr     string `mapstructure:"addr"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
 }
 
 func Load() *Config {
 	v := viper.New()
-
-	// Set Defaults
-	v.SetDefault("host", "0.0.0.0")
-	v.SetDefault("port", "8080")
-	v.SetDefault("recommender_addr", "localhost:50051")
 
 	// Config file support (optional)
 	v.SetConfigName("config")
