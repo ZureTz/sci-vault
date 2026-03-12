@@ -1,13 +1,4 @@
 {
-  "cSpell.words": [
-    "eqfield",
-    "gonic",
-    "grpcclient",
-    "grpcio",
-    "protocolbuffers",
-    "PYTHONPATH",
-    "pyyaml"
-  ],
   "python.analysis.extraPaths": [
     "./svc-recommender/src",
     "./svc-recommender/src/pb"
