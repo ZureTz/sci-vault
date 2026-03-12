@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"gateway/internal/dto"
+	"gateway/pkg/utils"
 )
 
 type UserService interface {
@@ -26,13 +27,13 @@ func NewUserHandler(userService UserService) *UserHandler {
 func (h *UserHandler) Login(c *gin.Context) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
 		return
 	}
 
 	response, err := h.userService.Login(c.Request.Context(), req)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(err))
 		return
 	}
 	c.JSON(http.StatusOK, response)
@@ -41,12 +42,12 @@ func (h *UserHandler) Login(c *gin.Context) {
 func (h *UserHandler) Register(c *gin.Context) {
 	var req dto.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
 		return
 	}
 
 	if err := h.userService.Register(c.Request.Context(), req); err != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "username already exists"})
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"message": "user registered successfully"})
