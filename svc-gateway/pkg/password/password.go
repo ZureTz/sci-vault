@@ -9,6 +9,6 @@ func Hash(plaintext string) (string, error) {
 }
 
 // Verify returns true if the plaintext password matches the bcrypt hash.
-func Verify(plaintext, hash string) bool {
-	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(plaintext)) == nil
+func Verify(hash, plaintext string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(plaintext))
 }
