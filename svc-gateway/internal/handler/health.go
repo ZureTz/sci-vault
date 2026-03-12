@@ -29,4 +29,3 @@ func HealthCheck(recommenderClient *grpcclient.RecommenderClient) gin.HandlerFun
 		c.JSON(http.StatusOK, services)
 	}
 }
-
