@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:18.3-trixie
+    container_name: sci-vault-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sci_vault
+      POSTGRES_PASSWORD: sci_vault_secret
+      POSTGRES_DB: sci_vault
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/18/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sci_vault -d sci_vault"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8.6-trixie
+    container_name: sci-vault-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
