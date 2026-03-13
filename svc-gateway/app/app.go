@@ -19,6 +19,7 @@ import (
 	"gateway/pkg/cache"
 	"gateway/pkg/database"
 	"gateway/pkg/grpcclient"
+	"gateway/pkg/jwt"
 	"gateway/pkg/logger"
 	"gateway/pkg/mailer"
 )
@@ -60,9 +61,10 @@ func New() (*App, error) {
 		return nil, fmt.Errorf("failed to auto migrate database: %w", err)
 	}
 
+	jwtGenerator := jwt.NewJWTGenerator(&cfg.JWT)
+
 	cacheConn := cache.NewCacheConnector(cfg.Redis.Addr, cfg.Redis.Password, cfg.Redis.DB)
 
-	// 1.1 Initialize Mailer
 	mailSrv := mailer.NewMailer(cfg.Mailer.Host, cfg.Mailer.Port, cfg.Mailer.User, cfg.Mailer.Password)
 	go mailSrv.Start()
 
@@ -70,14 +72,19 @@ func New() (*App, error) {
 	userRepo := repo.NewUserRepo(db)
 
 	// 3. Initialize services layer (business logic)
-	userService := service.NewUserService(userRepo, mailSrv, cacheConn)
+	userService := service.NewUserService(userRepo, jwtGenerator, mailSrv, cacheConn)
 
 	// 4. Initialize handlers layer (HTTP/API)
 	userHandler := handler.NewUserHandler(userService)
+	authHandler := handler.NewAuthHandler()
 
 	// 5. Initialize router layer (routing and middleware mapping)
-	r := router.NewRouter(router.RouterDeps{
-		UserHandler:       userHandler,
+	r := router.NewRouter(&router.RouterDeps{
+		UserHandler: userHandler,
+		AuthHandler: authHandler,
+
+		Config: cfg,
+
 		RecommenderClient: recommenderClient,
 	})
 

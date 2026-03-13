@@ -11,21 +11,24 @@ import (
 	"gateway/internal/model"
 	"gateway/internal/repo"
 	"gateway/pkg/cache"
+	"gateway/pkg/jwt"
 	"gateway/pkg/mailer"
 	"gateway/pkg/password"
 )
 
 type UserService struct {
-	repo      repo.UserRepository
-	mailer    *mailer.Mailer
-	cacheConn *cache.CacheConnector
+	repo         repo.UserRepository
+	jwtGenerator *jwt.JWTGenerator
+	mailer       *mailer.Mailer
+	cacheConn    *cache.CacheConnector
 }
 
-func NewUserService(repo repo.UserRepository, mailer *mailer.Mailer, cacheConn *cache.CacheConnector) *UserService {
+func NewUserService(repo repo.UserRepository, jwtGenerator *jwt.JWTGenerator, mailer *mailer.Mailer, cacheConn *cache.CacheConnector) *UserService {
 	return &UserService{
-		repo:      repo,
-		mailer:    mailer,
-		cacheConn: cacheConn,
+		repo:         repo,
+		jwtGenerator: jwtGenerator,
+		mailer:       mailer,
+		cacheConn:    cacheConn,
 	}
 }
 
@@ -67,10 +70,16 @@ func (s *UserService) Login(ctx context.Context, req dto.LoginRequest) (*dto.Log
 		return nil, fmt.Errorf("invalid password: %w", err)
 	}
 
+	// Generate JWT token
+	jwtToken, err := s.jwtGenerator.GenerateJWT(user.Username)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate JWT token: %w", err)
+	}
+
 	return &dto.LoginResponse{
 		UserID:   fmt.Sprintf("%d", user.ID),
 		Username: user.Username,
-		JWTToken: "sample-jwt-token", // TODO: Implement JWT token generation
+		JWTToken: jwtToken,
 	}, nil
 }
 
