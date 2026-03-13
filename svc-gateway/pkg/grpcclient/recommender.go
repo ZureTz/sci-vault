@@ -3,6 +3,7 @@ package grpcclient
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"google.golang.org/grpc"
@@ -27,6 +28,9 @@ func NewRecommenderClient(addr string) (*RecommenderClient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("dial recommender at %s: %w", addr, err)
 	}
+
+	slog.Info("connected to recommender grpc service", "addr", addr)
+
 	return &RecommenderClient{
 		conn:   conn,
 		client: pb.NewRecommenderServiceClient(conn),

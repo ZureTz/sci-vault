@@ -7,15 +7,20 @@ import (
 	"gateway/internal/dto"
 	"gateway/internal/model"
 	"gateway/internal/repo"
+	"gateway/pkg/mailer"
 	"gateway/pkg/password"
 )
 
 type UserService struct {
-	repo repo.UserRepository
+	repo   repo.UserRepository
+	mailer *mailer.Mailer
 }
 
-func NewUserService(repo repo.UserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(repo repo.UserRepository, mailer *mailer.Mailer) *UserService {
+	return &UserService{
+		repo:   repo,
+		mailer: mailer,
+	}
 }
 
 func (s *UserService) Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error) {
@@ -53,6 +58,13 @@ func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) err
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
+
+	// Send welcome email asynchronously (don't block registration flow)
+	s.mailer.SendMail(&mailer.MailRequest{
+		To:      []string{req.Email},
+		Subject: "Welcome to sci-vault",
+		Body:    fmt.Sprintf("<h1>Hello %s!</h1><p>Welcome to sci-vault!</p>", req.Username),
+	})
 
 	return nil
 }
