@@ -19,3 +19,9 @@ database:
   db_name: "sci_vault"
   ssl_mode: "disable"
   timezone: "UTC"
+
+mailer:
+  host: "smtp.example.com"
+  port: 587
+  username: "your-email@example.com"
+  password: "your-password"
