@@ -2,6 +2,10 @@ package dto
 
 // DTOs for user authentication (login and registration)
 
+type SendEmailCodeRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
 type LoginRequest struct {
 	Username string `json:"username" binding:"required,min=3,max=20,custom_username_validator"`
 	Password string `json:"password" binding:"required,min=6,max=50,custom_password_validator"`
@@ -18,6 +22,5 @@ type RegisterRequest struct {
 	Email             string `json:"email" binding:"required,email"`
 	Password          string `json:"password" binding:"required,min=6,max=50,custom_password_validator"`
 	ConfirmedPassword string `json:"confirmed_password" binding:"required,eqfield=Password"`
-	// TODO: For future email verification feature
-	// EmailCode         string `json:"email_code" binding:"required,len=6,numeric"`
+	EmailCode         string `json:"email_code" binding:"required,len=6,numeric"`
 }

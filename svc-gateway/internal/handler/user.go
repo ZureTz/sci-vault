@@ -12,6 +12,7 @@ import (
 )
 
 type UserService interface {
+	SendEmailCode(ctx context.Context, req dto.SendEmailCodeRequest) error
 	Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error) // returns JWT token
 	Register(ctx context.Context, req dto.RegisterRequest) error
 }
@@ -22,6 +23,22 @@ type UserHandler struct {
 
 func NewUserHandler(userService UserService) *UserHandler {
 	return &UserHandler{userService: userService}
+}
+
+func (h *UserHandler) SendEmailCode(c *gin.Context) {
+	// Send email verification code for registration
+	var req dto.SendEmailCodeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	// Call the userService to send the email code
+	if err := h.userService.SendEmailCode(c.Request.Context(), req); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "verification code sent successfully"})
 }
 
 func (h *UserHandler) Login(c *gin.Context) {
