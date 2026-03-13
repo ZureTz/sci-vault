@@ -25,3 +25,7 @@ mailer:
   port: 587
   username: "your-email@example.com"
   password: "your-password"
+
+jwt:
+  secret: "your-256-bit-secret"
+  timeout: 24 # hours

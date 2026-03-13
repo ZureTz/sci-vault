@@ -48,6 +48,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// Call the userService to perform login
 	response, err := h.userService.Login(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(err))

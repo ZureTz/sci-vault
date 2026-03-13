@@ -14,6 +14,12 @@ type Config struct {
 	Redis           RedisConfig    `mapstructure:"redis"`
 	Database        DatabaseConfig `mapstructure:"database"`
 	Mailer          MailerConfig   `mapstructure:"mailer"`
+	JWT             JWTConfig      `mapstructure:"jwt"`
+}
+
+type JWTConfig struct {
+	Secret  string `mapstructure:"secret"`
+	Timeout int    `mapstructure:"timeout"` // in hours
 }
 
 type MailerConfig struct {
