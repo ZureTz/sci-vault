@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -19,6 +20,8 @@ func NewCacheConnector(addr, password string, db int) *CacheConnector {
 		Password: password,
 		DB:       db,
 	})
+
+	slog.Info("connected to redis cache", "addr", addr, "db", db)
 
 	return &CacheConnector{
 		client: client,

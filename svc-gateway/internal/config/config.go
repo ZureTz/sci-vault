@@ -13,6 +13,14 @@ type Config struct {
 	Log             LogConfig      `mapstructure:"log"`
 	Redis           RedisConfig    `mapstructure:"redis"`
 	Database        DatabaseConfig `mapstructure:"database"`
+	Mailer          MailerConfig   `mapstructure:"mailer"`
+}
+
+type MailerConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	User     string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 type LogConfig struct {

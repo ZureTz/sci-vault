@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -19,7 +20,51 @@ const (
 	magenta = "\033[97;45m"
 	cyan    = "\033[97;46m"
 	reset   = "\033[0m"
+
+	// Custom colors for slog levels
+	slogInfo  = "\033[32m" // Green
+	slogWarn  = "\033[33m" // Yellow
+	slogError = "\033[31m" // Red
+	slogDebug = "\033[36m" // Cyan
 )
+
+type customHandler struct {
+	slog.Handler
+}
+
+func (h *customHandler) Handle(ctx context.Context, r slog.Record) error {
+	level := r.Level.String()
+	var levelColor string
+
+	switch r.Level {
+	case slog.LevelDebug:
+		levelColor = slogDebug
+	case slog.LevelInfo:
+		levelColor = slogInfo
+	case slog.LevelWarn:
+		levelColor = slogWarn
+	case slog.LevelError:
+		levelColor = slogError
+	default:
+		levelColor = reset
+	}
+
+	// Print the timestamp, colored level, and message
+	fmt.Printf("%s %s%-5s%s %s",
+		r.Time.Format("15:04:05.000"),
+		levelColor, level, reset,
+		r.Message,
+	)
+
+	// Print all attributes in the record
+	r.Attrs(func(a slog.Attr) bool {
+		fmt.Printf(" %s%s%s=%v", cyan, a.Key, reset, a.Value.Any())
+		return true
+	})
+
+	fmt.Println()
+	return nil
+}
 
 // GinLogger returns a gin.LogFormatter func with colored output based on status code.
 func GinLogger(param gin.LogFormatterParams) string {
@@ -98,7 +143,9 @@ func Setup(level, format string) {
 
 	var handler slog.Handler
 	if strings.ToLower(format) == "text" {
-		handler = slog.NewTextHandler(os.Stdout, opts)
+		handler = &customHandler{
+			Handler: slog.NewTextHandler(os.Stdout, opts),
+		}
 	} else {
 		handler = slog.NewJSONHandler(os.Stdout, opts)
 	}

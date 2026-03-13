@@ -1,13 +1,13 @@
 package router
 
 import (
-	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 
 	"gateway/internal/handler"
 	"gateway/pkg/grpcclient"
+	"gateway/pkg/logger"
 	customValidator "gateway/pkg/validator"
 )
 
@@ -22,8 +22,7 @@ type RouterDeps struct {
 // New creates and configures a gin Engine with all routes registered.
 func NewRouter(deps RouterDeps) *gin.Engine {
 	engine := gin.New()
-
-	engine.Use(logger.SetLogger())
+	engine.Use(gin.LoggerWithFormatter(logger.GinLogger))
 	engine.Use(gin.Recovery())
 
 	// Register custom validators for username and password

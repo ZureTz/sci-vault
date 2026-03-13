@@ -20,6 +20,7 @@ import (
 	"gateway/pkg/database"
 	"gateway/pkg/grpcclient"
 	"gateway/pkg/logger"
+	"gateway/pkg/mailer"
 )
 
 // App holds all dependencies and the HTTP server for the gateway application.
@@ -34,6 +35,7 @@ type App struct {
 	recommenderClient *grpcclient.RecommenderClient
 	db                *gorm.DB
 	cacheConn         *cache.CacheConnector
+	mailer            *mailer.Mailer
 }
 
 // New initializes all project dependencies, completes DI (Dependency Injection), and returns a ready-to-run App.
@@ -60,11 +62,15 @@ func New() (*App, error) {
 
 	cacheConn := cache.NewCacheConnector(cfg.Redis.Addr, cfg.Redis.Password, cfg.Redis.DB)
 
+	// 1.1 Initialize Mailer
+	mailSrv := mailer.NewMailer(cfg.Mailer.Host, cfg.Mailer.Port, cfg.Mailer.User, cfg.Mailer.Password)
+	go mailSrv.Start()
+
 	// 2. Initialize repositories layer (data access)
 	userRepo := repo.NewUserRepo(db)
 
 	// 3. Initialize services layer (business logic)
-	userService := service.NewUserService(userRepo)
+	userService := service.NewUserService(userRepo, mailSrv)
 
 	// 4. Initialize handlers layer (HTTP/API)
 	userHandler := handler.NewUserHandler(userService)
@@ -88,6 +94,7 @@ func New() (*App, error) {
 		recommenderClient: recommenderClient,
 		db:                db,
 		cacheConn:         cacheConn,
+		mailer:            mailSrv,
 	}, nil
 }
 
