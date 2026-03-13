@@ -12,7 +12,7 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	UserID   int64  `json:"user_id"`
+	UserID   string `json:"user_id"`
 	Username string `json:"username"`
 	JWTToken string `json:"token"`
 }
