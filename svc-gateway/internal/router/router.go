@@ -51,6 +51,10 @@ func registerCustomValidators() {
 
 // User login and registration routes (/api/v1/user)
 func registerAuthRoutes(group *gin.RouterGroup, userHandler *handler.UserHandler) {
+	// Send email verification code
+	group.POST("/send_email_code", userHandler.SendEmailCode)
+
+	// For login and registration
 	group.POST("/login", userHandler.Login)
 	group.POST("/register", userHandler.Register)
 }

@@ -70,7 +70,7 @@ func New() (*App, error) {
 	userRepo := repo.NewUserRepo(db)
 
 	// 3. Initialize services layer (business logic)
-	userService := service.NewUserService(userRepo, mailSrv)
+	userService := service.NewUserService(userRepo, mailSrv, cacheConn)
 
 	// 4. Initialize handlers layer (HTTP/API)
 	userHandler := handler.NewUserHandler(userService)
