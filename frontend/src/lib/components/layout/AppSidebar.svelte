@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Activity, Compass, LogOut, Settings, User } from 'lucide-svelte';
+	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 
 	import { goto } from '$app/navigation';
@@ -7,11 +8,32 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Sidebar from '$lib/components/ui/sidebar';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 
 	let { ref = $bindable(null), ...restProps } = $props();
 
+	let currentUser = $state({ id: '', username: 'User', email: '' });
+	let userInitials = $derived(
+		currentUser.username ? currentUser.username.substring(0, 2).toUpperCase() : 'US'
+	);
+
+	let initDone = $state(false);
+
+	onMount(() => {
+		const userStr = localStorage.getItem('user');
+		if (userStr) {
+			try {
+				currentUser = JSON.parse(userStr);
+			} catch (e) {
+				console.error('Failed to parse user info', e);
+			}
+		}
+		initDone = true;
+	});
+
 	function handleLogout() {
 		localStorage.removeItem('token');
+		localStorage.removeItem('user');
 		goto(resolve('/login'));
 	}
 </script>
@@ -70,13 +92,23 @@
 								class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 								{...props}
 							>
-								<Avatar.Root class="h-8 w-8 rounded-lg">
-									<Avatar.Fallback class="rounded-lg">US</Avatar.Fallback>
-								</Avatar.Root>
-								<div class="grid flex-1 text-left text-sm leading-tight">
-									<span class="truncate font-semibold">User Name</span>
-									<span class="truncate text-xs">user@scivault.com</span>
-								</div>
+								{#if !initDone}
+									<div class="flex items-center gap-2">
+										<Skeleton class="h-8 w-8 rounded-lg" />
+										<div class="grid flex-1 gap-1">
+											<Skeleton class="h-4 w-20" />
+											<Skeleton class="h-3 w-24" />
+										</div>
+									</div>
+								{:else}
+									<Avatar.Root class="h-8 w-8 rounded-lg">
+										<Avatar.Fallback class="rounded-lg">{userInitials}</Avatar.Fallback>
+									</Avatar.Root>
+									<div class="grid flex-1 text-left text-sm leading-tight">
+										<span class="truncate font-semibold">{currentUser.username}</span>
+										<span class="truncate text-xs">{currentUser.email}</span>
+									</div>
+								{/if}
 							</Sidebar.MenuButton>
 						{/snippet}
 					</DropdownMenu.Trigger>
@@ -89,11 +121,11 @@
 						<DropdownMenu.Label class="p-0 font-normal">
 							<div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
 								<Avatar.Root class="h-8 w-8 rounded-lg">
-									<Avatar.Fallback class="rounded-lg">US</Avatar.Fallback>
+									<Avatar.Fallback class="rounded-lg">{userInitials}</Avatar.Fallback>
 								</Avatar.Root>
 								<div class="grid flex-1 text-left text-sm leading-tight">
-									<span class="truncate font-semibold">User Name</span>
-									<span class="truncate text-xs">user@scivault.com</span>
+									<span class="truncate font-semibold">{currentUser.username}</span>
+									<span class="truncate text-xs">{currentUser.email}</span>
 								</div>
 							</div>
 						</DropdownMenu.Label>
