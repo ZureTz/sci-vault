@@ -1,13 +1,20 @@
 <script lang="ts">
-	import * as Sidebar from '$lib/components/ui/sidebar';
-	import { Activity, Compass, Settings, User, LogOut } from 'lucide-svelte';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import * as Avatar from '$lib/components/ui/avatar';
-	import * as Separator from '$lib/components/ui/separator';
-	import { resolve } from '$app/paths';
+	import { Activity, Compass, LogOut, Settings, User } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import * as Avatar from '$lib/components/ui/avatar';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as Separator from '$lib/components/ui/separator';
+	import * as Sidebar from '$lib/components/ui/sidebar';
+
 	let { ref = $bindable(null), ...restProps } = $props();
+
+	function handleLogout() {
+		localStorage.removeItem('token');
+		goto(resolve('/login'));
+	}
 </script>
 
 <Sidebar.Root bind:ref {...restProps}>
@@ -100,7 +107,7 @@
 							</DropdownMenu.Item>
 						</DropdownMenu.Group>
 						<DropdownMenu.Separator />
-						<DropdownMenu.Item>
+						<DropdownMenu.Item onclick={handleLogout}>
 							<LogOut />
 							{$_('sidebar.logout')}
 						</DropdownMenu.Item>
