@@ -15,6 +15,7 @@ type UserService interface {
 	SendEmailCode(ctx context.Context, req dto.SendEmailCodeRequest) error
 	Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error) // returns JWT token
 	Register(ctx context.Context, req dto.RegisterRequest) error
+	ResetPassword(ctx context.Context, req dto.ResetPasswordRequest) error
 }
 
 type UserHandler struct {
@@ -69,4 +70,18 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"message": "user registered successfully"})
+}
+
+func (h *UserHandler) ResetPassword(c *gin.Context) {
+	var req dto.ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	if err := h.userService.ResetPassword(c.Request.Context(), req); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "password reset successfully"})
 }
