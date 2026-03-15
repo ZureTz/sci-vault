@@ -24,6 +24,11 @@
 		"title": "仪表盘总览",
 		"description": "欢迎来到 Sci-Vault 仪表盘。内容将在这里显示。"
 	},
+	"common": {
+		"error": {
+			"missing_fields": "请填写所有必填字段"
+		}
+	},
 	"login": {
 		"title": {
 			"app": "Sci-Vault"
@@ -62,6 +67,20 @@
 		"code_placeholder": "6位验证码",
 		"reset_password_title": "重置密码",
 		"reset_password_desc": "输入您的电子邮箱以重置密码。",
-		"new_password": "新密码"
+		"new_password": "新密码",
+		"success": {
+			"login": "登录成功",
+			"register": "注册成功",
+			"code_sent": "验证码已发送",
+			"reset_password": "密码重置成功"
+		},
+		"error": {
+			"login_failed": "登录失败",
+			"register_failed": "注册失败",
+			"password_mismatch": "两次输入的密码不一致",
+			"email_required": "请输入邮箱地址",
+			"send_code_failed": "发送验证码失败",
+			"reset_failed": "重置密码失败"
+		}
 	}
 }

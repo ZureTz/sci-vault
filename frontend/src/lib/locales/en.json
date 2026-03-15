@@ -24,6 +24,11 @@
 		"title": "Dashboard Overview",
 		"description": "Welcome to the Sci-Vault Dashboard. Content goes here."
 	},
+	"common": {
+		"error": {
+			"missing_fields": "Please fill in all required fields"
+		}
+	},
 	"login": {
 		"title": {
 			"app": "Sci-Vault"
@@ -62,6 +67,20 @@
 		"code_placeholder": "6-digit code",
 		"reset_password_title": "Reset Password",
 		"reset_password_desc": "Enter your email address to reset your password.",
-		"new_password": "New Password"
+		"new_password": "New Password",
+		"success": {
+			"login": "Login successful",
+			"register": "Registration successful",
+			"code_sent": "Verification code sent",
+			"reset_password": "Password reset successfully"
+		},
+		"error": {
+			"login_failed": "Login failed",
+			"register_failed": "Registration failed",
+			"password_mismatch": "Passwords do not match",
+			"email_required": "Email address is required",
+			"send_code_failed": "Failed to send verification code",
+			"reset_failed": "Failed to reset password"
+		}
 	}
 }

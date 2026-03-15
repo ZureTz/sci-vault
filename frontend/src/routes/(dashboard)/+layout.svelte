@@ -1,11 +1,40 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { jwtDecode } from 'jwt-decode';
+	import { toast } from 'svelte-sonner';
+	import { _ } from 'svelte-i18n';
+
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import * as Separator from '$lib/components/ui/separator';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
-	import { _ } from 'svelte-i18n';
 
 	let { children } = $props();
+
+	onMount(() => {
+		const token = localStorage.getItem('token');
+		if (!token) {
+			goto(resolve('/login'));
+			return;
+		}
+
+		try {
+			const decoded = jwtDecode<{ exp?: number }>(token);
+			const currentTime = Date.now() / 1000;
+			if (decoded.exp && decoded.exp < currentTime) {
+				localStorage.removeItem('token');
+				toast.error('Token expired, please login again.');
+				goto(resolve('/login'));
+			}
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		} catch (error: unknown) {
+			localStorage.removeItem('token');
+			goto(resolve('/login'));
+		}
+	});
 </script>
 
 <Sidebar.Provider>
