@@ -3,6 +3,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import * as Separator from '$lib/components/ui/separator';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
+	import { _ } from 'svelte-i18n';
 
 	let { children } = $props();
 </script>
@@ -19,7 +20,7 @@
 				<Breadcrumb.Root>
 					<Breadcrumb.List>
 						<Breadcrumb.Item>
-							<Breadcrumb.Link href="/">Dashboard</Breadcrumb.Link>
+							<Breadcrumb.Link href="/">{$_('breadcrumb.dashboard')}</Breadcrumb.Link>
 						</Breadcrumb.Item>
 					</Breadcrumb.List>
 				</Breadcrumb.Root>

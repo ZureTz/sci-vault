@@ -5,6 +5,7 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as Separator from '$lib/components/ui/separator';
 	import { resolve } from '$app/paths';
+	import { _ } from 'svelte-i18n';
 
 	let { ref = $bindable(null), ...restProps } = $props();
 </script>
@@ -18,15 +19,15 @@
 				<Activity class="size-4" />
 			</div>
 			<div class="flex flex-col gap-0.5 leading-none">
-				<span class="font-semibold">Sci-Vault</span>
-				<span class="">v1.0.0</span>
+				<span class="font-semibold">{$_('app.title')}</span>
+				<span class="">{$_('app.version')}</span>
 			</div>
 		</div>
 	</Sidebar.Header>
 	<Separator.Root />
 	<Sidebar.Content>
 		<Sidebar.Group>
-			<Sidebar.GroupLabel>Navigation</Sidebar.GroupLabel>
+			<Sidebar.GroupLabel>{$_('sidebar.navigation')}</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					<Sidebar.MenuItem>
@@ -34,7 +35,7 @@
 							{#snippet child({ props })}
 								<a href={resolve('/')} {...props}>
 									<Compass />
-									<span>Dashboard</span>
+									<span>{$_('sidebar.dashboard')}</span>
 								</a>
 							{/snippet}
 						</Sidebar.MenuButton>
@@ -44,7 +45,7 @@
 							{#snippet child({ props })}
 								<a href={resolve('/settings')} {...props}>
 									<Settings />
-									<span>Settings</span>
+									<span>{$_('sidebar.settings')}</span>
 								</a>
 							{/snippet}
 						</Sidebar.MenuButton>
@@ -95,13 +96,13 @@
 						<DropdownMenu.Group>
 							<DropdownMenu.Item>
 								<User />
-								Profile
+								{$_('sidebar.profile')}
 							</DropdownMenu.Item>
 						</DropdownMenu.Group>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item>
 							<LogOut />
-							Log out
+							{$_('sidebar.logout')}
 						</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>

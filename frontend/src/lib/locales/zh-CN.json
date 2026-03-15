@@ -1,0 +1,61 @@
+{
+	"app": {
+		"title": "Sci-Vault",
+		"version": "v1.0.0",
+		"switch_language": "切换语言"
+	},
+	"sidebar": {
+		"navigation": "导航",
+		"dashboard": "仪表盘",
+		"settings": "设置",
+		"profile": "个人资料",
+		"logout": "退出登录"
+	},
+	"breadcrumb": {
+		"dashboard": "仪表盘"
+	},
+	"dashboard": {
+		"title": "仪表盘总览",
+		"description": "欢迎来到 Sci-Vault 仪表盘。内容将在这里显示。"
+	},
+	"login": {
+		"title": {
+			"app": "Sci-Vault"
+		},
+		"subtitle": {
+			"app": "管理您的科学知识工作区"
+		},
+		"tab": {
+			"login": "登录",
+			"register": "注册"
+		},
+		"welcome_back": "欢迎回来",
+		"signin_desc": "使用您的邮箱或用户名登录账户。",
+		"identifier": "用户名 / 邮箱",
+		"identifier_placeholder": "name@scivault.com",
+		"password": "密码",
+		"forgot_password": "忘记密码？",
+		"btn": {
+			"signin": "登录",
+			"signing_in": "登录中...",
+			"send_code": "发送验证码",
+			"create_account": "创建账户",
+			"creating_account": "创建中...",
+			"reset_password": "重置密码",
+			"resetting": "重置中...",
+			"back_to_login": "返回登录"
+		},
+		"create_account": "创建新账户",
+		"join_us": "加入我们，访问您的工作区。",
+		"username": "用户名",
+		"username_placeholder": "用户名 (3-20 个字符)",
+		"email": "邮箱",
+		"email_placeholder": "your@email.com",
+		"confirm_password": "确认密码",
+		"verification_code": "验证码",
+		"code_placeholder": "6位验证码",
+		"reset_password_title": "重置密码",
+		"reset_password_desc": "输入您的电子邮箱以重置密码。",
+		"new_password": "新密码"
+	}
+}

@@ -5,6 +5,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
+	import { _ } from 'svelte-i18n';
 
 	let activeView = $state<'auth' | 'reset-password'>('auth');
 	let activeTab = $state<'login' | 'register'>('login');
@@ -74,33 +75,33 @@
 				<Activity class="size-6" />
 			</div>
 			<div class="space-y-1">
-				<h1 class="text-2xl font-bold tracking-tight">Sci-Vault</h1>
-				<p class="text-sm text-muted-foreground">Manage your scientific knowledge workspace</p>
+				<h1 class="text-2xl font-bold tracking-tight">{$_('login.title.app')}</h1>
+				<p class="text-sm text-muted-foreground">{$_('login.subtitle.app')}</p>
 			</div>
 		</div>
 
 		{#if activeView === 'auth'}
 			<Tabs.Root bind:value={activeTab} class="w-full">
 				<Tabs.List class="grid w-full grid-cols-2">
-					<Tabs.Trigger value="login">Login</Tabs.Trigger>
-					<Tabs.Trigger value="register">Register</Tabs.Trigger>
+					<Tabs.Trigger value="login">{$_('login.tab.login')}</Tabs.Trigger>
+					<Tabs.Trigger value="register">{$_('login.tab.register')}</Tabs.Trigger>
 				</Tabs.List>
 
 				<!-- LOGIN TAB -->
 				<Tabs.Content value="login">
 					<Card.Root>
 						<Card.Header>
-							<Card.Title>Welcome back</Card.Title>
-							<Card.Description>Sign in to your account with email or username.</Card.Description>
+							<Card.Title>{$_('login.welcome_back')}</Card.Title>
+							<Card.Description>{$_('login.signin_desc')}</Card.Description>
 						</Card.Header>
 						<Card.Content class="space-y-4">
 							<div class="space-y-2">
-								<Label for="identifier">Username / Email</Label>
+								<Label for="identifier">{$_('login.identifier')}</Label>
 								<div class="relative">
 									<User class="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
 									<Input
 										id="identifier"
-										placeholder="name@scivault.com"
+										placeholder={$_('login.identifier_placeholder')}
 										class="pl-9"
 										bind:value={loginForm.identifier}
 									/>
@@ -108,13 +109,13 @@
 							</div>
 							<div class="space-y-2">
 								<div class="flex items-center justify-between">
-									<Label for="password">Password</Label>
+									<Label for="password">{$_('login.password')}</Label>
 									<button
 										type="button"
 										class="text-xs font-medium text-primary hover:underline"
 										onclick={() => (activeView = 'reset-password')}
 									>
-										Forgot password?
+										{$_('login.forgot_password')}
 									</button>
 								</div>
 								<div class="relative">
@@ -130,7 +131,7 @@
 						</Card.Content>
 						<Card.Footer>
 							<Button class="w-full" onclick={handleLogin} disabled={isSubmitting}>
-								{isSubmitting ? 'Signing in...' : 'Sign in'}
+								{isSubmitting ? $_('login.btn.signing_in') : $_('login.btn.signin')}
 							</Button>
 						</Card.Footer>
 					</Card.Root>
@@ -140,30 +141,30 @@
 				<Tabs.Content value="register">
 					<Card.Root>
 						<Card.Header>
-							<Card.Title>Create an account</Card.Title>
-							<Card.Description>Join us to access the workspace.</Card.Description>
+							<Card.Title>{$_('login.create_account')}</Card.Title>
+							<Card.Description>{$_('login.join_us')}</Card.Description>
 						</Card.Header>
 						<Card.Content class="space-y-4">
 							<div class="space-y-2">
-								<Label for="reg-username">Username</Label>
+								<Label for="reg-username">{$_('login.username')}</Label>
 								<div class="relative">
 									<User class="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
 									<Input
 										id="reg-username"
-										placeholder="Username (3-20 chars)"
+										placeholder={$_('login.username_placeholder')}
 										class="pl-9"
 										bind:value={registerForm.username}
 									/>
 								</div>
 							</div>
 							<div class="space-y-2">
-								<Label for="reg-email">Email</Label>
+								<Label for="reg-email">{$_('login.email')}</Label>
 								<div class="relative">
 									<Mail class="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
 									<Input
 										id="reg-email"
 										type="email"
-										placeholder="your@email.com"
+										placeholder={$_('login.email_placeholder')}
 										class="pl-9"
 										bind:value={registerForm.email}
 									/>
@@ -171,7 +172,7 @@
 							</div>
 							<div class="grid grid-cols-2 gap-4">
 								<div class="col-span-2 space-y-2 sm:col-span-1">
-									<Label for="reg-password">Password</Label>
+									<Label for="reg-password">{$_('login.password')}</Label>
 									<div class="relative">
 										<Lock class="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
 										<Input
@@ -183,7 +184,7 @@
 									</div>
 								</div>
 								<div class="col-span-2 space-y-2 sm:col-span-1">
-									<Label for="reg-confirm">Confirm Password</Label>
+									<Label for="reg-confirm">{$_('login.confirm_password')}</Label>
 									<div class="relative">
 										<Lock class="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
 										<Input
@@ -196,13 +197,13 @@
 								</div>
 							</div>
 							<div class="space-y-2">
-								<Label for="reg-code">Verification Code</Label>
+								<Label for="reg-code">{$_('login.verification_code')}</Label>
 								<div class="flex gap-2">
 									<div class="relative flex-1">
 										<KeyRound class="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
 										<Input
 											id="reg-code"
-											placeholder="6-digit code"
+											placeholder={$_('login.code_placeholder')}
 											class="pl-9"
 											maxlength={6}
 											bind:value={registerForm.email_code}
@@ -214,14 +215,14 @@
 										disabled={!registerForm.email}
 										onclick={() => handleSendCode(registerForm.email)}
 									>
-										Send Code
+										{$_('login.btn.send_code')}
 									</Button>
 								</div>
 							</div>
 						</Card.Content>
 						<Card.Footer>
 							<Button class="w-full" onclick={handleRegister} disabled={isSubmitting}>
-								{isSubmitting ? 'Creating account...' : 'Create Account'}
+								{isSubmitting ? $_('login.btn.creating_account') : $_('login.btn.create_account')}
 							</Button>
 						</Card.Footer>
 					</Card.Root>
@@ -231,31 +232,31 @@
 			<!-- RESET PASSWORD VIEW -->
 			<Card.Root>
 				<Card.Header>
-					<Card.Title>Reset Password</Card.Title>
-					<Card.Description>Enter your email address to reset your password.</Card.Description>
+					<Card.Title>{$_('login.reset_password_title')}</Card.Title>
+					<Card.Description>{$_('login.reset_password_desc')}</Card.Description>
 				</Card.Header>
 				<Card.Content class="space-y-4">
 					<div class="space-y-2">
-						<Label for="reset-email">Email</Label>
+						<Label for="reset-email">{$_('login.email')}</Label>
 						<div class="relative">
 							<Mail class="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
 							<Input
 								id="reset-email"
 								type="email"
-								placeholder="your@email.com"
+								placeholder={$_('login.email_placeholder')}
 								class="pl-9"
 								bind:value={resetForm.email}
 							/>
 						</div>
 					</div>
 					<div class="space-y-2">
-						<Label for="reset-code">Verification Code</Label>
+						<Label for="reset-code">{$_('login.verification_code')}</Label>
 						<div class="flex gap-2">
 							<div class="relative flex-1">
 								<KeyRound class="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
 								<Input
 									id="reset-code"
-									placeholder="6-digit code"
+									placeholder={$_('login.code_placeholder')}
 									class="pl-9"
 									maxlength={6}
 									bind:value={resetForm.email_code}
@@ -267,19 +268,19 @@
 								disabled={!resetForm.email}
 								onclick={() => handleSendCode(resetForm.email)}
 							>
-								Send Code
+								{$_('login.btn.send_code')}
 							</Button>
 						</div>
 					</div>
 					<div class="space-y-2">
-						<Label for="reset-pass">New Password</Label>
+						<Label for="reset-pass">{$_('login.new_password')}</Label>
 						<div class="relative">
 							<Lock class="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
 							<Input id="reset-pass" type="password" class="pl-9" bind:value={resetForm.password} />
 						</div>
 					</div>
 					<div class="space-y-2">
-						<Label for="reset-confirm">Confirm Password</Label>
+						<Label for="reset-confirm">{$_('login.confirm_password')}</Label>
 						<div class="relative">
 							<Lock class="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
 							<Input
@@ -293,14 +294,14 @@
 				</Card.Content>
 				<Card.Footer class="flex flex-col gap-2">
 					<Button class="w-full" onclick={handleResetPassword} disabled={isSubmitting}>
-						{isSubmitting ? 'Resetting...' : 'Reset Password'}
+						{isSubmitting ? $_('login.btn.resetting') : $_('login.btn.reset_password')}
 					</Button>
 					<Button
 						variant="ghost"
 						class="w-full text-muted-foreground"
 						onclick={() => (activeView = 'auth')}
 					>
-						Back to login
+						{$_('login.btn.back_to_login')}
 					</Button>
 				</Card.Footer>
 			</Card.Root>
