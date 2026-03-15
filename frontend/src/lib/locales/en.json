@@ -2,7 +2,8 @@
 	"app": {
 		"title": "Sci-Vault",
 		"version": "v1.0.0",
-		"switch_language": "Switch language"
+		"switch_language": "Switch language",
+		"toggle_theme": "Toggle theme"
 	},
 	"sidebar": {
 		"navigation": "Navigation",
