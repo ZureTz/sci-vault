@@ -83,6 +83,7 @@ func (s *UserService) Login(ctx context.Context, req dto.LoginRequest) (*dto.Log
 	return &dto.LoginResponse{
 		UserID:   fmt.Sprintf("%d", user.ID),
 		Username: user.Username,
+		Email:    user.Email,
 		JWTToken: jwtToken,
 	}, nil
 }
