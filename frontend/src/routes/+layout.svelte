@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import ThemeToggle from '$lib/components/layout/ThemeToggle.svelte';
 	import { ModeWatcher } from 'mode-watcher';
+	import { Toaster } from '$lib/components/ui/sonner';
 	import { Languages } from 'lucide-svelte';
 	import { tick } from 'svelte';
 	import { _, locale, waitLocale } from 'svelte-i18n';
@@ -33,6 +34,7 @@
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 <ModeWatcher />
+<Toaster position="bottom-center" richColors />
 
 <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
 	<ThemeToggle />

@@ -34,6 +34,7 @@
 		"prettier-plugin-tailwindcss": "^0.7.2",
 		"svelte": "^5.53.12",
 		"svelte-check": "^4.4.5",
+		"svelte-sonner": "^1.0.7",
 		"tailwind-merge": "^3.5.0",
 		"tailwind-variants": "^3.2.2",
 		"tailwindcss": "^4.2.1",
@@ -43,6 +44,8 @@
 		"vite": "^7.3.1"
 	},
 	"dependencies": {
+		"axios": "^1.13.6",
+		"jwt-decode": "^4.0.0",
 		"lucide-svelte": "^0.577.0",
 		"mode-watcher": "^1.1.0",
 		"svelte-i18n": "^4.0.1"
