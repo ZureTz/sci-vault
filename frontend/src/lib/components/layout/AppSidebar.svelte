@@ -6,7 +6,6 @@
 	import { resolve } from '$app/paths';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import * as Separator from '$lib/components/ui/separator';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 
 	let { ref = $bindable(null), ...restProps } = $props();
@@ -18,8 +17,8 @@
 </script>
 
 <Sidebar.Root bind:ref {...restProps}>
-	<Sidebar.Header>
-		<div class="flex items-center gap-2 px-4 py-2">
+	<Sidebar.Header class="h-16 justify-center border-b p-0 transition-[height] ease-linear">
+		<div class="flex items-center gap-2 px-4">
 			<div
 				class="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"
 			>
@@ -31,7 +30,6 @@
 			</div>
 		</div>
 	</Sidebar.Header>
-	<Separator.Root />
 	<Sidebar.Content>
 		<Sidebar.Group>
 			<Sidebar.GroupLabel>{$_('sidebar.navigation')}</Sidebar.GroupLabel>
