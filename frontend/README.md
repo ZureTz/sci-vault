@@ -8,7 +8,7 @@ Follow the instructions below to set up and run the frontend development server 
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) 1.0+ -  A fast all-in-one JavaScript runtime and package manager
+- [Bun](https://bun.sh/) 1.0+ - A fast all-in-one JavaScript runtime and package manager
 
 ### Install Dependencies
 
@@ -88,6 +88,7 @@ The built application is optimized for deployment. You may need to install an ap
 ## Roadmap: API Integration & Docker
 
 Upcoming improvements include:
+
 - Seamless integration with the `svc-gateway` API
 - Docker containerization for consistent development and deployment environments
 - Enhanced UI components and user experience improvements
