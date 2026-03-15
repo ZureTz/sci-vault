@@ -39,7 +39,7 @@ func (h *UserHandler) SendEmailCode(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "verification code sent successfully"})
+	c.JSON(http.StatusOK, utils.MessageResponse("verification code sent successfully"))
 }
 
 func (h *UserHandler) Login(c *gin.Context) {
@@ -69,7 +69,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"message": "user registered successfully"})
+	c.JSON(http.StatusCreated, utils.MessageResponse("user registered successfully"))
 }
 
 func (h *UserHandler) ResetPassword(c *gin.Context) {
@@ -83,5 +83,5 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "password reset successfully"})
+	c.JSON(http.StatusOK, utils.MessageResponse("password reset successfully"))
 }
