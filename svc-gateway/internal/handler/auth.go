@@ -1,6 +1,10 @@
 package handler
 
-import "github.com/gin-gonic/gin"
+import (
+	"gateway/pkg/utils"
+
+	"github.com/gin-gonic/gin"
+)
 
 type AuthHandler struct{}
 
@@ -9,7 +13,5 @@ func NewAuthHandler() *AuthHandler {
 }
 
 func (h *AuthHandler) Test(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "Authenticated route accessed successfully!",
-	})
+	c.JSON(200, utils.MessageResponse("Authenticated route accessed successfully!"))
 }
