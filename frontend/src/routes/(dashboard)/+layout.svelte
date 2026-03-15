@@ -26,12 +26,14 @@
 			const currentTime = Date.now() / 1000;
 			if (decoded.exp && decoded.exp < currentTime) {
 				localStorage.removeItem('token');
+				localStorage.removeItem('user');
 				toast.error('Token expired, please login again.');
 				goto(resolve('/login'));
 			}
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		} catch (error: unknown) {
 			localStorage.removeItem('token');
+			localStorage.removeItem('user');
 			goto(resolve('/login'));
 		}
 	});

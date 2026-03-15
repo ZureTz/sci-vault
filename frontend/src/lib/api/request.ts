@@ -39,6 +39,7 @@ request.interceptors.response.use(
 		// Unified error handling, e.g., redirect to login page for 401 Unauthorized
 		if (error.response?.status === 401) {
 			localStorage.removeItem('token');
+			localStorage.removeItem('user');
 			goto(resolve('/login'));
 		}
 		return Promise.reject(error);

@@ -76,6 +76,14 @@
 			});
 
 			localStorage.setItem('token', res.token);
+			localStorage.setItem(
+				'user',
+				JSON.stringify({
+					id: res.user_id,
+					username: res.username,
+					email: res.email
+				})
+			);
 			toast.success($_('login.success.login'));
 			goto(resolve('/'));
 		} catch (error: unknown) {
