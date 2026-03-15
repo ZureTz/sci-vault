@@ -5,6 +5,11 @@
 		"switch_language": "Switch language",
 		"toggle_theme": "Toggle theme"
 	},
+	"theme": {
+		"light": "Light",
+		"dark": "Dark",
+		"system": "System"
+	},
 	"sidebar": {
 		"navigation": "Navigation",
 		"dashboard": "Dashboard",
