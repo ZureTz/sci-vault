@@ -68,6 +68,7 @@ func registerUserRoutes(group *gin.RouterGroup, userHandler *handler.UserHandler
 	// For login and registration
 	group.POST("/login", userHandler.Login)
 	group.POST("/register", userHandler.Register)
+	group.POST("/reset_password", userHandler.ResetPassword)
 }
 
 // Authenticated routes (example: /api/v1/auth/...)

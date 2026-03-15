@@ -11,6 +11,7 @@ type UserRepository interface {
 	Create(ctx context.Context, user *model.User) error
 	FindByID(ctx context.Context, id uint) (model.User, error)
 	FindByUsernameOrEmail(ctx context.Context, usernameOrEmail string) (model.User, error)
+	UpdatePasswordByEmail(ctx context.Context, email string, passwordHash string) error
 }
 
 type userRepo struct {
@@ -31,4 +32,9 @@ func (r *userRepo) FindByID(ctx context.Context, id uint) (model.User, error) {
 
 func (r *userRepo) FindByUsernameOrEmail(ctx context.Context, usernameOrEmail string) (model.User, error) {
 	return gorm.G[model.User](r.db).Where("username = ?", usernameOrEmail).Or("email = ?", usernameOrEmail).First(ctx)
+}
+
+func (r *userRepo) UpdatePasswordByEmail(ctx context.Context, email string, passwordHash string) error {
+	_, err := gorm.G[model.User](r.db).Where("email = ?", email).Update(ctx, "password_hash", passwordHash)
+	return err
 }

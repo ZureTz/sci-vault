@@ -60,7 +60,11 @@ func (s *UserService) SendEmailCode(ctx context.Context, req dto.SendEmailCodeRe
 
 func (s *UserService) Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error) {
 	// Find user by username or email
-	user, err := s.repo.FindByUsernameOrEmail(ctx, req.Username)
+	account := req.Username
+	if account == "" {
+		account = req.Email
+	}
+	user, err := s.repo.FindByUsernameOrEmail(ctx, account)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
@@ -81,6 +85,33 @@ func (s *UserService) Login(ctx context.Context, req dto.LoginRequest) (*dto.Log
 		Username: user.Username,
 		JWTToken: jwtToken,
 	}, nil
+}
+
+func (s *UserService) ResetPassword(ctx context.Context, req dto.ResetPasswordRequest) error {
+	// Verify email code from Redis
+	cacheKey := fmt.Sprintf("%s:code", req.Email)
+	storedCode, err := s.cacheConn.Get(ctx, cacheKey)
+	if err != nil {
+		return fmt.Errorf("verification code expired or invalid")
+	}
+	if storedCode != req.EmailCode {
+		return fmt.Errorf("verification code does not match")
+	}
+
+	// Delete verification code after successful check
+	defer s.cacheConn.Del(context.Background(), cacheKey)
+
+	// Hash new password and update in database
+	hashedPassword, err := password.Hash(req.Password)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	if err := s.repo.UpdatePasswordByEmail(ctx, req.Email, hashedPassword); err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	return nil
 }
 
 func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) error {
