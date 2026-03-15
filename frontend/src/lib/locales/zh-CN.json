@@ -2,7 +2,8 @@
 	"app": {
 		"title": "Sci-Vault",
 		"version": "v1.0.0",
-		"switch_language": "切换语言"
+		"switch_language": "切换语言",
+		"toggle_theme": "切换主题"
 	},
 	"sidebar": {
 		"navigation": "导航",
