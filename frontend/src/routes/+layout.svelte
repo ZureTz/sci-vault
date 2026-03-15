@@ -4,17 +4,26 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { Button } from '$lib/components/ui/button';
 	import { Languages } from 'lucide-svelte';
-	import { _, locale } from 'svelte-i18n';
+	import { tick } from 'svelte';
+	import { _, locale, waitLocale } from 'svelte-i18n';
 
 	let { children } = $props();
 
-	const toggleLocale = () => {
+	const toggleLocale = async () => {
 		const nextLocale = $locale === 'zh-CN' ? 'en' : 'zh-CN';
-
-		locale.set(nextLocale);
 
 		if (browser) {
 			localStorage.setItem('locale', nextLocale);
+		}
+
+		if (document.startViewTransition) {
+			document.startViewTransition(async () => {
+				locale.set(nextLocale);
+				await waitLocale();
+				await tick();
+			});
+		} else {
+			locale.set(nextLocale);
 		}
 	};
 </script>
