@@ -5,6 +5,11 @@
 		"switch_language": "切换语言",
 		"toggle_theme": "切换主题"
 	},
+	"theme": {
+		"light": "浅色",
+		"dark": "深色",
+		"system": "跟随系统"
+	},
 	"sidebar": {
 		"navigation": "导航",
 		"dashboard": "仪表盘",
