@@ -30,6 +30,21 @@ cp config.example.yaml config.yaml
 
 Update the `config.yaml` file with your specific environment details, such as target gRPC ports, host bindings, and API configurations.
 
+#### RustFS (Object Storage)
+
+The service uses RustFS as its S3-compatible object storage backend. After starting the RustFS container via `docker compose up -d`, you need to configure the access credentials in your `config.yaml`:
+
+```yaml
+storage:
+  endpoint: "http://localhost:9000"
+  access_key: "rustfsadmin"   # replace with your RustFS access key
+  secret_key: "rustfsadmin"   # replace with your RustFS secret key
+  bucket: "sci-vault"
+  use_ssl: false
+```
+
+You can also manage access keys via the RustFS Console at `http://localhost:9001`.
+
 ### Run the Service
 
 Start the API gateway directly using Go:
