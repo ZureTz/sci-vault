@@ -13,18 +13,9 @@ type Config struct {
 	Log             LogConfig      `mapstructure:"log"`
 	Redis           RedisConfig    `mapstructure:"redis"`
 	Database        DatabaseConfig `mapstructure:"database"`
+	Storage         StorageConfig  `mapstructure:"storage"`
 	Mailer          MailerConfig   `mapstructure:"mailer"`
 	JWT             JWTConfig      `mapstructure:"jwt"`
-	Storage         StorageConfig  `mapstructure:"storage"`
-}
-
-type StorageConfig struct {
-	Endpoint      string `mapstructure:"endpoint"`
-	AccessKey     string `mapstructure:"access_key"`
-	SecretKey     string `mapstructure:"secret_key"`
-	PrivateBucket string `mapstructure:"private_bucket"`
-	PublicBucket  string `mapstructure:"public_bucket"`
-	UseSSL        bool   `mapstructure:"use_ssl"`
 }
 
 type JWTConfig struct {
@@ -42,6 +33,15 @@ type MailerConfig struct {
 type LogConfig struct {
 	Level  string `mapstructure:"level"`
 	Format string `mapstructure:"format"`
+}
+
+type StorageConfig struct {
+	Endpoint      string `mapstructure:"endpoint"`
+	AccessKey     string `mapstructure:"access_key"`
+	SecretKey     string `mapstructure:"secret_key"`
+	PrivateBucket string `mapstructure:"private_bucket"`
+	PublicBucket  string `mapstructure:"public_bucket"`
+	UseSSL        bool   `mapstructure:"use_ssl"`
 }
 
 type DatabaseConfig struct {

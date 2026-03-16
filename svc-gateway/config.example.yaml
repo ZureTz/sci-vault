@@ -20,6 +20,14 @@ database:
   ssl_mode: "disable"
   timezone: "UTC"
 
+storage:
+  endpoint: "http://localhost:9000"
+  access_key: "generated_access_key_from_rustfs_console" # Please replace with your actual access key
+  secret_key: "generated_secret_key_from_rustfs_console" # Please replace with your actual access secret
+  private_bucket: "sci-vault"
+  public_bucket: "public-assets"
+  use_ssl: false
+
 mailer:
   host: "smtp.example.com"
   port: 587
@@ -30,10 +38,3 @@ jwt:
   secret: "your-256-bit-secret"
   timeout: 24 # hours
 
-storage:
-  endpoint: "http://localhost:9000"
-  access_key: "generated_access_key_from_rustfs_console" # Please replace with your actual access key
-  secret_key: "generated_secret_key_from_rustfs_console" # Please replace with your actual access secret
-  private_bucket: "sci-vault"
-  public_bucket: "public-assets"
-  use_ssl: false
