@@ -32,6 +32,8 @@
       "protocolbuffers",
       "PYTHONPATH",
       "pyyaml",
+      "rustfs",
+      "rustfsadmin",
       "sslmode",
       "trixie"
     ],

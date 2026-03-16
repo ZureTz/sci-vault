@@ -29,3 +29,10 @@ mailer:
 jwt:
   secret: "your-256-bit-secret"
   timeout: 24 # hours
+
+storage:
+  endpoint: "http://localhost:9000"
+  access_key: "generated_access_key_from_rustfs_console" # Please replace with your actual access key
+  secret_key: "generated_secret_key_from_rustfs_console" # Please replace with your actual access secret
+  bucket: "sci-vault"
+  use_ssl: false

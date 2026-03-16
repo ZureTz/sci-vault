@@ -22,6 +22,7 @@ import (
 	"gateway/pkg/jwt"
 	"gateway/pkg/logger"
 	"gateway/pkg/mailer"
+	"gateway/pkg/storage"
 )
 
 // App holds all dependencies and the HTTP server for the gateway application.
@@ -36,6 +37,7 @@ type App struct {
 	recommenderClient *grpcclient.RecommenderClient
 	db                *gorm.DB
 	cacheConn         *cache.CacheConnector
+	storageClient     *storage.Client
 	mailer            *mailer.Mailer
 }
 
@@ -59,6 +61,11 @@ func New() (*App, error) {
 
 	if err := db.AutoMigrate(&model.User{}); err != nil {
 		return nil, fmt.Errorf("failed to auto migrate database: %w", err)
+	}
+
+	storageClient := storage.NewClient(cfg.Storage.Endpoint, cfg.Storage.AccessKey, cfg.Storage.SecretKey, cfg.Storage.Bucket, cfg.Storage.UseSSL)
+	if err := storageClient.EnsureBucket(context.Background()); err != nil {
+		return nil, fmt.Errorf("failed to ensure storage bucket: %w", err)
 	}
 
 	jwtGenerator := jwt.NewJWTGenerator(&cfg.JWT)
@@ -101,6 +108,7 @@ func New() (*App, error) {
 		recommenderClient: recommenderClient,
 		db:                db,
 		cacheConn:         cacheConn,
+		storageClient:     storageClient,
 		mailer:            mailSrv,
 	}, nil
 }
