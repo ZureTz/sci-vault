@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 
@@ -11,11 +13,12 @@ import (
 )
 
 type Client struct {
-	s3     *s3.Client
-	bucket string
+	s3            *s3.Client
+	privateBucket string
+	publicBucket  string
 }
 
-func NewClient(endpoint, accessKey, secretKey, bucket string, useSSL bool) *Client {
+func NewClient(endpoint, accessKey, secretKey, privateBucket, publicBucket string, useSSL bool) *Client {
 	cfg := aws.Config{
 		Region: "ap-east-1",
 		Credentials: aws.NewCredentialsCache(
@@ -28,31 +31,76 @@ func NewClient(endpoint, accessKey, secretKey, bucket string, useSSL bool) *Clie
 		o.UsePathStyle = true
 	})
 
-	slog.Info("connected to rustfs storage", "endpoint", endpoint, "bucket", bucket)
+	slog.Info("connected to rustfs storage", "endpoint", endpoint,
+		"privateBucket", privateBucket, "publicBucket", publicBucket)
 
 	return &Client{
-		s3:     client,
-		bucket: bucket,
+		s3:            client,
+		privateBucket: privateBucket,
+		publicBucket:  publicBucket,
 	}
 }
 
-func (c *Client) EnsureBucket(ctx context.Context) error {
+func (c *Client) bucket(isPrivate bool) string {
+	if isPrivate {
+		return c.privateBucket
+	}
+	return c.publicBucket
+}
+
+// EnsureBuckets creates both buckets if they don't exist and sets the public bucket policy.
+func (c *Client) EnsureBuckets(ctx context.Context) error {
+	if err := c.ensureBucket(ctx, c.privateBucket); err != nil {
+		return fmt.Errorf("private bucket %q: %w", c.privateBucket, err)
+	}
+	if err := c.ensureBucket(ctx, c.publicBucket); err != nil {
+		return fmt.Errorf("public bucket %q: %w", c.publicBucket, err)
+	}
+	if err := c.setPublicReadPolicy(ctx, c.publicBucket); err != nil {
+		return fmt.Errorf("set public policy on %q: %w", c.publicBucket, err)
+	}
+	return nil
+}
+
+func (c *Client) ensureBucket(ctx context.Context, name string) error {
 	_, err := c.s3.HeadBucket(ctx, &s3.HeadBucketInput{
-		Bucket: aws.String(c.bucket),
+		Bucket: aws.String(name),
 	})
 	if err == nil {
 		return nil
 	}
-
 	_, err = c.s3.CreateBucket(ctx, &s3.CreateBucketInput{
-		Bucket: aws.String(c.bucket),
+		Bucket: aws.String(name),
 	})
 	return err
 }
 
-func (c *Client) PutObject(ctx context.Context, key string, body io.Reader, contentType string) error {
+func (c *Client) setPublicReadPolicy(ctx context.Context, name string) error {
+	policy := map[string]any{
+		"Version": "2012-10-17",
+		"Statement": []map[string]any{
+			{
+				"Effect":    "Allow",
+				"Principal": "*",
+				"Action":    []string{"s3:GetObject"},
+				"Resource":  []string{fmt.Sprintf("arn:aws:s3:::%s/*", name)},
+			},
+		},
+	}
+	policyJSON, err := json.Marshal(policy)
+	if err != nil {
+		return err
+	}
+	_, err = c.s3.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
+		Bucket: aws.String(name),
+		Policy: aws.String(string(policyJSON)),
+	})
+	return err
+}
+
+func (c *Client) PutObject(ctx context.Context, key string, body io.Reader, contentType string, isPrivate bool) error {
 	input := &s3.PutObjectInput{
-		Bucket: aws.String(c.bucket),
+		Bucket: aws.String(c.bucket(isPrivate)),
 		Key:    aws.String(key),
 		Body:   body,
 	}
@@ -63,9 +111,9 @@ func (c *Client) PutObject(ctx context.Context, key string, body io.Reader, cont
 	return err
 }
 
-func (c *Client) GetObject(ctx context.Context, key string) (io.ReadCloser, error) {
+func (c *Client) GetObject(ctx context.Context, key string, isPrivate bool) (io.ReadCloser, error) {
 	output, err := c.s3.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(c.bucket),
+		Bucket: aws.String(c.bucket(isPrivate)),
 		Key:    aws.String(key),
 	})
 	if err != nil {
@@ -74,23 +122,22 @@ func (c *Client) GetObject(ctx context.Context, key string) (io.ReadCloser, erro
 	return output.Body, nil
 }
 
-func (c *Client) DeleteObject(ctx context.Context, key string) error {
+func (c *Client) DeleteObject(ctx context.Context, key string, isPrivate bool) error {
 	_, err := c.s3.DeleteObject(ctx, &s3.DeleteObjectInput{
-		Bucket: aws.String(c.bucket),
+		Bucket: aws.String(c.bucket(isPrivate)),
 		Key:    aws.String(key),
 	})
 	return err
 }
 
-func (c *Client) ListObjects(ctx context.Context, prefix string) ([]string, error) {
+func (c *Client) ListObjects(ctx context.Context, prefix string, isPrivate bool) ([]string, error) {
 	output, err := c.s3.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
-		Bucket: aws.String(c.bucket),
+		Bucket: aws.String(c.bucket(isPrivate)),
 		Prefix: aws.String(prefix),
 	})
 	if err != nil {
 		return nil, err
 	}
-
 	keys := make([]string, 0, len(output.Contents))
 	for _, obj := range output.Contents {
 		keys = append(keys, *obj.Key)
@@ -98,6 +145,6 @@ func (c *Client) ListObjects(ctx context.Context, prefix string) ([]string, erro
 	return keys, nil
 }
 
-func (c *Client) S3() *s3.Client {
-	return c.s3
-}
+func (c *Client) PrivateBucket() string { return c.privateBucket }
+func (c *Client) PublicBucket() string  { return c.publicBucket }
+func (c *Client) S3() *s3.Client        { return c.s3 }
