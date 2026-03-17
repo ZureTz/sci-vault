@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { Activity, Compass, LogOut, Settings, User } from 'lucide-svelte';
+	import { Activity, ChevronsUpDown, Compass, LogOut, Settings, User } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -18,6 +19,11 @@
 	);
 
 	let initDone = $state(false);
+
+	const navItems = [
+		{ title: 'sidebar.dashboard', url: '/' as const, icon: Compass },
+		{ title: 'sidebar.settings', url: '/settings' as const, icon: Settings }
+	];
 
 	onMount(() => {
 		const userStr = localStorage.getItem('user');
@@ -38,7 +44,7 @@
 	}
 </script>
 
-<Sidebar.Root bind:ref {...restProps}>
+<Sidebar.Root collapsible="offcanvas" bind:ref {...restProps}>
 	<Sidebar.Header class="h-16 justify-center border-b p-0 transition-[height] ease-linear">
 		<div class="flex items-center gap-2 px-4">
 			<div
@@ -57,26 +63,18 @@
 			<Sidebar.GroupLabel>{$_('sidebar.navigation')}</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					<Sidebar.MenuItem>
-						<Sidebar.MenuButton>
-							{#snippet child({ props })}
-								<a href={resolve('/')} {...props}>
-									<Compass />
-									<span>{$_('sidebar.dashboard')}</span>
-								</a>
-							{/snippet}
-						</Sidebar.MenuButton>
-					</Sidebar.MenuItem>
-					<Sidebar.MenuItem>
-						<Sidebar.MenuButton>
-							{#snippet child({ props })}
-								<a href={resolve('/settings')} {...props}>
-									<Settings />
-									<span>{$_('sidebar.settings')}</span>
-								</a>
-							{/snippet}
-						</Sidebar.MenuButton>
-					</Sidebar.MenuItem>
+					{#each navItems as item (item.title)}
+						<Sidebar.MenuItem>
+							<Sidebar.MenuButton isActive={page.url.pathname === resolve(item.url)}>
+								{#snippet child({ props })}
+									<a href={resolve(item.url)} {...props}>
+										<item.icon />
+										<span>{$_(item.title)}</span>
+									</a>
+								{/snippet}
+							</Sidebar.MenuButton>
+						</Sidebar.MenuItem>
+					{/each}
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
@@ -108,6 +106,7 @@
 										<span class="truncate font-semibold">{currentUser.username}</span>
 										<span class="truncate text-xs">{currentUser.email}</span>
 									</div>
+									<ChevronsUpDown class="ml-auto size-4" />
 								{/if}
 							</Sidebar.MenuButton>
 						{/snippet}
