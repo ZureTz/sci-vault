@@ -42,6 +42,8 @@ func (h *UserHandler) SendEmailCode(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.MessageResponse("verification code sent successfully"))
 }
 
+// For login, registration, and password reset (without JWT authentication)
+
 func (h *UserHandler) Login(c *gin.Context) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -84,4 +86,9 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, utils.MessageResponse("password reset successfully"))
+}
+
+// UploadAvatar is a protected route that requires JWT authentication
+func (h *UserHandler) UploadAvatar(c *gin.Context) {
+
 }

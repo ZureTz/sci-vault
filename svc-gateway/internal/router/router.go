@@ -32,7 +32,7 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 	engine.Use(gin.Recovery())
 
 	// Register custom validators for username and password
-	registerCustomValidators()
+	deps.registerCustomValidators()
 
 	// API versioning: all routes will be prefixed with /api/v1
 	v1 := engine.Group("/api/v1")
@@ -41,19 +41,19 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 	v1.GET("/health", handler.HealthCheck(deps.RecommenderClient))
 
 	// Register user routes
-	registerUserRoutes(v1.Group("/user"), deps.UserHandler)
+	deps.registerUserRoutes(v1.Group("/user"), deps.UserHandler)
 
 	// Protected routes (require JWT authentication)
 	auth := v1.Group("/auth")
 	auth.Use(middleware.CheckJWT(&deps.Config.JWT))
-	registerAuthenticatedRoutes(auth, deps.AuthHandler)
+	deps.registerAuthenticatedRoutes(auth, deps.AuthHandler)
 
 	// Assign the configured engine to the router struct
 	return engine
 }
 
 // Register custom validation functions for username and password
-func registerCustomValidators() {
+func (deps *RouterDeps) registerCustomValidators() {
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("custom_username_validator", customValidator.CustomUsernameValidator)
 		v.RegisterValidation("custom_password_validator", customValidator.CustomPasswordValidator)
@@ -61,7 +61,7 @@ func registerCustomValidators() {
 }
 
 // User login and registration routes (/api/v1/user)
-func registerUserRoutes(group *gin.RouterGroup, userHandler *handler.UserHandler) {
+func (deps *RouterDeps) registerUserRoutes(group *gin.RouterGroup, userHandler *handler.UserHandler) {
 	// Send email verification code
 	group.POST("/send_email_code", userHandler.SendEmailCode)
 
@@ -69,9 +69,14 @@ func registerUserRoutes(group *gin.RouterGroup, userHandler *handler.UserHandler
 	group.POST("/login", userHandler.Login)
 	group.POST("/register", userHandler.Register)
 	group.POST("/reset_password", userHandler.ResetPassword)
+
+	// Protected user routes
+	protected := group.Group("/")
+	protected.Use(middleware.CheckJWT(&deps.Config.JWT))
+	protected.POST("/upload_avatar", userHandler.UploadAvatar)
 }
 
 // Authenticated routes (example: /api/v1/auth/...)
-func registerAuthenticatedRoutes(group *gin.RouterGroup, authHandler *handler.AuthHandler) {
+func (deps *RouterDeps) registerAuthenticatedRoutes(group *gin.RouterGroup, authHandler *handler.AuthHandler) {
 	group.GET("/test", authHandler.Test)
 }
