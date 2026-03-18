@@ -2,6 +2,8 @@ package dto
 
 // DTOs for user authentication (login and registration)
 
+import "mime/multipart"
+
 type SendEmailCodeRequest struct {
 	Email string `json:"email" binding:"required,email"`
 }
@@ -34,4 +36,13 @@ type ResetPasswordRequest struct {
 	EmailCode         string `json:"email_code" binding:"required,len=6,numeric"`
 	Password          string `json:"password" binding:"required,min=6,max=50,custom_password_validator"`
 	ConfirmedPassword string `json:"confirmed_password" binding:"required,eqfield=Password"`
+}
+
+// UploadAvatarForm validates that the multipart form contains the avatar file field.
+type UploadAvatarForm struct {
+	Avatar *multipart.FileHeader `form:"avatar" binding:"required"`
+}
+
+type UploadAvatarResponse struct {
+	AvatarURL string `json:"avatar_url"`
 }

@@ -7,6 +7,7 @@ import (
 
 // CustomClaims contains custom data we want from the token.
 type CustomClaims struct {
+	UserID       uint   `json:"user_id"`
 	Username     string `json:"username"`
 	ShouldReject bool   `json:"should_reject"`
 }

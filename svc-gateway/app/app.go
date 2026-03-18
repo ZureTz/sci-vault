@@ -59,7 +59,7 @@ func New() (*App, error) {
 		return nil, fmt.Errorf("failed to create database connection: %w", err)
 	}
 
-	if err := db.AutoMigrate(&model.User{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.UserAvatar{}); err != nil {
 		return nil, fmt.Errorf("failed to auto migrate database: %w", err)
 	}
 
@@ -77,9 +77,10 @@ func New() (*App, error) {
 
 	// 2. Initialize repositories layer (data access)
 	userRepo := repo.NewUserRepo(db)
+	userAvatarRepo := repo.NewUserAvatarRepo(db)
 
 	// 3. Initialize services layer (business logic)
-	userService := service.NewUserService(userRepo, jwtGenerator, mailSrv, cacheConn)
+	userService := service.NewUserService(userRepo, userAvatarRepo, jwtGenerator, mailSrv, cacheConn, storageClient)
 
 	// 4. Initialize handlers layer (HTTP/API)
 	userHandler := handler.NewUserHandler(userService)

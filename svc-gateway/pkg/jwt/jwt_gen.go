@@ -26,8 +26,8 @@ func NewJWTGenerator(cfg *config.JWTConfig) *JWTGenerator {
 	}
 }
 
-// GenerateJWT creates a new JWT string given the username, secret, and timeout in hours.
-func (j *JWTGenerator) GenerateJWT(username string) (string, error) {
+// GenerateJWT creates a new JWT string given the user ID and username.
+func (j *JWTGenerator) GenerateJWT(userID uint, username string) (string, error) {
 	claims := struct {
 		jwt.RegisteredClaims
 		CustomClaims
@@ -41,6 +41,7 @@ func (j *JWTGenerator) GenerateJWT(username string) (string, error) {
 			NotBefore: jwt.NewNumericDate(time.Now()),
 		},
 		CustomClaims: CustomClaims{
+			UserID:       userID,
 			Username:     username,
 			ShouldReject: false,
 		},

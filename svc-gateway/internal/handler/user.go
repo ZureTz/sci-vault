@@ -3,11 +3,14 @@ package handler
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"gateway/internal/dto"
+	"gateway/pkg/jwt"
 	"gateway/pkg/utils"
 )
 
@@ -16,6 +19,7 @@ type UserService interface {
 	Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error) // returns JWT token
 	Register(ctx context.Context, req dto.RegisterRequest) error
 	ResetPassword(ctx context.Context, req dto.ResetPasswordRequest) error
+	UploadAvatar(ctx context.Context, userID uint, file io.Reader, contentType, filename string, size int64) (*dto.UploadAvatarResponse, error)
 }
 
 type UserHandler struct {
@@ -90,5 +94,31 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 
 // UploadAvatar is a protected route that requires JWT authentication
 func (h *UserHandler) UploadAvatar(c *gin.Context) {
+	claims, err := jwt.GetClaims(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized: %w", err)))
+		return
+	}
 
+	var form dto.UploadAvatarForm
+	if err := c.ShouldBind(&form); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	file, err := form.Avatar.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("failed to read uploaded file")))
+		return
+	}
+	defer file.Close()
+
+	resp, err := h.userService.UploadAvatar(c.Request.Context(), claims.UserID,
+		file, form.Avatar.Header.Get("Content-Type"), form.Avatar.Filename, form.Avatar.Size,
+	)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, resp)
 }

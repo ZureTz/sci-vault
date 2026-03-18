@@ -148,3 +148,9 @@ func (c *Client) ListObjects(ctx context.Context, prefix string, isPrivate bool)
 func (c *Client) PrivateBucket() string { return c.privateBucket }
 func (c *Client) PublicBucket() string  { return c.publicBucket }
 func (c *Client) S3() *s3.Client        { return c.s3 }
+
+// PublicObjectURL returns the public-facing URL for an object in the public bucket.
+// Nginx/Vite proxies /assets/ to the rustfs public bucket.
+func (c *Client) PublicObjectURL(key string) string {
+	return fmt.Sprintf("/assets/%s", key)
+}
