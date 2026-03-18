@@ -4,7 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"io"
 	"math/big"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"gateway/internal/dto"
@@ -14,21 +17,42 @@ import (
 	"gateway/pkg/jwt"
 	"gateway/pkg/mailer"
 	"gateway/pkg/password"
+	"gateway/pkg/storage"
 )
 
-type UserService struct {
-	repo         repo.UserRepository
-	jwtGenerator *jwt.JWTGenerator
-	mailer       *mailer.Mailer
-	cacheConn    *cache.CacheConnector
+var allowedImageTypes = map[string]string{
+	"image/jpeg": ".jpg",
+	"image/png":  ".png",
+	"image/gif":  ".gif",
+	"image/webp": ".webp",
 }
 
-func NewUserService(repo repo.UserRepository, jwtGenerator *jwt.JWTGenerator, mailer *mailer.Mailer, cacheConn *cache.CacheConnector) *UserService {
+const maxAvatarSize = 5 << 20 // 5 MB
+
+type UserService struct {
+	repo          repo.UserRepository
+	avatarRepo    repo.UserAvatarRepository
+	jwtGenerator  *jwt.JWTGenerator
+	mailer        *mailer.Mailer
+	cacheConn     *cache.CacheConnector
+	storageClient *storage.Client
+}
+
+func NewUserService(
+	repo repo.UserRepository,
+	avatarRepo repo.UserAvatarRepository,
+	jwtGenerator *jwt.JWTGenerator,
+	mailer *mailer.Mailer,
+	cacheConn *cache.CacheConnector,
+	storageClient *storage.Client,
+) *UserService {
 	return &UserService{
-		repo:         repo,
-		jwtGenerator: jwtGenerator,
-		mailer:       mailer,
-		cacheConn:    cacheConn,
+		repo:          repo,
+		avatarRepo:    avatarRepo,
+		jwtGenerator:  jwtGenerator,
+		mailer:        mailer,
+		cacheConn:     cacheConn,
+		storageClient: storageClient,
 	}
 }
 
@@ -75,7 +99,7 @@ func (s *UserService) Login(ctx context.Context, req dto.LoginRequest) (*dto.Log
 	}
 
 	// Generate JWT token
-	jwtToken, err := s.jwtGenerator.GenerateJWT(user.Username)
+	jwtToken, err := s.jwtGenerator.GenerateJWT(user.ID, user.Username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate JWT token: %w", err)
 	}
@@ -113,6 +137,32 @@ func (s *UserService) ResetPassword(ctx context.Context, req dto.ResetPasswordRe
 	}
 
 	return nil
+}
+
+func (s *UserService) UploadAvatar(ctx context.Context, userID uint, file io.Reader, contentType, filename string, size int64) (*dto.UploadAvatarResponse, error) {
+	if size > maxAvatarSize {
+		return nil, fmt.Errorf("file size exceeds 5MB limit")
+	}
+
+	ext, ok := allowedImageTypes[strings.ToLower(contentType)]
+	if !ok {
+		return nil, fmt.Errorf("unsupported image type: %s", contentType)
+	}
+	if strings.ToLower(filepath.Ext(filename)) == ".jpeg" {
+		ext = ".jpg"
+	}
+
+	key := fmt.Sprintf("avatars/%d/%s%s", userID, time.Now().Format("20060102150405"), ext)
+	if err := s.storageClient.PutObject(ctx, key, file, contentType, false); err != nil {
+		return nil, fmt.Errorf("failed to upload avatar: %w", err)
+	}
+
+	avatarURL := s.storageClient.PublicObjectURL(key)
+	if err := s.avatarRepo.Create(ctx, &model.UserAvatar{UserID: userID, AvatarURL: avatarURL}); err != nil {
+		return nil, fmt.Errorf("failed to record avatar: %w", err)
+	}
+
+	return &dto.UploadAvatarResponse{AvatarURL: avatarURL}, nil
 }
 
 func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) error {
