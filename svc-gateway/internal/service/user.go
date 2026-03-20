@@ -31,7 +31,7 @@ const maxAvatarSize = 5 << 20 // 5 MB
 
 type UserService struct {
 	repo          repo.UserRepository
-	avatarRepo    repo.UserAvatarRepository
+	profileRepo   repo.UserProfileRepository
 	jwtGenerator  *jwt.JWTGenerator
 	mailer        *mailer.Mailer
 	cacheConn     *cache.CacheConnector
@@ -40,7 +40,7 @@ type UserService struct {
 
 func NewUserService(
 	repo repo.UserRepository,
-	avatarRepo repo.UserAvatarRepository,
+	profileRepo repo.UserProfileRepository,
 	jwtGenerator *jwt.JWTGenerator,
 	mailer *mailer.Mailer,
 	cacheConn *cache.CacheConnector,
@@ -48,7 +48,7 @@ func NewUserService(
 ) *UserService {
 	return &UserService{
 		repo:          repo,
-		avatarRepo:    avatarRepo,
+		profileRepo:   profileRepo,
 		jwtGenerator:  jwtGenerator,
 		mailer:        mailer,
 		cacheConn:     cacheConn,
@@ -139,32 +139,6 @@ func (s *UserService) ResetPassword(ctx context.Context, req dto.ResetPasswordRe
 	return nil
 }
 
-func (s *UserService) UploadAvatar(ctx context.Context, userID uint, file io.Reader, contentType, filename string, size int64) (*dto.UploadAvatarResponse, error) {
-	if size > maxAvatarSize {
-		return nil, fmt.Errorf("file size exceeds 5MB limit")
-	}
-
-	ext, ok := allowedImageTypes[strings.ToLower(contentType)]
-	if !ok {
-		return nil, fmt.Errorf("unsupported image type: %s", contentType)
-	}
-	if strings.ToLower(filepath.Ext(filename)) == ".jpeg" {
-		ext = ".jpg"
-	}
-
-	key := fmt.Sprintf("avatars/%d/%s%s", userID, time.Now().Format("20060102150405"), ext)
-	if err := s.storageClient.PutObject(ctx, key, file, contentType, false); err != nil {
-		return nil, fmt.Errorf("failed to upload avatar: %w", err)
-	}
-
-	avatarURL := s.storageClient.PublicObjectURL(key)
-	if err := s.avatarRepo.Create(ctx, &model.UserAvatar{UserID: userID, AvatarURL: avatarURL}); err != nil {
-		return nil, fmt.Errorf("failed to record avatar: %w", err)
-	}
-
-	return &dto.UploadAvatarResponse{AvatarURL: avatarURL}, nil
-}
-
 func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) error {
 	// Verify email code from Redis
 	cacheKey := fmt.Sprintf("%s:code", req.Email)
@@ -203,4 +177,63 @@ func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) err
 	})
 
 	return nil
+}
+
+func (s *UserService) UploadAvatar(ctx context.Context, userID uint, file io.Reader, contentType, filename string, size int64) (*dto.UploadAvatarResponse, error) {
+	if size > maxAvatarSize {
+		return nil, fmt.Errorf("file size exceeds 5MB limit")
+	}
+
+	ext, ok := allowedImageTypes[strings.ToLower(contentType)]
+	if !ok {
+		return nil, fmt.Errorf("unsupported image type: %s", contentType)
+	}
+	if strings.ToLower(filepath.Ext(filename)) == ".jpeg" {
+		ext = ".jpg"
+	}
+
+	key := fmt.Sprintf("avatars/%d/%s%s", userID, time.Now().Format("20060102150405"), ext)
+	if err := s.storageClient.PutObject(ctx, key, file, contentType, false); err != nil {
+		return nil, fmt.Errorf("failed to upload avatar: %w", err)
+	}
+
+	avatarURL := s.storageClient.PublicObjectURL(key)
+	if err := s.profileRepo.UpsertAvatar(ctx, &model.UserProfile{UserID: userID, AvatarURL: &avatarURL}); err != nil {
+		return nil, fmt.Errorf("failed to update profile avatar: %w", err)
+	}
+
+	return &dto.UploadAvatarResponse{AvatarURL: avatarURL}, nil
+}
+
+func (s *UserService) UpdateProfile(ctx context.Context, userID uint, req dto.UpdateProfileRequest) error {
+	return s.profileRepo.UpsertProfile(ctx, &model.UserProfile{
+		UserID:   userID,
+		Nickname: req.Nickname,
+		Bio:      req.Bio,
+		Website:  req.Website,
+		Location: req.Location,
+	})
+}
+
+func (s *UserService) GetAvatar(ctx context.Context, userID uint) (*dto.AvatarResponse, error) {
+	profile, err := s.profileRepo.FindByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &dto.AvatarResponse{AvatarURL: profile.AvatarURL}, nil
+}
+
+func (s *UserService) GetProfile(ctx context.Context, userID uint) (*dto.ProfileResponse, error) {
+	profile, err := s.profileRepo.FindByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &dto.ProfileResponse{
+		UserID:    profile.UserID,
+		Nickname:  profile.Nickname,
+		Bio:       profile.Bio,
+		AvatarURL: profile.AvatarURL,
+		Website:   profile.Website,
+		Location:  profile.Location,
+	}, nil
 }

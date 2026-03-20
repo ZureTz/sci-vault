@@ -74,6 +74,9 @@ func (deps *RouterDeps) registerUserRoutes(group *gin.RouterGroup, userHandler *
 	protected := group.Group("/")
 	protected.Use(middleware.CheckJWT(&deps.Config.JWT))
 	protected.POST("/upload_avatar", userHandler.UploadAvatar)
+	protected.PUT("/profile", userHandler.UpdateProfile)
+	protected.GET("/avatar", userHandler.GetAvatar)
+	protected.GET("/profile", userHandler.GetProfile)
 }
 
 // Authenticated routes (example: /api/v1/auth/...)

@@ -35,7 +35,8 @@
       "rustfs",
       "rustfsadmin",
       "sslmode",
-      "trixie"
+      "trixie",
+      "webp"
     ],
   },
 }
