@@ -43,9 +43,15 @@ type App struct {
 
 // New initializes all project dependencies, completes DI (Dependency Injection), and returns a ready-to-run App.
 func New() (*App, error) {
-	cfg := config.Load()
+	// 0. Set up the global slog logger with defaults so errors before config load are visible
+	logger.Setup("info", "text")
 
-	// 0. Set up the global slog logger as early as possible
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Reconfigure logger with values from config
 	logger.Setup(cfg.Log.Level, cfg.Log.Format)
 
 	// 1. Initialize low-level dependencies (Databases, Redis, gRPC Clients)
@@ -59,7 +65,7 @@ func New() (*App, error) {
 		return nil, fmt.Errorf("failed to create database connection: %w", err)
 	}
 
-	if err := db.AutoMigrate(&model.User{}, &model.UserAvatar{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.UserProfile{}); err != nil {
 		return nil, fmt.Errorf("failed to auto migrate database: %w", err)
 	}
 
@@ -77,7 +83,7 @@ func New() (*App, error) {
 
 	// 2. Initialize repositories layer (data access)
 	userRepo := repo.NewUserRepo(db)
-	userAvatarRepo := repo.NewUserAvatarRepo(db)
+	userAvatarRepo := repo.NewUserProfileRepo(db)
 
 	// 3. Initialize services layer (business logic)
 	userService := service.NewUserService(userRepo, userAvatarRepo, jwtGenerator, mailSrv, cacheConn, storageClient)

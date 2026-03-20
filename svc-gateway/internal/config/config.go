@@ -60,7 +60,7 @@ type RedisConfig struct {
 	DB       int    `mapstructure:"db"`
 }
 
-func Load() *Config {
+func Load() (*Config, error) {
 	v := viper.New()
 
 	// Config file support (optional)
@@ -69,16 +69,17 @@ func Load() *Config {
 	v.AddConfigPath(".")
 
 	if err := v.ReadInConfig(); err != nil {
-		slog.Info("no config file found, using defaults and environment variables", "err", err)
+		slog.Error("no config file found", "err", err)
+		return nil, err
 	}
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
 		slog.Error("unable to decode config into struct", "err", err)
-		// Return defaults if unmarshal fails but v was ok
+		return nil, err
 	}
 
-	return &cfg
+	return &cfg, nil
 }
 
 func (c *Config) Addr() string {
