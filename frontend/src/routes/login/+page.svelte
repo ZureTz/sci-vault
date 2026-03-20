@@ -177,6 +177,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>{$_('login.title.app')} | Sci-Vault</title>
+</svelte:head>
+
 <div class="flex min-h-screen items-center justify-center p-4">
 	<!-- Background decoration -->
 	<div class="absolute inset-0 z-[-1] overflow-hidden bg-background">
