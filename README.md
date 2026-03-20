@@ -6,53 +6,83 @@
 
 This monorepo contains a complete microservices-based application for research data management:
 
-- **svc-gateway**: REST API gateway built with Go and Gin, serving as the primary entry point for client requests
-- **svc-recommender**: gRPC-based recommendation engine built with Python, utilizing embedding models and pgvector for intelligent content discovery
-- **frontend**: Modern SvelteKit-based web application for user-friendly data exploration and interaction
+- **svc-gateway**: REST API gateway built with Go and Gin. Handles user authentication (registration, login, email verification, password reset), profile management, avatar uploads, JWT middleware, and routes recommendation requests to `svc-recommender` via gRPC.
+- **svc-recommender**: gRPC-based recommendation engine built with Python, utilizing embedding models and pgvector for intelligent content discovery.
+- **frontend**: Modern SvelteKit (Svelte 5) web application with dark/light theme, i18n support (en / zh-CN), and full integration with the gateway API.
 
 ## Technology Stack
 
-- **Backend**: Go (Gateway), Python (Recommender Service)
-- **Frontend**: SvelteKit, Vite, Tailwind CSS, TypeScript
-- **Communication**: gRPC, REST API
-- **Database**: PostgreSQL with pgvector extension
-- **Build & Code Gen**: Buf (Protocol Buffers), Vite, Go modules, Python UV
+| Layer | Technologies |
+|-------|-------------|
+| **Gateway** | Go 1.26, Gin, GORM, JWT, Redis, gomail |
+| **Recommender** | Python 3.14, gRPC, pgvector |
+| **Frontend** | SvelteKit (Svelte 5), Vite, Tailwind CSS v4, TypeScript, Axios |
+| **Database** | PostgreSQL (with pgvector extension) |
+| **Cache** | Redis |
+| **Storage** | RustFS (S3-compatible object storage) |
+| **Communication** | gRPC (gateway ↔ recommender), REST/HTTP (frontend ↔ gateway) |
+| **Code Gen** | Buf (Protocol Buffers) |
 
 ## Prerequisites
 
 Before getting started, ensure you have the following tools installed:
 
-- [Buf](https://buf.build/docs/cli/installation/) - For code generation from protobuf definitions
-- [Go](https://go.dev/doc/install) 1.25+ - For the gateway service
-- [Python](https://www.python.org/downloads/) 3.10+ with [uv](https://docs.astral.sh/uv/getting-started/installation/) - For the recommender service
-- [Bun](https://bun.sh/) 1.0+ - For the frontend application
-- [PostgreSQL](https://www.postgresql.org/download/) with [pgvector](https://github.com/pgvector/pgvector) extension - For vector storage
+- [Buf](https://buf.build/docs/cli/installation/) — For code generation from protobuf definitions
+- [Go](https://go.dev/doc/install) 1.26+ — For the gateway service
+- [Python](https://www.python.org/downloads/) 3.10+ with [uv](https://docs.astral.sh/uv/getting-started/installation/) — For the recommender service
+- [Bun](https://bun.sh/) 1.0+ — For the frontend application
+- [Docker](https://docs.docker.com/get-docker/) with Docker Compose — For running infrastructure services
 
 ## Quick Start
 
-### 1. Generate gRPC Code
+### 1. Start Infrastructure
 
-The first step is to generate the necessary gRPC code for both services using Buf:
+A `docker-compose.yaml` is provided at the root to spin up all required infrastructure services (PostgreSQL, Redis, RustFS) in one command:
+
+```bash
+docker compose up -d
+```
+
+This starts the following containers:
+
+| Container | Service | Ports |
+|-----------|---------|-------|
+| `sci-vault-postgres` | PostgreSQL 18 | `5432` |
+| `sci-vault-redis` | Redis 8 | `6379` |
+| `sci-vault-rustfs` | RustFS (S3-compatible storage) | `9000` (API), `9001` (Console) |
+
+After startup, open the RustFS Console at `http://localhost:9001` (default credentials: `rustfsadmin` / `rustfsadmin`) to generate access keys for the gateway configuration.
+
+To stop the infrastructure:
+
+```bash
+docker compose down
+```
+
+### 2. Generate gRPC Code
+
+Generate the necessary gRPC stubs for both services using Buf:
 
 ```bash
 buf generate
 ```
 
-This reads the protobuf definitions from the `proto/` directory and generates the required gRPC stubs and client code for `svc-gateway` and `svc-recommender`. **Re-run this command whenever you modify any `.proto` files.**
+This reads the protobuf definitions from the `proto/` directory and generates the required stubs for `svc-gateway` and `svc-recommender`. **Re-run this command whenever you modify any `.proto` files.**
 
-### 2. Set Up Individual Services
+### 3. Set Up Individual Services
 
-Each service has its own setup and runtime requirements. Navigate to the respective service directories and follow their specific instructions:
+Each service has its own setup and runtime requirements. Navigate to the respective directories and follow their specific README:
 
 #### svc-gateway (API Gateway)
 
 ```bash
 cd svc-gateway
+cp config.example.yaml config.yaml  # then fill in your values
 go mod tidy
 go run .
 ```
 
-See [svc-gateway/README.md](./svc-gateway/README.md) for detailed instructions.
+See [svc-gateway/README.md](./svc-gateway/README.md) for the full configuration reference and API endpoint documentation.
 
 #### svc-recommender (Recommender Engine)
 
@@ -83,29 +113,36 @@ sci-vault/
 ├── svc-gateway/            # Go-based API gateway
 ├── svc-recommender/        # Python-based recommendation engine
 ├── frontend/               # SvelteKit web application
-├── buf.yaml               # Buf configuration for code generation
-├── buf.gen.yaml           # Buf generation settings
-└── README.md              # This file
+├── docker-compose.yaml     # Infrastructure services (PostgreSQL, Redis, RustFS)
+├── buf.yaml                # Buf configuration for code generation
+├── buf.gen.yaml            # Buf generation settings
+└── README.md               # This file
 ```
 
 ## Development Workflow
 
-1. **Update Proto Definitions**: Modify files in `proto/` as needed
-2. **Generate Code**: Run `buf generate` to update generated code
+1. **Start infrastructure**: `docker compose up -d`
+2. **Update Proto Definitions**: Modify files in `proto/` as needed, then run `buf generate`
 3. **Develop Services**: Make changes to individual service code
-4. **Test**: Run services independently or deploy with Docker (coming soon)
+4. **Run Services**: Start `svc-recommender`, `svc-gateway`, and `frontend` independently
 
 ## Service Communication
 
-- **Frontend ↔ Gateway**: REST API over HTTP
-- **Gateway ↔ Recommender**: gRPC over TCP
-- **All Services ↔ Database**: PostgreSQL connections
+```
+Browser
+  │  REST/HTTP
+  ▼
+svc-gateway ──gRPC──► svc-recommender
+  │
+  ├── PostgreSQL  (user data, profiles)
+  ├── Redis       (email verification codes, cache)
+  └── RustFS      (avatar & asset storage)
+```
 
 ## Roadmap
 
-Upcoming improvements include:
 - Additional recommendation algorithms and personalization features
-- Docker and docker-compose configuration for containerized development and deployment
+- Docker containerization for `svc-gateway`, `svc-recommender`, and `frontend`
 - Enhanced CI/CD pipeline with automated testing and building
 
 ## License
