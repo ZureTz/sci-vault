@@ -20,6 +20,9 @@ type UserService interface {
 	Register(ctx context.Context, req dto.RegisterRequest) error
 	ResetPassword(ctx context.Context, req dto.ResetPasswordRequest) error
 	UploadAvatar(ctx context.Context, userID uint, file io.Reader, contentType, filename string, size int64) (*dto.UploadAvatarResponse, error)
+	UpdateProfile(ctx context.Context, userID uint, req dto.UpdateProfileRequest) error
+	GetAvatar(ctx context.Context, userID uint) (*dto.AvatarResponse, error)
+	GetProfile(ctx context.Context, userID uint) (*dto.ProfileResponse, error)
 }
 
 type UserHandler struct {
@@ -92,7 +95,6 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.MessageResponse("password reset successfully"))
 }
 
-// UploadAvatar is a protected route that requires JWT authentication
 func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	claims, err := jwt.GetClaims(c.Request.Context())
 	if err != nil {
@@ -118,6 +120,56 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
+func (h *UserHandler) UpdateProfile(c *gin.Context) {
+	claims, err := jwt.GetClaims(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized: %w", err)))
+		return
+	}
+
+	var req dto.UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	if err := h.userService.UpdateProfile(c.Request.Context(), claims.UserID, req); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, utils.MessageResponse("profile updated successfully"))
+}
+
+func (h *UserHandler) GetAvatar(c *gin.Context) {
+	claims, err := jwt.GetClaims(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized: %w", err)))
+		return
+	}
+
+	resp, err := h.userService.GetAvatar(c.Request.Context(), claims.UserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
+func (h *UserHandler) GetProfile(c *gin.Context) {
+	claims, err := jwt.GetClaims(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized: %w", err)))
+		return
+	}
+
+	resp, err := h.userService.GetProfile(c.Request.Context(), claims.UserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
 		return
 	}
 	c.JSON(http.StatusOK, resp)
