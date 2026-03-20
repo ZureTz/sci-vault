@@ -18,7 +18,9 @@
 		"logout": "Log out"
 	},
 	"breadcrumb": {
-		"dashboard": "Dashboard"
+		"dashboard": "Dashboard",
+		"settings": "Settings",
+		"profile": "Profile"
 	},
 	"dashboard": {
 		"title": "Dashboard Overview",
@@ -81,6 +83,36 @@
 			"email_required": "Email address is required",
 			"send_code_failed": "Failed to send verification code",
 			"reset_failed": "Failed to reset password"
+		}
+	},
+	"profile": {
+		"title": "Profile",
+		"not_found": "Profile not found",
+		"not_found_desc": "This user hasn't set up their profile yet.",
+		"empty_own_profile": "You haven't set up your profile yet. Fill in the details below to get started.",
+		"form": {
+			"nickname": "Nickname",
+			"location": "Location",
+			"website": "Website",
+			"bio": "Bio"
+		},
+		"btn": {
+			"save": "Save",
+			"cancel": "Cancel",
+			"edit": "Edit Profile"
+		},
+		"tooltip": {
+			"upload_avatar": "Upload avatar",
+			"open_website": "Open website"
+		},
+		"success": {
+			"profile_updated": "Profile updated!",
+			"avatar_updated": "Avatar updated!"
+		},
+		"error": {
+			"update_failed": "Failed to update profile",
+			"avatar_too_large": "Avatar must be smaller than 5 MB",
+			"upload_failed": "Failed to upload avatar"
 		}
 	}
 }

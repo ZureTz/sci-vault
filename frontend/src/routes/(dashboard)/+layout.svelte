@@ -6,6 +6,7 @@
 
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar';
@@ -13,6 +14,18 @@
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
 
 	let { children } = $props();
+
+	const crumbs = $derived.by((): { label: string; href?: string }[] => {
+		const routeId = page.route.id ?? '';
+		const base = { label: $_('breadcrumb.dashboard'), href: resolve('/') };
+		if (routeId.includes('/settings')) {
+			return [base, { label: $_('breadcrumb.settings') }];
+		}
+		if (routeId.includes('/profile')) {
+			return [base, { label: $_('breadcrumb.profile') }];
+		}
+		return [base];
+	});
 
 	onMount(() => {
 		const token = localStorage.getItem('token');
@@ -50,9 +63,18 @@
 				<Separator.Root orientation="vertical" class="mr-2 h-4" />
 				<Breadcrumb.Root>
 					<Breadcrumb.List>
-						<Breadcrumb.Item>
-							<Breadcrumb.Link href="/">{$_('breadcrumb.dashboard')}</Breadcrumb.Link>
-						</Breadcrumb.Item>
+						{#each crumbs as crumb, i (crumb.label)}
+							{#if i > 0}
+								<Breadcrumb.Separator />
+							{/if}
+							<Breadcrumb.Item>
+								{#if crumb.href}
+									<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
+								{:else}
+									<Breadcrumb.Page>{crumb.label}</Breadcrumb.Page>
+								{/if}
+							</Breadcrumb.Item>
+						{/each}
 					</Breadcrumb.List>
 				</Breadcrumb.Root>
 			</div>

@@ -10,6 +10,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import userApi from '$lib/api/user';
 
 	let { ref = $bindable(null), ...restProps } = $props();
 
@@ -19,13 +20,14 @@
 	);
 
 	let initDone = $state(false);
+	let avatarUrl = $state<string | undefined>(undefined);
 
 	const navItems = [
 		{ title: 'sidebar.dashboard', url: '/' as const, icon: Compass },
 		{ title: 'sidebar.settings', url: '/settings' as const, icon: Settings }
 	];
 
-	onMount(() => {
+	onMount(async () => {
 		const userStr = localStorage.getItem('user');
 		if (userStr) {
 			try {
@@ -34,6 +36,14 @@
 				console.error('Failed to parse user info', e);
 			}
 		}
+
+		try {
+			const avatar = await userApi.getAvatar(currentUser.id);
+			avatarUrl = avatar.avatar_url;
+		} catch {
+			// silently ignore — avatar falls back to initials
+		}
+
 		initDone = true;
 	});
 
@@ -100,6 +110,13 @@
 									</div>
 								{:else}
 									<Avatar.Root class="h-8 w-8 rounded-lg">
+										{#if avatarUrl}
+											<Avatar.Image
+												src={avatarUrl}
+												alt={currentUser.username}
+												class="object-cover"
+											/>
+										{/if}
 										<Avatar.Fallback class="rounded-lg">{userInitials}</Avatar.Fallback>
 									</Avatar.Root>
 									<div class="grid flex-1 text-left text-sm leading-tight">
@@ -120,6 +137,9 @@
 						<DropdownMenu.Label class="p-0 font-normal">
 							<div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
 								<Avatar.Root class="h-8 w-8 rounded-lg">
+									{#if avatarUrl}
+										<Avatar.Image src={avatarUrl} alt={currentUser.username} class="object-cover" />
+									{/if}
 									<Avatar.Fallback class="rounded-lg">{userInitials}</Avatar.Fallback>
 								</Avatar.Root>
 								<div class="grid flex-1 text-left text-sm leading-tight">
@@ -130,7 +150,7 @@
 						</DropdownMenu.Label>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Group>
-							<DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => goto(resolve(`/profile/${currentUser.id}`))}>
 								<User />
 								{$_('sidebar.profile')}
 							</DropdownMenu.Item>
