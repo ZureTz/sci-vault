@@ -36,6 +36,30 @@ export interface ResetPasswordRequest {
 	confirmed_password: string;
 }
 
+export interface AvatarResponse {
+	avatar_url: string;
+}
+
+export interface ProfileResponse {
+	user_id: number;
+	nickname?: string;
+	bio?: string;
+	avatar_url?: string;
+	website?: string;
+	location?: string;
+}
+
+export interface UpdateProfileRequest {
+	nickname?: string;
+	bio?: string;
+	website?: string;
+	location?: string;
+}
+
+export interface UploadAvatarResponse {
+	avatar_url: string;
+}
+
 // ==== API functions ====
 
 const userApi = {
@@ -65,6 +89,42 @@ const userApi = {
 	 */
 	resetPassword(data: ResetPasswordRequest) {
 		return request.post<ResetPasswordRequest, DefaultResponse>('/user/reset_password', data);
+	},
+
+	/**
+	 * Get the avatar URL for the given user, or the current authenticated user if omitted.
+	 */
+	getAvatar(userId?: string | number): Promise<AvatarResponse> {
+		const url = userId ? `/user/avatar/${userId}` : '/user/avatar';
+		return request.get<AvatarResponse>(url) as unknown as Promise<AvatarResponse>;
+	},
+
+	/**
+	 * Get the user's profile information. If userId is not provided, it will return the profile of the currently authenticated user.
+	 */
+	getProfile(userId?: string | number): Promise<ProfileResponse> {
+		const url = userId ? `/user/profile/${userId}` : `/user/profile`;
+		return request.get<ProfileResponse>(url) as unknown as Promise<ProfileResponse>;
+	},
+
+	/**
+	 * Update the user's profile information
+	 */
+	updateProfile(data: UpdateProfileRequest) {
+		return request.put<UpdateProfileRequest, DefaultResponse>('/user/profile', data);
+	},
+
+	/**
+	 * Upload the user's avatar
+	 */
+	uploadAvatar(file: File) {
+		const formData = new FormData();
+		formData.append('avatar', file);
+		return request.post<FormData, UploadAvatarResponse>('/user/upload_avatar', formData, {
+			headers: {
+				'Content-Type': 'multipart/form-data'
+			}
+		});
 	}
 };
 

@@ -18,7 +18,9 @@
 		"logout": "退出登录"
 	},
 	"breadcrumb": {
-		"dashboard": "仪表盘"
+		"dashboard": "仪表盘",
+		"settings": "设置",
+		"profile": "个人资料"
 	},
 	"dashboard": {
 		"title": "仪表盘总览",
@@ -81,6 +83,36 @@
 			"email_required": "请输入邮箱地址",
 			"send_code_failed": "发送验证码失败",
 			"reset_failed": "重置密码失败"
+		}
+	},
+	"profile": {
+		"title": "个人资料",
+		"not_found": "找不到个人资料",
+		"not_found_desc": "该用户还未设置个人资料。",
+		"empty_own_profile": "您还未设置个人资料。请填写以下详细信息开始使用。",
+		"form": {
+			"nickname": "昵称",
+			"location": "位置",
+			"website": "网站",
+			"bio": "个人简介"
+		},
+		"btn": {
+			"save": "保存",
+			"cancel": "取消",
+			"edit": "编辑资料"
+		},
+		"tooltip": {
+			"upload_avatar": "上传头像",
+			"open_website": "打开网站"
+		},
+		"success": {
+			"profile_updated": "个人资料已更新！",
+			"avatar_updated": "头像已更新！"
+		},
+		"error": {
+			"update_failed": "更新个人资料失败",
+			"avatar_too_large": "头像不能超过 5MB",
+			"upload_failed": "上传头像失败"
 		}
 	}
 }
