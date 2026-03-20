@@ -52,21 +52,21 @@ type UserIDUri struct {
 }
 
 type UpdateProfileRequest struct {
-	Nickname *string `json:"nickname" binding:"omitempty,max=50"`
-	Bio      *string `json:"bio" binding:"omitempty,max=500"`
-	Website  *string `json:"website" binding:"omitempty,max=255,url"`
-	Location *string `json:"location" binding:"omitempty,max=100"`
+	Nickname string `json:"nickname" binding:"omitempty,max=50"`
+	Bio      string `json:"bio" binding:"omitempty,max=500"`
+	Website  string `json:"website" binding:"omitempty,max=255,http_url"`
+	Location string `json:"location" binding:"omitempty,max=100"`
 }
 
 type AvatarResponse struct {
-	AvatarURL *string `json:"avatar_url"`
+	AvatarURL string `json:"avatar_url"`
 }
 
 type ProfileResponse struct {
-	UserID    uint    `json:"user_id"`
-	Nickname  *string `json:"nickname"`
-	Bio       *string `json:"bio"`
-	AvatarURL *string `json:"avatar_url"`
-	Website   *string `json:"website"`
-	Location  *string `json:"location"`
+	UserID    uint   `json:"user_id"`
+	Nickname  string `json:"nickname"`
+	Bio       string `json:"bio"`
+	AvatarURL string `json:"avatar_url"`
+	Website   string `json:"website"`
+	Location  string `json:"location"`
 }
