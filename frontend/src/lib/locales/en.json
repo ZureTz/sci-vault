@@ -26,6 +26,9 @@
 		"title": "Dashboard Overview",
 		"description": "Welcome to the Sci-Vault Dashboard. Content goes here."
 	},
+	"settings": {
+		"title": "Settings"
+	},
 	"common": {
 		"error": {
 			"missing_fields": "Please fill in all required fields"

@@ -26,6 +26,9 @@
 		"title": "仪表盘总览",
 		"description": "欢迎来到 Sci-Vault 仪表盘。内容将在这里显示。"
 	},
+	"settings": {
+		"title": "设置"
+	},
 	"common": {
 		"error": {
 			"missing_fields": "请填写所有必填字段"
