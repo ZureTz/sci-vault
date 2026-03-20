@@ -47,6 +47,10 @@ type UploadAvatarResponse struct {
 	AvatarURL string `json:"avatar_url"`
 }
 
+type UserIDUri struct {
+	UserID uint `uri:"user_id" binding:"required"`
+}
+
 type UpdateProfileRequest struct {
 	Nickname *string `json:"nickname" binding:"omitempty,max=50"`
 	Bio      *string `json:"bio" binding:"omitempty,max=500"`

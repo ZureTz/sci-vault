@@ -146,13 +146,13 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 }
 
 func (h *UserHandler) GetAvatar(c *gin.Context) {
-	claims, err := jwt.GetClaims(c.Request.Context())
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized: %w", err)))
+	var uri dto.UserIDUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
 		return
 	}
 
-	resp, err := h.userService.GetAvatar(c.Request.Context(), claims.UserID)
+	resp, err := h.userService.GetAvatar(c.Request.Context(), uri.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
 		return
@@ -161,13 +161,13 @@ func (h *UserHandler) GetAvatar(c *gin.Context) {
 }
 
 func (h *UserHandler) GetProfile(c *gin.Context) {
-	claims, err := jwt.GetClaims(c.Request.Context())
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized: %w", err)))
+	var uri dto.UserIDUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
 		return
 	}
 
-	resp, err := h.userService.GetProfile(c.Request.Context(), claims.UserID)
+	resp, err := h.userService.GetProfile(c.Request.Context(), uri.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
 		return
