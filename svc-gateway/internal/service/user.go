@@ -198,7 +198,7 @@ func (s *UserService) UploadAvatar(ctx context.Context, userID uint, file io.Rea
 	}
 
 	avatarURL := s.storageClient.PublicObjectURL(key)
-	if err := s.profileRepo.UpsertAvatar(ctx, &model.UserProfile{UserID: userID, AvatarURL: &avatarURL}); err != nil {
+	if err := s.profileRepo.UpsertAvatar(ctx, &model.UserProfile{UserID: userID, AvatarURL: avatarURL}); err != nil {
 		return nil, fmt.Errorf("failed to update profile avatar: %w", err)
 	}
 
