@@ -30,6 +30,8 @@ func translateFieldName(field string) string {
 		return "个人网站"
 	case "Location":
 		return "所在地"
+	case "UserID":
+		return "用户ID"
 	default:
 		return field
 	}
