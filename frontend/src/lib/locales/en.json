@@ -34,6 +34,35 @@
 			"missing_fields": "Please fill in all required fields"
 		}
 	},
+	"validation": {
+		"identifier": {
+			"required": "Username or email is required"
+		},
+		"username": {
+			"required": "Username is required",
+			"min": "Username must be at least 3 characters",
+			"max": "Username must be at most 20 characters",
+			"invalid": "Username may only contain letters, numbers, and underscores"
+		},
+		"password": {
+			"required": "Password is required",
+			"min": "Password must be at least 6 characters",
+			"max": "Password must be at most 50 characters",
+			"invalid": "Password may only contain letters, numbers, and the characters _ ! @ # $ % ^ & *"
+		},
+		"email": {
+			"required": "Email is required",
+			"invalid": "Please enter a valid email address"
+		},
+		"email_code": {
+			"required": "Verification code is required",
+			"invalid": "Verification code must be exactly 6 digits"
+		},
+		"confirmed_password": {
+			"required": "Please confirm your password",
+			"mismatch": "Passwords do not match"
+		}
+	},
 	"login": {
 		"title": {
 			"app": "Sci-Vault"
