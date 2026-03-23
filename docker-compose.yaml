@@ -114,6 +114,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      rustfs:
+        condition: service_healthy
       recommender:
         condition: service_started
 
