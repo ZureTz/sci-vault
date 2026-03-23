@@ -92,32 +92,32 @@ All routes are prefixed with `/api/v1`.
 
 ### Public User Routes (`/api/v1/user`)
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/user/send_email_code` | Send email verification code |
-| `POST` | `/user/login` | Log in (username or email + password) |
-| `POST` | `/user/register` | Register a new user (requires email code) |
-| `POST` | `/user/reset_password` | Reset password (requires email code) |
+| Method | Path                    | Description                               |
+| ------ | ----------------------- | ----------------------------------------- |
+| `POST` | `/user/send_email_code` | Send email verification code              |
+| `POST` | `/user/login`           | Log in (username or email + password)     |
+| `POST` | `/user/register`        | Register a new user (requires email code) |
+| `POST` | `/user/reset_password`  | Reset password (requires email code)      |
 
 ### Protected User Routes (`/api/v1/user`, requires JWT)
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/user/upload_avatar` | Upload user avatar (multipart form) |
-| `PUT`  | `/user/profile` | Update user profile |
-| `GET`  | `/user/avatar/:user_id` | Get user avatar URL |
-| `GET`  | `/user/profile/:user_id` | Get user profile |
+| Method | Path                     | Description                         |
+| ------ | ------------------------ | ----------------------------------- |
+| `POST` | `/user/upload_avatar`    | Upload user avatar (multipart form) |
+| `PUT`  | `/user/profile`          | Update user profile                 |
+| `GET`  | `/user/avatar/:user_id`  | Get user avatar URL                 |
+| `GET`  | `/user/profile/:user_id` | Get user profile                    |
 
 ### Protected Auth Routes (`/api/v1/auth`, requires JWT)
 
-| Method | Path | Description |
-|--------|------|-------------|
+| Method | Path         | Description               |
+| ------ | ------------ | ------------------------- |
 | `GET`  | `/auth/test` | Verify JWT authentication |
 
 ### Health Check
 
-| Method | Path | Description |
-|--------|------|-------------|
+| Method | Path             | Description                            |
+| ------ | ---------------- | -------------------------------------- |
 | `GET`  | `/api/v1/health` | Gateway and recommender liveness check |
 
 ## Directory Structure

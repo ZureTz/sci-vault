@@ -12,16 +12,16 @@ This monorepo contains a complete microservices-based application for research d
 
 ## Technology Stack
 
-| Layer | Technologies |
-|-------|-------------|
-| **Gateway** | Go 1.26, Gin, GORM, JWT, Redis, gomail |
-| **Recommender** | Python 3.14, gRPC, pgvector |
-| **Frontend** | SvelteKit (Svelte 5), Vite, Tailwind CSS v4, TypeScript, Axios |
-| **Database** | PostgreSQL (with pgvector extension) |
-| **Cache** | Redis |
-| **Storage** | RustFS (S3-compatible object storage) |
-| **Communication** | gRPC (gateway ↔ recommender), REST/HTTP (frontend ↔ gateway) |
-| **Code Gen** | Buf (Protocol Buffers) |
+| Layer             | Technologies                                                   |
+| ----------------- | -------------------------------------------------------------- |
+| **Gateway**       | Go 1.26, Gin, GORM, JWT, Redis, gomail                         |
+| **Recommender**   | Python 3.14, gRPC, pgvector                                    |
+| **Frontend**      | SvelteKit (Svelte 5), Vite, Tailwind CSS v4, TypeScript, Axios |
+| **Database**      | PostgreSQL (with pgvector extension)                           |
+| **Cache**         | Redis                                                          |
+| **Storage**       | RustFS (S3-compatible object storage)                          |
+| **Communication** | gRPC (gateway ↔ recommender), REST/HTTP (frontend ↔ gateway)   |
+| **Code Gen**      | Buf (Protocol Buffers)                                         |
 
 ## Prerequisites
 
@@ -51,15 +51,24 @@ This reads the protobuf definitions from the `proto/` directory and generates th
 
 A `docker-compose.yaml` is provided at the root to spin up the entire application (Frontend, Gateway, Recommender) along with all required infrastructure services (PostgreSQL, Redis, RustFS) in one command.
 
-First, prepare the configuration files for the services. For example, for the gateway:
+First, prepare the gateway configuration file:
 
 ```bash
-cp svc-gateway/config.example.yaml svc-gateway/config.docker.yaml
-# Edit config.docker.yaml to set up parameters (e.g. database host to 'postgres', redis host to 'redis') and secrets (e.g. JWT secret, email credentials)
-# Note: You can leave the RustFS access keys empty or as defaults for now, as you will generate them after starting the infrastructure.
+cp svc-gateway/config.docker.example.yaml svc-gateway/config.docker.yaml
 ```
 
-Then, run the cluster:
+Then open `svc-gateway/config.docker.yaml` and fill in your secrets:
+
+| Field                                       | What to set                                                                                                            |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `database.password`                         | Must match `POSTGRES_PASSWORD` in `docker-compose.yaml`                                                                |
+| `storage.access_key` / `storage.secret_key` | Must match `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` in `docker-compose.yaml` (default: `rustfsadmin` / `rustfsadmin`) |
+| `mailer.username` / `mailer.password`       | Your SMTP credentials                                                                                                  |
+| `jwt.secret`                                | Any strong random string                                                                                               |
+
+> **RustFS S3 credentials**: RustFS uses the same `RUSTFS_ACCESS_KEY`/`RUSTFS_SECRET_KEY` values from `docker-compose.yaml` directly as its S3 API credentials — no need to log into the web console to generate separate keys. For local development the defaults (`rustfsadmin` / `rustfsadmin`) work out of the box.
+
+Then run the cluster:
 
 ```bash
 # For Local Development
@@ -67,30 +76,26 @@ docker compose up -d --build
 
 # For Production (using production-specific config)
 cp docker-compose.yaml docker-compose-production.yaml # If you haven't created one yet
-# Edit docker-compose-production.yaml and your config files with production-grade secrets
+# Edit docker-compose-production.yaml and svc-gateway/config.docker.yaml with production-grade secrets
 docker compose -f docker-compose-production.yaml up -d --build
 ```
 
 This starts the following containers:
 
-| Container | Service | Ports |
-|-----------|---------|-------|
-| `sci-vault-postgres` | PostgreSQL 18 | `5432` |
-| `sci-vault-redis` | Redis 8 | `6379` |
-| `sci-vault-rustfs` | RustFS (S3-compatible storage) | `9000` (API), `9001` (Console) |
-| `sci-vault-recommender`| Recommender (gRPC) | `50051` |
-| `sci-vault-gateway` | API Gateway (REST) | `8080` |
-| `sci-vault-frontend` | Frontend Web Client | `80` |
+| Container               | Service                        | Ports                          |
+| ----------------------- | ------------------------------ | ------------------------------ |
+| `sci-vault-postgres`    | PostgreSQL 18                  | `5432`                         |
+| `sci-vault-redis`       | Redis 8                        | `6379`                         |
+| `sci-vault-rustfs`      | RustFS (S3-compatible storage) | `9000` (API), `9001` (Console) |
+| `sci-vault-recommender` | Recommender (gRPC)             | `50051`                        |
+| `sci-vault-gateway`     | API Gateway (REST)             | `8080`                         |
+| `sci-vault-frontend`    | Frontend Web Client            | `80`                           |
 
-After startup, open the RustFS Console at `http://localhost:9001` (default credentials: `rustfsadmin` / `rustfsadmin`) to generate access keys for the gateway configuration.
-
-> **Note**: If this is your first time starting up and you have just generated your RustFS access keys, make sure to update your `svc-gateway/config.docker.yaml` with the new keys. After updating the config file, you must rebuild and restart the gateway service for the changes to take effect:
+> **Updating configuration**: `config.docker.yaml` is mounted into the gateway container at runtime (not baked into the image). After editing it, only a restart is needed — no rebuild:
 > ```bash
-> # For Local Development
-> docker compose up -d --build gateway
->
-> # For Production
-> docker compose -f docker-compose-production.yaml up -d --build gateway
+> docker compose restart gateway
+> # or for production:
+> docker compose -f docker-compose-production.yaml restart gateway
 > ```
 
 To stop the infrastructure:

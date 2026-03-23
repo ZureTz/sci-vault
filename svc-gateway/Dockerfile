@@ -16,8 +16,9 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates tzdata
 
 COPY --from=builder /app/gateway /app/gateway
-COPY --from=builder /app/config.docker.yaml /app/config.docker.yaml
 
 EXPOSE 8080
 
-CMD ["./gateway", "--config", "config.docker.yaml"]
+# config.yaml is expected to be mounted at runtime via a volume bind mount.
+# Example: -v ./svc-gateway/config.docker.yaml:/app/config.yaml:ro
+CMD ["./gateway", "--config", "/app/config.yaml"]
