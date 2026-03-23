@@ -62,8 +62,8 @@ The server is now up and ready to receive gRPC requests on port `50051` by defau
 
 The service exposes the `RecommenderService` defined in the protobuf schema.
 
-| RPC | Description |
-|-----|-------------|
+| RPC      | Description                                     |
+| -------- | ----------------------------------------------- |
 | `Health` | Returns liveness status (`ok`) and service name |
 
 ## Directory Structure
@@ -85,15 +85,18 @@ svc-recommender/
 └── pyproject.toml            # Dependency management
 ```
 
-## Roadmap: Docker Integration
+## Docker Deployment
 
-A `Dockerfile` and `docker-compose.yaml` configuration will be added soon to containerize the service, ensuring a seamless and reliable deployment process across all environments.
+This service is fully containerized. You can run it along with the rest of the application using Docker Compose from the root directory:
 
 ```bash
-# Future usage
-docker compose up -d
+cd ..
+docker compose up -d --build recommender
 ```
 
+Before building or running the `recommender` service via Docker Compose, ensure that the protobuf stubs under `src/pb` have been generated on the host (for example, by running `buf generate` in the appropriate directory). The current Docker image does not generate these stubs during build, so missing stubs will prevent the service from starting correctly.
+
+Note: while `docker-compose.yaml` may define environment variables for services such as PostgreSQL and Redis, the `svc-recommender` service does not presently use these settings directly; it only runs the gRPC server and is wired into the broader stack via Docker networking and ports.
 ## License
 
 This project is licensed under the [LICENSE](../LICENSE) file in the root directory.

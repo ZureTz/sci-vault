@@ -10,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/18/data
+      - postgres_data:/var/lib/postgresql/18/docker
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sci_vault -d sci_vault"]
       interval: 10s
@@ -87,6 +87,46 @@ services:
         exit 0
       "
     restart: "no"
+
+  recommender:
+    build: ./svc-recommender
+    container_name: sci-vault-recommender
+    restart: unless-stopped
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./svc-recommender/config.docker.yaml:/app/config.yaml:ro
+    environment:
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - REDIS_HOST=redis
+
+  gateway:
+    build: ./svc-gateway
+    container_name: sci-vault-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./svc-gateway/config.docker.yaml:/app/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rustfs:
+        condition: service_healthy
+      recommender:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    container_name: sci-vault-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - gateway
 
 volumes:
   postgres_data:

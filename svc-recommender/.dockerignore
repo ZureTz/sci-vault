@@ -1,0 +1,7 @@
+.devcontainer
+.env
+.idea
+.vscode
+*.log
+config.yaml
+config.docker.yaml

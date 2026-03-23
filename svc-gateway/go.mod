@@ -3,6 +3,7 @@ module gateway
 go 1.26.0
 
 require (
+	github.com/alexflint/go-arg v1.6.1
 	github.com/auth0/go-jwt-middleware/v3 v3.0.0
 	github.com/aws/aws-sdk-go-v2 v1.41.4
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.12
@@ -21,6 +22,7 @@ require (
 )
 
 require (
+	github.com/alexflint/go-scalar v1.2.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.7 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.20 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.20 // indirect

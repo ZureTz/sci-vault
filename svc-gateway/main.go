@@ -8,11 +8,19 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alexflint/go-arg"
+
 	"gateway/app"
 )
 
+var args struct {
+	Config string `arg:"-c,--config" help:"path to config file" default:""`
+}
+
 func main() {
-	application, err := app.New()
+	arg.MustParse(&args)
+
+	application, err := app.New(args.Config)
 	if err != nil {
 		slog.Error("failed to initialize app", "err", err)
 		os.Exit(1)
