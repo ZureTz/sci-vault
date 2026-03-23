@@ -13,6 +13,7 @@ import (
 	"gateway/internal/dto"
 	"gateway/internal/model"
 	"gateway/internal/repo"
+	"gateway/pkg/app_error"
 	"gateway/pkg/cache"
 	"gateway/pkg/jwt"
 	"gateway/pkg/mailer"
@@ -117,10 +118,10 @@ func (s *UserService) ResetPassword(ctx context.Context, req dto.ResetPasswordRe
 	cacheKey := fmt.Sprintf("%s:code", req.Email)
 	storedCode, err := s.cacheConn.Get(ctx, cacheKey)
 	if err != nil {
-		return fmt.Errorf("verification code expired or invalid")
+		return app_error.ErrEmailCodeExpired
 	}
 	if storedCode != req.EmailCode {
-		return fmt.Errorf("verification code does not match")
+		return app_error.ErrEmailCodeMismatch
 	}
 
 	// Delete verification code after successful check
@@ -144,10 +145,10 @@ func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) err
 	cacheKey := fmt.Sprintf("%s:code", req.Email)
 	storedCode, err := s.cacheConn.Get(ctx, cacheKey)
 	if err != nil {
-		return fmt.Errorf("verification code expired or invalid")
+		return app_error.ErrEmailCodeExpired
 	}
 	if storedCode != req.EmailCode {
-		return fmt.Errorf("verification code does not match")
+		return app_error.ErrEmailCodeMismatch
 	}
 
 	// Delete verification code after successful check
@@ -181,12 +182,12 @@ func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) err
 
 func (s *UserService) UploadAvatar(ctx context.Context, userID uint, file io.Reader, contentType, filename string, size int64) (*dto.UploadAvatarResponse, error) {
 	if size > maxAvatarSize {
-		return nil, fmt.Errorf("file size exceeds 5MB limit")
+		return nil, app_error.ErrAvatarTooLarge
 	}
 
 	ext, ok := allowedImageTypes[strings.ToLower(contentType)]
 	if !ok {
-		return nil, fmt.Errorf("unsupported image type: %s", contentType)
+		return nil, app_error.ErrAvatarInvalidType
 	}
 	if strings.ToLower(filepath.Ext(filename)) == ".jpeg" {
 		ext = ".jpg"
