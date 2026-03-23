@@ -94,6 +94,8 @@ services:
     restart: unless-stopped
     ports:
       - "50051:50051"
+    volumes:
+      - ./svc-recommender/config.docker.yaml:/app/config.yaml:ro
     environment:
       - PG_HOST=postgres
       - PG_PORT=5432
