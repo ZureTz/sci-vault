@@ -35,12 +35,40 @@ Before getting started, ensure you have the following tools installed:
 
 ## Quick Start
 
-### 1. Start Infrastructure
+### 1. Generate gRPC Code
 
-A `docker-compose.yaml` is provided at the root to spin up all required infrastructure services (PostgreSQL, Redis, RustFS) in one command:
+Generate the necessary gRPC stubs for both services using Buf. **This step is required before running the application:**
 
 ```bash
-docker compose up -d
+buf generate
+```
+
+This reads the protobuf definitions from the `proto/` directory and generates the required stubs for `svc-gateway` and `svc-recommender`. **Re-run this command whenever you modify any `.proto` files.**
+
+### 2. Start Everything with Docker Compose
+
+> **⚠️ WARNING for Production environments**: The provided `docker-compose.yaml` and default configurations are intended for **local development and testing only**. When deploying to a production environment, you MUST use your own secure parameters, strong passwords, and proper secrets management. It is highly recommended to create and use a dedicated `docker-compose-production.yaml` with hardened configurations.
+
+A `docker-compose.yaml` is provided at the root to spin up the entire application (Frontend, Gateway, Recommender) along with all required infrastructure services (PostgreSQL, Redis, RustFS) in one command.
+
+First, prepare the configuration files for the services. For example, for the gateway:
+
+```bash
+cp svc-gateway/config.example.yaml svc-gateway/config.docker.yaml
+# Edit config.docker.yaml to set up parameters (e.g. database host to 'postgres', redis host to 'redis') and secrets (e.g. JWT secret, email credentials)
+# Note: You can leave the RustFS access keys empty or as defaults for now, as you will generate them after starting the infrastructure.
+```
+
+Then, run the cluster:
+
+```bash
+# For Local Development
+docker compose up -d --build
+
+# For Production (using production-specific config)
+cp docker-compose.yaml docker-compose-production.yaml # If you haven't created one yet
+# Edit docker-compose-production.yaml and your config files with production-grade secrets
+docker compose -f docker-compose-production.yaml up -d --build
 ```
 
 This starts the following containers:
@@ -50,26 +78,44 @@ This starts the following containers:
 | `sci-vault-postgres` | PostgreSQL 18 | `5432` |
 | `sci-vault-redis` | Redis 8 | `6379` |
 | `sci-vault-rustfs` | RustFS (S3-compatible storage) | `9000` (API), `9001` (Console) |
+| `sci-vault-recommender`| Recommender (gRPC) | `50051` |
+| `sci-vault-gateway` | API Gateway (REST) | `8080` |
+| `sci-vault-frontend` | Frontend Web Client | `80` |
 
 After startup, open the RustFS Console at `http://localhost:9001` (default credentials: `rustfsadmin` / `rustfsadmin`) to generate access keys for the gateway configuration.
+
+> **Note**: If this is your first time starting up and you have just generated your RustFS access keys, make sure to update your `svc-gateway/config.docker.yaml` with the new keys. After updating the config file, you must rebuild and restart the gateway service for the changes to take effect:
+> ```bash
+> # For Local Development
+> docker compose up -d --build gateway
+>
+> # For Production
+> docker compose -f docker-compose-production.yaml up -d --build gateway
+> ```
 
 To stop the infrastructure:
 
 ```bash
+# For Local Development
 docker compose down
+
+# For Production
+docker compose -f docker-compose-production.yaml down
 ```
 
-### 2. Generate gRPC Code
+### 3. Set Up Local Infrastructure only (Optional)
 
-Generate the necessary gRPC stubs for both services using Buf:
+If you prefer to develop services locally while running only the back-end infrastructure (DB, Redis, S3) in Docker:
 
 ```bash
-buf generate
+# For Local Development
+docker compose up -d postgres redis rustfs
+
+# For Production
+docker compose -f docker-compose-production.yaml up -d postgres redis rustfs
 ```
 
-This reads the protobuf definitions from the `proto/` directory and generates the required stubs for `svc-gateway` and `svc-recommender`. **Re-run this command whenever you modify any `.proto` files.**
-
-### 3. Set Up Individual Services
+### 4. Set Up Individual Services for Local Development (Optional)
 
 Each service has its own setup and runtime requirements. Navigate to the respective directories and follow their specific README:
 
@@ -142,7 +188,6 @@ svc-gateway ──gRPC──► svc-recommender
 ## Roadmap
 
 - Additional recommendation algorithms and personalization features
-- Docker containerization for `svc-gateway`, `svc-recommender`, and `frontend`
 - Enhanced CI/CD pipeline with automated testing and building
 
 ## License

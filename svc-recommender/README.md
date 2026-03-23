@@ -85,14 +85,16 @@ svc-recommender/
 └── pyproject.toml            # Dependency management
 ```
 
-## Roadmap: Docker Integration
+## Docker Deployment
 
-A `Dockerfile` and `docker-compose.yaml` configuration will be added soon to containerize the service, ensuring a seamless and reliable deployment process across all environments.
+This service is fully containerized. You can run it along with the rest of the application using Docker Compose from the root directory:
 
 ```bash
-# Future usage
-docker compose up -d
+cd ..
+docker compose up -d --build recommender
 ```
+
+The Docker image automatically configures connection to environment services like PostgreSQL and Redis through `docker-compose.yaml`.
 
 ## License
 
