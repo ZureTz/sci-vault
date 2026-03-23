@@ -30,12 +30,14 @@
 		"title": "Settings"
 	},
 	"common": {
-		"error": {
-			"missing_fields": "Please fill in all required fields"
-		},
 		"unauthorized": "Your session has expired, please log in again"
 	},
 	"service": {
+		"internal": {
+			"network": "Unable to connect to the server, please check your network or try again later",
+			"502": "The system service is upgrading or the backend is down (502 Bad Gateway), please try again later!",
+			"504": "Gateway timeout (504 Gateway Timeout), maybe the LLM processing is too slow, please wait patiently!"
+		},
 		"send_email_code": {
 			"failed": "Failed to send verification code, please try again"
 		},
