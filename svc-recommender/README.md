@@ -94,8 +94,9 @@ cd ..
 docker compose up -d --build recommender
 ```
 
-The Docker image automatically configures connection to environment services like PostgreSQL and Redis through `docker-compose.yaml`.
+Before building or running the `recommender` service via Docker Compose, ensure that the protobuf stubs under `src/pb` have been generated on the host (for example, by running `buf generate` in the appropriate directory). The current Docker image does not generate these stubs during build, so missing stubs will prevent the service from starting correctly.
 
+Note: while `docker-compose.yaml` may define environment variables for services such as PostgreSQL and Redis, the `svc-recommender` service does not presently use these settings directly; it only runs the gRPC server and is wired into the broader stack via Docker networking and ports.
 ## License
 
 This project is licensed under the [LICENSE](../LICENSE) file in the root directory.
