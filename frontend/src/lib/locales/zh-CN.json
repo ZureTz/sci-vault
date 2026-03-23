@@ -115,35 +115,6 @@
 			"required": "用户 ID 不能为空"
 		}
 	},
-	"validation": {
-		"identifier": {
-			"required": "请输入用户名或邮箱"
-		},
-		"username": {
-			"required": "请输入用户名",
-			"min": "用户名至少需要 3 个字符",
-			"max": "用户名最多 20 个字符",
-			"invalid": "用户名只能包含字母、数字和下划线"
-		},
-		"password": {
-			"required": "请输入密码",
-			"min": "密码至少需要 6 个字符",
-			"max": "密码最多 50 个字符",
-			"invalid": "密码只能包含字母、数字和以下特殊字符：_ ! @ # $ % ^ & *"
-		},
-		"email": {
-			"required": "请输入邮箱地址",
-			"invalid": "请输入有效的邮箱地址"
-		},
-		"email_code": {
-			"required": "请输入验证码",
-			"invalid": "验证码必须是 6 位数字"
-		},
-		"confirmed_password": {
-			"required": "请确认密码",
-			"mismatch": "两次输入的密码不一致"
-		}
-	},
 	"login": {
 		"title": {
 			"app": "Sci-Vault"
