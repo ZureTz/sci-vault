@@ -30,12 +30,14 @@
 		"title": "设置"
 	},
 	"common": {
-		"error": {
-			"missing_fields": "请填写所有必填字段"
-		},
 		"unauthorized": "登录已过期，请重新登录"
 	},
 	"service": {
+		"internal": {
+			"network": "无法连接到服务器，请检查网络或稍后再试",
+			"502": "系统服务正在升级或后端已宕机 (502 Bad Gateway)，请稍后再试！",
+			"504": "网关请求超时 (504 Gateway Timeout)，可能是大模型处理太慢，请耐心等待！"
+		},
 		"send_email_code": {
 			"failed": "发送验证码失败，请稍后重试"
 		},

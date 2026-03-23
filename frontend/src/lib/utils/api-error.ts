@@ -13,6 +13,21 @@ import type { ApiErrorResponse } from '$lib/api/request';
 export function showApiErrors(error: unknown, fallback: string): void {
 	const t = get(_);
 	if (axios.isAxiosError(error)) {
+		if (!error.response) {
+			toast.error(t('service.internal.network', { default: 'service.internal.network' }));
+			return;
+		}
+
+		if (error.response.status === 502) {
+			toast.error(t('service.internal.502', { default: 'service.internal.502' }));
+			return;
+		}
+
+		if (error.response.status === 504) {
+			toast.error(t('service.internal.504', { default: 'service.internal.504' }));
+			return;
+		}
+
 		const data = error.response?.data as ApiErrorResponse | undefined;
 		if (data?.errors && data.errors.length > 0) {
 			const msg = data.errors.map((key) => t(key, { default: key })).join('\n');
