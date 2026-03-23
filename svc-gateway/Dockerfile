@@ -16,8 +16,8 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates tzdata
 
 COPY --from=builder /app/gateway /app/gateway
-COPY --from=builder /app/config.docker.yaml /app/config.yaml
+COPY --from=builder /app/config.docker.yaml /app/config.docker.yaml
 
 EXPOSE 8080
 
-CMD ["./gateway"]
+CMD ["./gateway", "--config", "config.docker.yaml"]
