@@ -153,13 +153,23 @@ svc-gateway/
 └── go.mod                  # Dependency management
 ```
 
-## Roadmap: Docker Integration
+## Docker Deployment
 
-Docker support will be added to simplify containerized deployments and orchestrate the entire microservices stack locally.
+This service can be run locally using Docker and Docker Compose. 
+
+Before building the Docker image, ensure you have created a `config.docker.yaml` file so the build process can copy it into the container:
 
 ```bash
-# Future usage
-docker compose up -d
+cp config.example.yaml config.docker.yaml
+```
+
+Update your `config.docker.yaml` to point to the correct Docker service hostnames (e.g., `postgres` for database host, `redis` for Redis host, and `recommender:50051` for the recommender address).
+
+To build and start the entire stack including the gateway:
+
+```bash
+cd ..
+docker compose up -d --build gateway
 ```
 
 ## License
