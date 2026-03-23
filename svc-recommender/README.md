@@ -62,8 +62,8 @@ The server is now up and ready to receive gRPC requests on port `50051` by defau
 
 The service exposes the `RecommenderService` defined in the protobuf schema.
 
-| RPC | Description |
-|-----|-------------|
+| RPC      | Description                                     |
+| -------- | ----------------------------------------------- |
 | `Health` | Returns liveness status (`ok`) and service name |
 
 ## Directory Structure

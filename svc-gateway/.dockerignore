@@ -9,3 +9,5 @@ bin/
 gateway
 gateway.exe
 *.log
+config.yaml
+config.docker.yaml
