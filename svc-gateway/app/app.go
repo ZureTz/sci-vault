@@ -42,11 +42,11 @@ type App struct {
 }
 
 // New initializes all project dependencies, completes DI (Dependency Injection), and returns a ready-to-run App.
-func New() (*App, error) {
+func New(configPath string) (*App, error) {
 	// 0. Set up the global slog logger with defaults so errors before config load are visible
 	logger.Setup("info", "text")
 
-	cfg, err := config.Load()
+	cfg, err := config.Load(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}

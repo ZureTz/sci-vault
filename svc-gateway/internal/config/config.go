@@ -60,13 +60,18 @@ type RedisConfig struct {
 	DB       int    `mapstructure:"db"`
 }
 
-func Load() (*Config, error) {
+func Load(configPath string) (*Config, error) {
 	v := viper.New()
 
-	// Config file support (optional)
-	v.SetConfigName("config")
-	v.SetConfigType("yaml")
-	v.AddConfigPath(".")
+	if configPath != "" {
+		v.SetConfigFile(configPath)
+		slog.Info("loading config from specified path", "path", configPath)
+	} else {
+		v.SetConfigName("config")
+		v.SetConfigType("yaml")
+		v.AddConfigPath(".")
+		slog.Info("loading config from default path", "path", "./config.yaml")
+	}
 
 	if err := v.ReadInConfig(); err != nil {
 		slog.Error("no config file found", "err", err)
