@@ -3,20 +3,23 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"gateway/internal/dto"
+	"gateway/pkg/app_error"
 	"gateway/pkg/jwt"
 	"gateway/pkg/utils"
 )
 
 type UserService interface {
 	SendEmailCode(ctx context.Context, req dto.SendEmailCodeRequest) error
-	Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error) // returns JWT token
+	Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error)
 	Register(ctx context.Context, req dto.RegisterRequest) error
 	ResetPassword(ctx context.Context, req dto.ResetPasswordRequest) error
 	UploadAvatar(ctx context.Context, userID uint, file io.Reader, contentType, filename string, size int64) (*dto.UploadAvatarResponse, error)
@@ -34,22 +37,19 @@ func NewUserHandler(userService UserService) *UserHandler {
 }
 
 func (h *UserHandler) SendEmailCode(c *gin.Context) {
-	// Send email verification code for registration
 	var req dto.SendEmailCodeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
 		return
 	}
 
-	// Call the userService to send the email code
 	if err := h.userService.SendEmailCode(c.Request.Context(), req); err != nil {
-		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
+		slog.Error("SendEmailCode service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.send_email_code.failed")))
 		return
 	}
 	c.JSON(http.StatusOK, utils.MessageResponse("verification code sent successfully"))
 }
-
-// For login, registration, and password reset (without JWT authentication)
 
 func (h *UserHandler) Login(c *gin.Context) {
 	var req dto.LoginRequest
@@ -58,10 +58,10 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Call the userService to perform login
 	response, err := h.userService.Login(c.Request.Context(), req)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(err))
+		slog.Warn("Login failed", "err", err)
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("service.login.failed")))
 		return
 	}
 	c.JSON(http.StatusOK, response)
@@ -75,7 +75,12 @@ func (h *UserHandler) Register(c *gin.Context) {
 	}
 
 	if err := h.userService.Register(c.Request.Context(), req); err != nil {
-		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
+		if errors.Is(err, app_error.ErrEmailCodeExpired) || errors.Is(err, app_error.ErrEmailCodeMismatch) {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.email_code.invalid")))
+			return
+		}
+		slog.Error("Register service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.register.failed")))
 		return
 	}
 	c.JSON(http.StatusCreated, utils.MessageResponse("user registered successfully"))
@@ -89,7 +94,12 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 	}
 
 	if err := h.userService.ResetPassword(c.Request.Context(), req); err != nil {
-		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
+		if errors.Is(err, app_error.ErrEmailCodeExpired) || errors.Is(err, app_error.ErrEmailCodeMismatch) {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.email_code.invalid")))
+			return
+		}
+		slog.Error("ResetPassword service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.reset_password.failed")))
 		return
 	}
 	c.JSON(http.StatusOK, utils.MessageResponse("password reset successfully"))
@@ -98,7 +108,8 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	claims, err := jwt.GetClaims(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized: %w", err)))
+		slog.Warn("UploadAvatar: missing JWT claims", "err", err)
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
 		return
 	}
 
@@ -110,7 +121,8 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 
 	file, err := form.Avatar.Open()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("failed to read uploaded file")))
+		slog.Error("UploadAvatar: failed to open uploaded file", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.upload_avatar.read_failed")))
 		return
 	}
 	defer file.Close()
@@ -119,7 +131,15 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 		file, form.Avatar.Header.Get("Content-Type"), form.Avatar.Filename, form.Avatar.Size,
 	)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		switch {
+		case errors.Is(err, app_error.ErrAvatarTooLarge):
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.upload_avatar.too_large")))
+		case errors.Is(err, app_error.ErrAvatarInvalidType):
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.upload_avatar.unsupported_type")))
+		default:
+			slog.Error("UploadAvatar service error", "err", err)
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.upload_avatar.failed")))
+		}
 		return
 	}
 	c.JSON(http.StatusOK, resp)
@@ -128,7 +148,8 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	claims, err := jwt.GetClaims(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized: %w", err)))
+		slog.Warn("UpdateProfile: missing JWT claims", "err", err)
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
 		return
 	}
 
@@ -139,7 +160,8 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	if err := h.userService.UpdateProfile(c.Request.Context(), claims.UserID, req); err != nil {
-		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
+		slog.Error("UpdateProfile service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.update_profile.failed")))
 		return
 	}
 	c.JSON(http.StatusOK, utils.MessageResponse("profile updated successfully"))
@@ -154,7 +176,8 @@ func (h *UserHandler) GetAvatar(c *gin.Context) {
 
 	resp, err := h.userService.GetAvatar(c.Request.Context(), uri.UserID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
+		slog.Error("GetAvatar service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.get_avatar.failed")))
 		return
 	}
 	c.JSON(http.StatusOK, resp)
@@ -169,7 +192,8 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 
 	resp, err := h.userService.GetProfile(c.Request.Context(), uri.UserID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(err))
+		slog.Error("GetProfile service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.get_profile.failed")))
 		return
 	}
 	c.JSON(http.StatusOK, resp)

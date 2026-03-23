@@ -16,6 +16,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import userApi from '$lib/api/user';
+	import { showApiErrors } from '$lib/utils/api-error';
 
 	let { data }: { data: PageData } = $props();
 
@@ -69,8 +70,8 @@
 			isEditing = false;
 			profilePromise = userApi.getProfile(userId);
 			toast.success($_('profile.success.profile_updated'));
-		} catch {
-			toast.error($_('profile.error.update_failed'));
+		} catch (error: unknown) {
+			showApiErrors(error, $_('profile.error.update_failed'));
 		}
 	}
 
@@ -85,8 +86,8 @@
 			await userApi.uploadAvatar(file);
 			profilePromise = userApi.getProfile(userId);
 			toast.success($_('profile.success.avatar_updated'));
-		} catch {
-			toast.error($_('profile.error.upload_failed'));
+		} catch (error: unknown) {
+			showApiErrors(error, $_('profile.error.upload_failed'));
 		}
 	}
 </script>
