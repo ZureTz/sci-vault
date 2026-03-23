@@ -32,6 +32,87 @@
 	"common": {
 		"error": {
 			"missing_fields": "Please fill in all required fields"
+		},
+		"unauthorized": "Your session has expired, please log in again"
+	},
+	"service": {
+		"send_email_code": {
+			"failed": "Failed to send verification code, please try again"
+		},
+		"email_code": {
+			"invalid": "Verification code is invalid or has expired"
+		},
+		"login": {
+			"failed": "Incorrect username/email or password"
+		},
+		"register": {
+			"failed": "Registration failed, this email or username may already be taken"
+		},
+		"reset_password": {
+			"failed": "Failed to reset password, please try again"
+		},
+		"upload_avatar": {
+			"read_failed": "Failed to read file, please try again",
+			"too_large": "Avatar must be smaller than 5 MB",
+			"unsupported_type": "Unsupported image format, please upload JPG / PNG / GIF / WebP",
+			"failed": "Failed to upload avatar, please try again"
+		},
+		"update_profile": {
+			"failed": "Failed to update profile, please try again"
+		},
+		"get_avatar": {
+			"failed": "Failed to load avatar"
+		},
+		"get_profile": {
+			"failed": "Failed to load profile"
+		}
+	},
+	"validation": {
+		"identifier": {
+			"required": "Username or email is required"
+		},
+		"username": {
+			"required": "Username is required",
+			"min": "Username must be at least 3 characters",
+			"max": "Username must be at most 20 characters",
+			"invalid": "Username may only contain letters, numbers, and underscores"
+		},
+		"password": {
+			"required": "Password is required",
+			"min": "Password must be at least 6 characters",
+			"max": "Password must be at most 50 characters",
+			"invalid": "Password may only contain letters, numbers, and the characters _ ! @ # $ % ^ & *"
+		},
+		"email": {
+			"required": "Email is required",
+			"invalid": "Please enter a valid email address"
+		},
+		"email_code": {
+			"required": "Verification code is required",
+			"invalid": "Verification code must be exactly 6 digits"
+		},
+		"confirmed_password": {
+			"required": "Please confirm your password",
+			"mismatch": "Passwords do not match"
+		},
+		"avatar": {
+			"required": "Please upload an avatar"
+		},
+		"nickname": {
+			"max": "Nickname must be at most 50 characters"
+		},
+		"bio": {
+			"max": "Bio must be at most 500 characters"
+		},
+		"website": {
+			"max": "Website must be at most 255 characters",
+			"invalid": "Website must be a valid HTTP/HTTPS URL"
+		},
+		"location": {
+			"max": "Location must be at most 100 characters"
+		},
+		"user_id": {
+			"required": "User ID is required"
 		}
 	},
 	"login": {
