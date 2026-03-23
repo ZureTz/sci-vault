@@ -15,6 +15,15 @@
 	import authApi from '$lib/api/auth';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import {
+		validateEmail,
+		validateLoginForm,
+		validateRegisterForm,
+		validateResetForm,
+		type LoginFormErrors,
+		type RegisterFormErrors,
+		type ResetFormErrors
+	} from '$lib/utils/validation';
 
 	let activeView = $state<'auth' | 'reset-password'>('auth');
 	let activeTab = $state<'login' | 'register'>('login');
@@ -38,6 +47,11 @@
 	// Mocking request states
 	let isSubmitting = $state(false);
 
+	// Inline field error states
+	let loginErrors = $state<LoginFormErrors>({});
+	let registerErrors = $state<RegisterFormErrors>({});
+	let resetErrors = $state<ResetFormErrors>({});
+
 	onMount(async () => {
 		try {
 			// Check if already authenticated via token testing
@@ -60,10 +74,12 @@
 	});
 
 	async function handleLogin() {
-		if (!loginForm.identifier || !loginForm.password) {
-			toast.error($_('common.error.missing_fields'));
+		const errors = validateLoginForm(loginForm);
+		if (errors) {
+			loginErrors = errors;
 			return;
 		}
+		loginErrors = {};
 
 		isSubmitting = true;
 		try {
@@ -102,10 +118,12 @@
 	}
 
 	async function handleRegister() {
-		if (registerForm.password !== registerForm.confirmed_password) {
-			toast.error($_('login.error.password_mismatch'));
+		const errors = validateRegisterForm(registerForm);
+		if (errors) {
+			registerErrors = errors;
 			return;
 		}
+		registerErrors = {};
 
 		isSubmitting = true;
 		try {
@@ -128,8 +146,9 @@
 	}
 
 	async function handleSendCode(email: string) {
-		if (!email) {
-			toast.error($_('login.error.email_required'));
+		const emailErr = validateEmail(email);
+		if (emailErr) {
+			toast.error($_(emailErr));
 			return;
 		}
 
@@ -150,10 +169,12 @@
 	}
 
 	async function handleResetPassword() {
-		if (resetForm.password !== resetForm.confirmed_password) {
-			toast.error($_('login.error.password_mismatch'));
+		const errors = validateResetForm(resetForm);
+		if (errors) {
+			resetErrors = errors;
 			return;
 		}
+		resetErrors = {};
 
 		isSubmitting = true;
 		try {
@@ -237,6 +258,9 @@
 											bind:value={loginForm.identifier}
 										/>
 									</div>
+									{#if loginErrors.identifier}
+										<p class="text-sm text-destructive">{$_(loginErrors.identifier)}</p>
+									{/if}
 								</div>
 								<div class="space-y-2">
 									<div class="flex items-center justify-between">
@@ -258,6 +282,9 @@
 											bind:value={loginForm.password}
 										/>
 									</div>
+									{#if loginErrors.password}
+										<p class="text-sm text-destructive">{$_(loginErrors.password)}</p>
+									{/if}
 								</div>
 							</Card.Content>
 							<Card.Footer>
@@ -294,6 +321,9 @@
 											bind:value={registerForm.username}
 										/>
 									</div>
+									{#if registerErrors.username}
+										<p class="text-sm text-destructive">{$_(registerErrors.username)}</p>
+									{/if}
 								</div>
 								<div class="space-y-2">
 									<Label for="reg-email">{$_('login.email')}</Label>
@@ -307,6 +337,9 @@
 											bind:value={registerForm.email}
 										/>
 									</div>
+									{#if registerErrors.email}
+										<p class="text-sm text-destructive">{$_(registerErrors.email)}</p>
+									{/if}
 								</div>
 								<div class="grid grid-cols-2 gap-4">
 									<div class="col-span-2 space-y-2 sm:col-span-1">
@@ -320,6 +353,9 @@
 												bind:value={registerForm.password}
 											/>
 										</div>
+										{#if registerErrors.password}
+											<p class="text-sm text-destructive">{$_(registerErrors.password)}</p>
+										{/if}
 									</div>
 									<div class="col-span-2 space-y-2 sm:col-span-1">
 										<Label for="reg-confirm">{$_('login.confirm_password')}</Label>
@@ -332,6 +368,11 @@
 												bind:value={registerForm.confirmed_password}
 											/>
 										</div>
+										{#if registerErrors.confirmed_password}
+											<p class="text-sm text-destructive">
+												{$_(registerErrors.confirmed_password)}
+											</p>
+										{/if}
 									</div>
 								</div>
 								<div class="space-y-2">
@@ -356,6 +397,9 @@
 											{$_('login.btn.send_code')}
 										</Button>
 									</div>
+									{#if registerErrors.email_code}
+										<p class="text-sm text-destructive">{$_(registerErrors.email_code)}</p>
+									{/if}
 								</div>
 							</Card.Content>
 							<Card.Footer>
@@ -393,6 +437,9 @@
 									bind:value={resetForm.email}
 								/>
 							</div>
+							{#if resetErrors.email}
+								<p class="text-sm text-destructive">{$_(resetErrors.email)}</p>
+							{/if}
 						</div>
 						<div class="space-y-2">
 							<Label for="reset-code">{$_('login.verification_code')}</Label>
@@ -416,6 +463,9 @@
 									{$_('login.btn.send_code')}
 								</Button>
 							</div>
+							{#if resetErrors.email_code}
+								<p class="text-sm text-destructive">{$_(resetErrors.email_code)}</p>
+							{/if}
 						</div>
 						<div class="space-y-2">
 							<Label for="reset-pass">{$_('login.new_password')}</Label>
@@ -428,6 +478,9 @@
 									bind:value={resetForm.password}
 								/>
 							</div>
+							{#if resetErrors.password}
+								<p class="text-sm text-destructive">{$_(resetErrors.password)}</p>
+							{/if}
 						</div>
 						<div class="space-y-2">
 							<Label for="reset-confirm">{$_('login.confirm_password')}</Label>
@@ -440,6 +493,9 @@
 									bind:value={resetForm.confirmed_password}
 								/>
 							</div>
+							{#if resetErrors.confirmed_password}
+								<p class="text-sm text-destructive">{$_(resetErrors.confirmed_password)}</p>
+							{/if}
 						</div>
 					</Card.Content>
 					<Card.Footer class="flex flex-col gap-2">
