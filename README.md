@@ -51,10 +51,11 @@ This reads the protobuf definitions from the `proto/` directory and generates th
 
 A `docker-compose.yaml` is provided at the root to spin up the entire application (Frontend, Gateway, Recommender) along with all required infrastructure services (PostgreSQL, Redis, RustFS) in one command.
 
-First, prepare the gateway configuration file:
+First, prepare the configuration files for each service:
 
 ```bash
 cp svc-gateway/config.docker.example.yaml svc-gateway/config.docker.yaml
+cp svc-recommender/config.docker.example.yaml svc-recommender/config.docker.yaml
 ```
 
 Then open `svc-gateway/config.docker.yaml` and fill in your secrets:
@@ -91,11 +92,11 @@ This starts the following containers:
 | `sci-vault-gateway`     | API Gateway (REST)             | `8080`                         |
 | `sci-vault-frontend`    | Frontend Web Client            | `80`                           |
 
-> **Updating configuration**: `config.docker.yaml` is mounted into the gateway container at runtime (not baked into the image). After editing it, only a restart is needed — no rebuild:
+> **Updating configuration**: `config.docker.yaml` is mounted into each service container at runtime (not baked into the image). After editing, only a restart is needed — no rebuild:
 > ```bash
-> docker compose restart gateway
+> docker compose restart gateway recommender
 > # or for production:
-> docker compose -f docker-compose-production.yaml restart gateway
+> docker compose -f docker-compose-production.yaml restart gateway recommender
 > ```
 
 To stop the infrastructure:
