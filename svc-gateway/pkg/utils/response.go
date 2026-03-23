@@ -3,75 +3,68 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/go-playground/validator/v10"
 )
 
-func translateFieldName(field string) string {
+// fieldToKey converts a Go struct field name to its i18n locale key segment.
+func fieldToKey(field string) string {
 	switch field {
 	case "Username":
-		return "用户名"
+		return "username"
 	case "Password":
-		return "密码"
+		return "password"
 	case "Email":
-		return "邮箱"
+		return "email"
 	case "EmailCode":
-		return "验证码"
+		return "email_code"
 	case "ConfirmedPassword":
-		return "确认密码"
+		return "confirmed_password"
 	case "Avatar":
-		return "头像"
+		return "avatar"
 	case "Nickname":
-		return "昵称"
+		return "nickname"
 	case "Bio":
-		return "个人简介"
+		return "bio"
 	case "Website":
-		return "个人网站"
+		return "website"
 	case "Location":
-		return "所在地"
+		return "location"
 	case "UserID":
-		return "用户ID"
+		return "user_id"
 	default:
 		return field
 	}
 }
 
+// formatValidationError returns a dot-notation i18n locale key for the frontend to translate,
+// e.g. "validation.username.required", "validation.email.invalid".
 func formatValidationError(f validator.FieldError) string {
-	field := translateFieldName(f.Field())
-	param := f.Param()
-
+	field := fieldToKey(f.Field())
 	switch f.Tag() {
-	case "required":
-		return fmt.Sprintf("%s不能为空", field)
 	case "required_without":
-		return fmt.Sprintf("当%s缺失时，%s不能为空", translateFieldName(param), field)
-	case "min":
-		return fmt.Sprintf("%s长度不能少于 %s 个字符", field, param)
-	case "max":
-		return fmt.Sprintf("%s长度不能超过 %s 个字符", field, param)
-	case "email":
-		return fmt.Sprintf("请填写真实有效的%s", field)
+		// Username and Email are mutually required_without each other → unified identifier message
+		return "validation.identifier.required"
+	case "email", "http_url",
+		"len", "numeric",
+		"custom_username_validator", "custom_password_validator":
+		return fmt.Sprintf("validation.%s.invalid", field)
 	case "eqfield":
-		return fmt.Sprintf("%s与%s不一致", field, translateFieldName(param))
-	case "len":
-		return fmt.Sprintf("%s长度必须是 %s 位", field, param)
-	case "numeric":
-		return fmt.Sprintf("%s必须是纯数字", field)
+		return fmt.Sprintf("validation.%s.mismatch", field)
 	}
-	return fmt.Sprintf("%s填写有误", field)
+	// covers: required, min, max, and any other standard tags
+	return fmt.Sprintf("validation.%s.%s", field, f.Tag())
 }
 
 func ErrorResponse(err error) map[string]any {
-	var validationErrs validator.ValidationErrors
-	if errors.As(err, &validationErrs) {
-		var errMsgs []string
+	if validationErrs, ok := errors.AsType[validator.ValidationErrors](err); ok {
+		errMsgs := make([]string, 0, len(validationErrs))
 		for _, f := range validationErrs {
 			errMsgs = append(errMsgs, formatValidationError(f))
 		}
-		return map[string]any{"error": strings.Join(errMsgs, "; ")}
+		return map[string]any{"errors": errMsgs}
 	}
-	return map[string]any{"error": err.Error()}
+	return map[string]any{"errors": []string{err.Error()}}
 }
 
 func MessageResponse(message string) map[string]any {

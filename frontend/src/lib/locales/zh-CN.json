@@ -32,6 +32,87 @@
 	"common": {
 		"error": {
 			"missing_fields": "请填写所有必填字段"
+		},
+		"unauthorized": "登录已过期，请重新登录"
+	},
+	"service": {
+		"send_email_code": {
+			"failed": "发送验证码失败，请稍后重试"
+		},
+		"email_code": {
+			"invalid": "验证码无效或已过期"
+		},
+		"login": {
+			"failed": "用户名/邮箱或密码错误"
+		},
+		"register": {
+			"failed": "注册失败，该邮箱或用户名已被使用"
+		},
+		"reset_password": {
+			"failed": "密码重置失败，请稍后重试"
+		},
+		"upload_avatar": {
+			"read_failed": "读取文件失败，请重试",
+			"too_large": "头像不能超过 5MB",
+			"unsupported_type": "不支持的图片格式，请上传 JPG / PNG / GIF / WebP",
+			"failed": "上传头像失败，请稍后重试"
+		},
+		"update_profile": {
+			"failed": "更新资料失败，请稍后重试"
+		},
+		"get_avatar": {
+			"failed": "获取头像失败"
+		},
+		"get_profile": {
+			"failed": "获取资料失败"
+		}
+	},
+	"validation": {
+		"identifier": {
+			"required": "请输入用户名或邮箱"
+		},
+		"username": {
+			"required": "请输入用户名",
+			"min": "用户名至少需要 3 个字符",
+			"max": "用户名最多 20 个字符",
+			"invalid": "用户名只能包含字母、数字和下划线"
+		},
+		"password": {
+			"required": "请输入密码",
+			"min": "密码至少需要 6 个字符",
+			"max": "密码最多 50 个字符",
+			"invalid": "密码只能包含字母、数字和以下特殊字符：_ ! @ # $ % ^ & *"
+		},
+		"email": {
+			"required": "请输入邮箱地址",
+			"invalid": "请输入有效的邮箱地址"
+		},
+		"email_code": {
+			"required": "请输入验证码",
+			"invalid": "验证码必须是 6 位数字"
+		},
+		"confirmed_password": {
+			"required": "请确认密码",
+			"mismatch": "两次输入的密码不一致"
+		},
+		"avatar": {
+			"required": "请上传头像"
+		},
+		"nickname": {
+			"max": "昵称长度不能超过 50 个字符"
+		},
+		"bio": {
+			"max": "个人简介不能超过 500 个字符"
+		},
+		"website": {
+			"max": "个人网站地址不能超过 255 个字符",
+			"invalid": "个人网站必须是有效的 HTTP/HTTPS 地址"
+		},
+		"location": {
+			"max": "所在地不能超过 100 个字符"
+		},
+		"user_id": {
+			"required": "用户 ID 不能为空"
 		}
 	},
 	"login": {

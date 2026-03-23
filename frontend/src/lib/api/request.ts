@@ -51,4 +51,8 @@ export interface DefaultResponse {
 	message: string;
 }
 
+export interface ApiErrorResponse {
+	errors?: string[];
+}
+
 export default request;

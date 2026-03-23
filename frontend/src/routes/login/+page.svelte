@@ -3,7 +3,6 @@
 	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
-	import axios from 'axios';
 
 	import * as Card from '$lib/components/ui/card';
 	import * as Tabs from '$lib/components/ui/tabs';
@@ -13,6 +12,7 @@
 
 	import userApi from '$lib/api/user';
 	import authApi from '$lib/api/auth';
+	import { showApiErrors } from '$lib/utils/api-error';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 
@@ -44,18 +44,8 @@
 			await authApi.testAuth();
 			toast.success($_('login.success.login'));
 			goto(resolve('/'));
-		} catch (error: unknown) {
-			// Token is invalid, empty, or expired.
-			// The user should naturally stay on the login page in this case.
-			if (axios.isAxiosError(error) && error.response?.status !== 401) {
-				toast.error(
-					error.response?.data?.message ||
-						error.response?.data?.error ||
-						$_('login.error.auth_check_failed')
-				);
-			} else if (!axios.isAxiosError(error)) {
-				toast.error((error as Error).message || $_('login.error.auth_check_failed'));
-			}
+		} catch {
+			// Token is invalid, empty, or expired — stay on login page.
 		}
 	});
 
@@ -87,15 +77,7 @@
 			toast.success($_('login.success.login'));
 			goto(resolve('/'));
 		} catch (error: unknown) {
-			if (axios.isAxiosError(error)) {
-				toast.error(
-					error.response?.data?.message ||
-						error.response?.data?.error ||
-						$_('login.error.login_failed')
-				);
-			} else {
-				toast.error((error as Error).message || $_('login.error.login_failed'));
-			}
+			showApiErrors(error, $_('login.error.login_failed'));
 		} finally {
 			isSubmitting = false;
 		}
@@ -113,15 +95,7 @@
 			toast.success($_('login.success.register'));
 			activeTab = 'login';
 		} catch (error: unknown) {
-			if (axios.isAxiosError(error)) {
-				toast.error(
-					error.response?.data?.message ||
-						error.response?.data?.error ||
-						$_('login.error.register_failed')
-				);
-			} else {
-				toast.error((error as Error).message || $_('login.error.register_failed'));
-			}
+			showApiErrors(error, $_('login.error.register_failed'));
 		} finally {
 			isSubmitting = false;
 		}
@@ -137,15 +111,7 @@
 			await userApi.sendEmailCode({ email });
 			toast.success($_('login.success.code_sent'));
 		} catch (error: unknown) {
-			if (axios.isAxiosError(error)) {
-				toast.error(
-					error.response?.data?.message ||
-						error.response?.data?.error ||
-						$_('login.error.send_code_failed')
-				);
-			} else {
-				toast.error((error as Error).message || $_('login.error.send_code_failed'));
-			}
+			showApiErrors(error, $_('login.error.send_code_failed'));
 		}
 	}
 
@@ -162,15 +128,7 @@
 			activeView = 'auth';
 			activeTab = 'login';
 		} catch (error: unknown) {
-			if (axios.isAxiosError(error)) {
-				toast.error(
-					error.response?.data?.message ||
-						error.response?.data?.error ||
-						$_('login.error.reset_failed')
-				);
-			} else {
-				toast.error((error as Error).message || $_('login.error.reset_failed'));
-			}
+			showApiErrors(error, $_('login.error.reset_failed'));
 		} finally {
 			isSubmitting = false;
 		}
