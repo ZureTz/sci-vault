@@ -1,0 +1,39 @@
+host: "0.0.0.0"
+port: "8080"
+recommender_addr: "recommender:50051"
+
+log:
+  level: "info"
+  format: "json"
+
+redis:
+  addr: "redis:6379"
+  password: ""
+  db: 0
+
+database:
+  host: "postgres"
+  port: 5432
+  user: "sci_vault"
+  password: "sci_vault_secret"
+  db_name: "sci_vault"
+  ssl_mode: "disable"
+  timezone: "UTC"
+
+storage:
+  endpoint: "http://rustfs:9000"
+  access_key: "rustfsadmin"
+  secret_key: "rustfsadmin"
+  private_bucket: "sci-vault"
+  public_bucket: "public-assets"
+  use_ssl: false
+
+mailer:
+  host: "smtp.example.com"
+  port: 587
+  username: "your-email@example.com"
+  password: "your-password"
+
+jwt:
+  secret: "your-256-bit-secret"
+  timeout: 24

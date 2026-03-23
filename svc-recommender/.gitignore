@@ -9,3 +9,4 @@ src/pb/
 
 # configuration files
 config.yaml
+config.docker.yaml

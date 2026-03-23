@@ -98,11 +98,15 @@ src/
 └── app.html                  # HTML entry point
 ```
 
-## Roadmap: Docker
+## Docker Deployment
 
-Upcoming improvements include:
+This application comes with a Dockerfile for easy containerization. 
+To build and start the frontend along with the rest of the application utilizing Docker Compose, run the following from the root directory:
 
-- Docker containerization for consistent development and deployment environments
+```bash
+cd ..
+docker compose up -d --build frontend
+```
 
 ## License
 

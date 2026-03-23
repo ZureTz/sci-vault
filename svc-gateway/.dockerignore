@@ -1,0 +1,13 @@
+.devcontainer
+.env
+.idea
+.vscode
+go.work
+go.work.sum
+tests
+bin/
+gateway
+gateway.exe
+*.log
+config.yaml
+config.docker.yaml
