@@ -56,6 +56,7 @@ First, prepare the configuration files for each service:
 ```bash
 cp svc-gateway/config.docker.example.yaml svc-gateway/config.docker.yaml
 cp svc-recommender/config.docker.example.yaml svc-recommender/config.docker.yaml
+cp frontend/nginx.example.conf frontend/nginx.conf
 ```
 
 Then open `svc-gateway/config.docker.yaml` and fill in your secrets:
@@ -98,6 +99,19 @@ This starts the following containers:
 > # or for production:
 > docker compose -f docker-compose-production.yaml restart gateway recommender
 > ```
+
+> **Frontend nginx config**: `frontend/nginx.conf` (copied from `nginx.example.conf`) is mounted at runtime. You can edit it (e.g. tune proxy settings, add security headers) and restart without rebuilding:
+> ```bash
+> docker compose restart frontend
+> ```
+
+> **HTTPS / TLS**: To enable HTTPS for the frontend:
+> 1. Place your certificate and private key at `frontend/ssl/cert.pem` and `frontend/ssl/key.pem`
+> 2. Uncomment the `listen 443 ssl` block and certificate directives in `frontend/nginx.conf`
+> 3. Update the `server_name` in `frontend/nginx.conf` to your actual domain
+> 4. Restart the frontend container: `docker compose restart frontend`
+>
+> The `frontend/ssl/` directory is mounted read-only into the container at `/etc/nginx/ssl/`. The directory is git-ignored — never commit your private key.
 
 To stop the infrastructure:
 

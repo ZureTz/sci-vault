@@ -125,6 +125,10 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro  # Copy from nginx.example.conf
+      - ./frontend/ssl:/etc/nginx/ssl:ro  # Optional: place cert.pem and key.pem here for HTTPS
     depends_on:
       - gateway
 
