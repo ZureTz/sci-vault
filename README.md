@@ -115,7 +115,7 @@ If you prefer to develop services locally while running only the back-end infras
 
 ```bash
 # For Local Development
-docker compose up -d postgres redis rustfs
+docker compose up -d postgres redis rustfs # add rustfs-volume-helper if first time to initialize the volume
 
 # For Production
 docker compose -f docker-compose-production.yaml up -d postgres redis rustfs
