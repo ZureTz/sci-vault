@@ -65,7 +65,11 @@ func New(configPath string) (*App, error) {
 		return nil, fmt.Errorf("failed to create database connection: %w", err)
 	}
 
-	if err := db.AutoMigrate(&model.User{}, &model.UserProfile{}); err != nil {
+	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS vector").Error; err != nil {
+		return nil, fmt.Errorf("failed to create pgvector extension: %w", err)
+	}
+
+	if err := db.AutoMigrate(&model.User{}, &model.UserProfile{}, &model.Document{}); err != nil {
 		return nil, fmt.Errorf("failed to auto migrate database: %w", err)
 	}
 
