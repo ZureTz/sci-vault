@@ -100,7 +100,7 @@ src/
 
 ## Docker Deployment
 
-This application comes with a Dockerfile for easy containerization. 
+This application comes with a Dockerfile for easy containerization.
 To build and start the frontend along with the rest of the application utilizing Docker Compose, run the following from the root directory:
 
 ```bash
