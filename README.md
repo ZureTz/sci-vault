@@ -25,33 +25,24 @@ This monorepo contains a complete microservices-based application for research d
 
 ## Prerequisites
 
-Before getting started, ensure you have the following tools installed:
+**For Docker Deployment (Recommended):**
+- [Docker](https://docs.docker.com/get-docker/) with Docker Compose
 
-- [Buf](https://buf.build/docs/cli/installation/) — For code generation from protobuf definitions
+**For Manual Local Development:**
+- [Buf](https://buf.build/docs/cli/installation/) — For gRPC protobuf code generation
 - [Go](https://go.dev/doc/install) 1.26+ — For the gateway service
 - [Python](https://www.python.org/downloads/) 3.10+ with [uv](https://docs.astral.sh/uv/getting-started/installation/) — For the recommender service
 - [Bun](https://bun.sh/) 1.0+ — For the frontend application
-- [Docker](https://docs.docker.com/get-docker/) with Docker Compose — For running infrastructure services
 
-## Quick Start
-
-### 1. Generate gRPC Code
-
-Generate the necessary gRPC stubs for both services using Buf. **This step is required before running the application:**
-
-```bash
-buf generate
-```
-
-This reads the protobuf definitions from the `proto/` directory and generates the required stubs for `svc-gateway` and `svc-recommender`. **Re-run this command whenever you modify any `.proto` files.**
-
-### 2. Start Everything with Docker Compose
+## Quick Start Using Docker Compose
 
 > **⚠️ WARNING for Production environments**: The provided `docker-compose.yaml` and default configurations are intended for **local development and testing only**. When deploying to a production environment, you MUST use your own secure parameters, strong passwords, and proper secrets management. It is highly recommended to create and use a dedicated `docker-compose-production.yaml` with hardened configurations.
 
 A `docker-compose.yaml` is provided at the root to spin up the entire application (Frontend, Gateway, Recommender) along with all required infrastructure services (PostgreSQL, Redis, RustFS) in one command.
 
-First, prepare the configuration files for each service:
+*Note: The gRPC stubs will be automatically generated inside the Docker containers during the build process.*
+
+### 1. Prepare the configuration files for each service:
 
 ```bash
 cp svc-gateway/config.docker.example.yaml svc-gateway/config.docker.yaml
@@ -59,7 +50,7 @@ cp svc-recommender/config.docker.example.yaml svc-recommender/config.docker.yaml
 cp frontend/nginx.example.conf frontend/nginx.conf
 ```
 
-Then open `svc-gateway/config.docker.yaml` and fill in your secrets:
+### 2. Open `svc-gateway/config.docker.yaml` and fill in your secrets:
 
 | Field                                       | What to set                                                                                                            |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -70,7 +61,7 @@ Then open `svc-gateway/config.docker.yaml` and fill in your secrets:
 
 > **RustFS S3 credentials**: RustFS uses the same `RUSTFS_ACCESS_KEY`/`RUSTFS_SECRET_KEY` values from `docker-compose.yaml` directly as its S3 API credentials — no need to log into the web console to generate separate keys. For local development the defaults (`rustfsadmin` / `rustfsadmin`) work out of the box.
 
-Then run the cluster:
+### 3. Run the cluster:
 
 ```bash
 # For Local Development
@@ -123,19 +114,26 @@ docker compose down
 docker compose -f docker-compose-production.yaml down
 ```
 
-### 3. Set Up Local Infrastructure only (Optional)
+## Manual Local Development
 
+If you prefer to run the services directly on your host machine instead of using Docker, follow these steps.
+
+### 1. Start Infrastructure Dependencies
 If you prefer to develop services locally while running only the back-end infrastructure (DB, Redis, S3) in Docker:
 
 ```bash
-# For Local Development
-docker compose up -d postgres redis rustfs # add rustfs-volume-helper if first time to initialize the volume
-
-# For Production
-docker compose -f docker-compose-production.yaml up -d postgres redis rustfs
+docker compose up -d postgres redis rustfs # Add rustfs-volume-helper if first time
 ```
 
-### 4. Set Up Individual Services for Local Development (Optional)
+### 2. Generate gRPC Code
+Make sure [Buf](https://buf.build/docs/cli/installation/) is installed.
+
+```bash
+buf generate
+```
+**Important:** Re-run this command whenever you modify any `.proto` files in the `proto/` directory.
+
+### 3. Set Up Individual Services
 
 Each service has its own setup and runtime requirements. Navigate to the respective directories and follow their specific README:
 
