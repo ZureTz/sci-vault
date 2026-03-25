@@ -89,7 +89,10 @@ services:
     restart: "no"
 
   recommender:
-    build: ./svc-recommender
+    build:
+      context: ./svc-recommender
+      additional_contexts:
+        - workspace_root=.
     container_name: sci-vault-recommender
     restart: unless-stopped
     ports:
@@ -102,7 +105,10 @@ services:
       - REDIS_HOST=redis
 
   gateway:
-    build: ./svc-gateway
+    build:
+      context: ./svc-gateway
+      additional_contexts:
+        - workspace_root=.
     container_name: sci-vault-gateway
     restart: unless-stopped
     ports:
