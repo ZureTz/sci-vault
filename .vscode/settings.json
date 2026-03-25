@@ -1,6 +1,0 @@
-{
-  "python.analysis.extraPaths": [
-    "./svc-recommender/src",
-    "./svc-recommender/src/pb"
-  ]
-}
