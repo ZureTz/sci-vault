@@ -8,21 +8,19 @@ import (
 	"gateway/internal/config"
 	"gateway/internal/handler"
 	"gateway/internal/middleware"
-	"gateway/pkg/grpcclient"
 	"gateway/pkg/logger"
 	customValidator "gateway/pkg/validator"
 )
 
 type RouterDeps struct {
 	// Handlers
-	UserHandler *handler.UserHandler
-	AuthHandler *handler.AuthHandler
+	HealthHandler   *handler.HealthHandler
+	UserHandler     *handler.UserHandler
+	AuthHandler     *handler.AuthHandler
+	DocumentHandler *handler.DocumentHandler
 
 	// Config
 	Config *config.Config
-
-	// gRPC clients
-	RecommenderClient *grpcclient.RecommenderClient
 }
 
 // New creates and configures a gin Engine with all routes registered.
@@ -38,7 +36,7 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 	v1 := engine.Group("/api/v1")
 
 	// Health check endpoint
-	v1.GET("/health", handler.HealthCheck(deps.RecommenderClient))
+	v1.GET("/health", deps.HealthHandler.HealthCheck)
 
 	// Register user routes
 	deps.registerUserRoutes(v1.Group("/user"), deps.UserHandler)
@@ -47,6 +45,10 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 	auth := v1.Group("/auth")
 	auth.Use(middleware.CheckJWT(&deps.Config.JWT))
 	deps.registerAuthenticatedRoutes(auth, deps.AuthHandler)
+
+	docs := v1.Group("/docs")
+	docs.Use(middleware.CheckJWT(&deps.Config.JWT))
+	deps.registerDocumentRoutes(docs)
 
 	// Assign the configured engine to the router struct
 	return engine
@@ -82,4 +84,11 @@ func (deps *RouterDeps) registerUserRoutes(group *gin.RouterGroup, userHandler *
 // Authenticated routes (example: /api/v1/auth/...)
 func (deps *RouterDeps) registerAuthenticatedRoutes(group *gin.RouterGroup, authHandler *handler.AuthHandler) {
 	group.GET("/test", authHandler.Test)
+}
+
+// Document routes (/api/v1/docs/...)
+func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
+	group.POST("/upload", deps.DocumentHandler.UploadDocument)
+	group.GET("/:doc_id", deps.DocumentHandler.GetDocument)
+	group.GET("/:doc_id/enrich_status", deps.DocumentHandler.GetEnrichStatus)
 }

@@ -12,6 +12,7 @@ type DocumentRepository interface {
 	FindByID(ctx context.Context, id uint) (model.Document, error)
 	IncrementViewCount(ctx context.Context, id uint) error
 	IncrementLikeCount(ctx context.Context, id uint) error
+	UpdateEnrichStatus(ctx context.Context, id uint, status string) error
 }
 
 type documentRepo struct {
@@ -37,5 +38,10 @@ func (r *documentRepo) IncrementViewCount(ctx context.Context, id uint) error {
 
 func (r *documentRepo) IncrementLikeCount(ctx context.Context, id uint) error {
 	_, err := gorm.G[model.Document](r.db).Where("id = ?", id).Update(ctx, "like_count", gorm.Expr("like_count + 1"))
+	return err
+}
+
+func (r *documentRepo) UpdateEnrichStatus(ctx context.Context, id uint, status string) error {
+	_, err := gorm.G[model.Document](r.db).Where("id = ?", id).Update(ctx, "enrich_status", status)
 	return err
 }

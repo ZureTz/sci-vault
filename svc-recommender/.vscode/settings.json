@@ -1,3 +1,12 @@
 {
-  "python.analysis.extraPaths": ["./src", "./src/pb"]
+  "python.analysis.extraPaths": [
+    "./src",
+    "./src/pb"
+  ],
+  "cSpell.words": [
+    "genai",
+    "grpcio",
+    "psycopg",
+    "pyyaml"
+  ]
 }

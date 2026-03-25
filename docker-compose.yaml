@@ -97,8 +97,8 @@ services:
     volumes:
       - ./svc-recommender/config.docker.yaml:/app/config.yaml:ro
     environment:
-      - PG_HOST=postgres
-      - PG_PORT=5432
+      - DB_HOST=postgres
+      - DB_PORT=5432
       - REDIS_HOST=redis
 
   gateway:

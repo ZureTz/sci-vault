@@ -9,4 +9,8 @@ var (
 	ErrEmailCodeMismatch = errors.New("email code mismatch")
 	ErrAvatarTooLarge    = errors.New("avatar file too large")
 	ErrAvatarInvalidType = errors.New("unsupported avatar image type")
+
+	ErrDocumentTooLarge    = errors.New("document file too large")
+	ErrDocumentInvalidType = errors.New("unsupported document type; only PDF is accepted")
+	ErrDocumentNotFound    = errors.New("document not found")
 )

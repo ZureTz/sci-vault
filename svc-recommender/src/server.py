@@ -6,10 +6,12 @@ import sys
 from concurrent import futures
 
 import grpc
+import redis
 
 from recommender import recommender_pb2_grpc
 from config import Config
 from interceptor.logging import LoggingInterceptor
+from servicer.document import DocumentServicer
 from servicer.health import HealthServicer
 
 log = logging.getLogger(__name__)
@@ -21,9 +23,20 @@ def create_server(cfg: Config) -> grpc.Server:
         futures.ThreadPoolExecutor(max_workers=cfg.max_workers),
         interceptors=[LoggingInterceptor()],
     )
-    # Register servicers – add more here as new RPCs are defined.
+
+    redis_client = redis.Redis(
+        host=cfg.redis_host,
+        port=cfg.redis_port,
+        password=cfg.redis_password or None,
+        db=cfg.redis_db,
+        decode_responses=True,
+    )
+
+    class RecommenderServicer(DocumentServicer, HealthServicer):
+        pass
+
     recommender_pb2_grpc.add_RecommenderServiceServicer_to_server(
-        HealthServicer(),
+        RecommenderServicer(redis_client, cfg.db_dsn),
         server,
     )
     server.add_insecure_port(cfg.addr)

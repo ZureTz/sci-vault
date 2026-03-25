@@ -18,7 +18,7 @@ import (
 	"gateway/internal/service"
 	"gateway/pkg/cache"
 	"gateway/pkg/database"
-	"gateway/pkg/grpcclient"
+	"gateway/pkg/grpc_client"
 	"gateway/pkg/jwt"
 	"gateway/pkg/logger"
 	"gateway/pkg/mailer"
@@ -34,10 +34,10 @@ type App struct {
 	server *http.Server
 
 	// External dependencies (Clients / Connectors)
-	recommenderClient *grpcclient.RecommenderClient
 	db                *gorm.DB
 	cacheConn         *cache.CacheConnector
 	storageClient     *storage.Client
+	recommenderClient *grpc_client.RecommenderClient
 	mailer            *mailer.Mailer
 }
 
@@ -55,7 +55,7 @@ func New(configPath string) (*App, error) {
 	logger.Setup(cfg.Log.Level, cfg.Log.Format)
 
 	// 1. Initialize low-level dependencies (Databases, Redis, gRPC Clients)
-	recommenderClient, err := grpcclient.NewRecommenderClient(cfg.RecommenderAddr)
+	recommenderClient, err := grpc_client.NewRecommenderClient(cfg.RecommenderAddr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create recommender gRPC client: %w", err)
 	}
@@ -88,22 +88,26 @@ func New(configPath string) (*App, error) {
 	// 2. Initialize repositories layer (data access)
 	userRepo := repo.NewUserRepo(db)
 	userAvatarRepo := repo.NewUserProfileRepo(db)
+	documentRepo := repo.NewDocumentRepo(db)
 
 	// 3. Initialize services layer (business logic)
 	userService := service.NewUserService(userRepo, userAvatarRepo, jwtGenerator, mailSrv, cacheConn, storageClient)
+	documentService := service.NewDocumentService(documentRepo, storageClient, recommenderClient, cacheConn)
 
 	// 4. Initialize handlers layer (HTTP/API)
+	healthHandler := handler.NewHealthHandler(recommenderClient)
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler()
+	documentHandler := handler.NewDocumentHandler(documentService)
 
 	// 5. Initialize router layer (routing and middleware mapping)
 	r := router.NewRouter(&router.RouterDeps{
-		UserHandler: userHandler,
-		AuthHandler: authHandler,
+		HealthHandler:   healthHandler,
+		UserHandler:     userHandler,
+		AuthHandler:     authHandler,
+		DocumentHandler: documentHandler,
 
 		Config: cfg,
-
-		RecommenderClient: recommenderClient,
 	})
 
 	// 6. Build the HTTP server
@@ -116,10 +120,10 @@ func New(configPath string) (*App, error) {
 		cfg:               cfg,
 		engine:            r,
 		server:            srv,
-		recommenderClient: recommenderClient,
 		db:                db,
 		cacheConn:         cacheConn,
 		storageClient:     storageClient,
+		recommenderClient: recommenderClient,
 		mailer:            mailSrv,
 	}, nil
 }
