@@ -157,7 +157,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('login.title.app')} | Sci-Vault</title>
+	<title>{$_('login.title.app')}</title>
 </svelte:head>
 
 <div class="relative flex flex-1 items-center justify-center p-4">
