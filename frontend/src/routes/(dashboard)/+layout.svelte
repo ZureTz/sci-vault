@@ -9,6 +9,8 @@
 	import { page } from '$app/state';
 
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
+	import ThemeToggle from '$lib/components/layout/ThemeToggle.svelte';
+	import LanguageToggle from '$lib/components/layout/LanguageToggle.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import * as Separator from '$lib/components/ui/separator';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
@@ -56,9 +58,9 @@
 	<AppSidebar />
 	<Sidebar.Inset>
 		<header
-			class="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
+			class="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
 		>
-			<div class="flex items-center gap-2 px-4">
+			<div class="flex flex-1 items-center gap-2 px-4">
 				<Sidebar.Trigger class="-ml-1" />
 				<Separator.Root orientation="vertical" class="mr-2 h-4" />
 				<Breadcrumb.Root>
@@ -77,6 +79,10 @@
 						{/each}
 					</Breadcrumb.List>
 				</Breadcrumb.Root>
+			</div>
+			<div class="flex items-center gap-2 px-4">
+				<ThemeToggle />
+				<LanguageToggle />
 			</div>
 		</header>
 		<div class="mt-4 flex flex-1 flex-col gap-4 p-4 pt-0">
