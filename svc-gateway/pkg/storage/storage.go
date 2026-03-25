@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -143,6 +144,21 @@ func (c *Client) ListObjects(ctx context.Context, prefix string, isPrivate bool)
 		keys = append(keys, *obj.Key)
 	}
 	return keys, nil
+}
+
+// PresignGetObject returns a presigned GET URL for a private object, valid for the given duration.
+func (c *Client) PresignGetObject(ctx context.Context, key string, expiry time.Duration) (string, error) {
+	presignClient := s3.NewPresignClient(c.s3)
+	req, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(c.privateBucket),
+		Key:    aws.String(key),
+	}, func(opts *s3.PresignOptions) {
+		opts.Expires = expiry
+	})
+	if err != nil {
+		return "", err
+	}
+	return req.URL, nil
 }
 
 func (c *Client) PrivateBucket() string { return c.privateBucket }

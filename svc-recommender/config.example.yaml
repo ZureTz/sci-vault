@@ -1,3 +1,16 @@
 host: "0.0.0.0"
 port: 50051
 max_workers: 10
+
+redis_host: "localhost"
+redis_port: 6379
+redis_password: ""
+redis_db: 0
+
+db_host: "localhost"
+db_port: 5432
+db_user: "sci_vault"
+db_password: "sci_vault_secret"
+db_name: "sci_vault"
+db_ssl_mode: "disable"
+db_timezone: "UTC"

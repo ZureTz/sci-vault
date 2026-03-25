@@ -1,4 +1,4 @@
-package grpcclient
+package grpc_client
 
 import (
 	"context"
@@ -43,6 +43,21 @@ func (r *RecommenderClient) Health(ctx context.Context) (*pb.HealthResponse, err
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	return r.client.Health(ctx, &pb.HealthRequest{})
+}
+
+// EnrichDocument sends a fire-and-forget enrichment request to the Python service.
+// The Python service ACKs immediately and processes asynchronously.
+func (r *RecommenderClient) EnrichDocument(ctx context.Context, docID uint64, fileKey string) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	resp, err := r.client.EnrichDocument(ctx, &pb.EnrichDocumentRequest{
+		DocId:   docID,
+		FileKey: fileKey,
+	})
+	if err != nil {
+		return false, err
+	}
+	return resp.Accepted, nil
 }
 
 // Close releases the underlying gRPC connection.

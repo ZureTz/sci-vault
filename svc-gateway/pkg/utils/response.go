@@ -32,6 +32,16 @@ func fieldToKey(field string) string {
 		return "location"
 	case "UserID":
 		return "user_id"
+	case "File":
+		return "file"
+	case "Title":
+		return "title"
+	case "Year":
+		return "year"
+	case "DOI":
+		return "doi"
+	case "DocID":
+		return "doc_id"
 	default:
 		return field
 	}
