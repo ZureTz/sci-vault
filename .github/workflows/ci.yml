@@ -1,0 +1,53 @@
+name: CI Check
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  buf-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1
+      - run: buf build
+      - run: buf lint
+
+  go-check:
+    runs-on: ubuntu-latest
+    needs: buf-check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - run: |
+          buf generate
+          cd svc-gateway
+          go build -v ./...
+          go test ./...
+          go vet ./...
+
+  frontend-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - name: Install frontend deps
+        run: |
+          cd frontend
+          bun install
+
+      - name: Run frontend checks
+        run: |
+          cd frontend
+          bun run check
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          bun run build
