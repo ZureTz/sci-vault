@@ -147,12 +147,17 @@ func (c *Client) ListObjects(ctx context.Context, prefix string, isPrivate bool)
 }
 
 // PresignGetObject returns a presigned GET URL for a private object, valid for the given duration.
-func (c *Client) PresignGetObject(ctx context.Context, key string, expiry time.Duration) (string, error) {
+// filename sets the Content-Disposition header so browsers save the file with that name.
+func (c *Client) PresignGetObject(ctx context.Context, key string, expiry time.Duration, filename string) (string, error) {
 	presignClient := s3.NewPresignClient(c.s3)
-	req, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
+	input := &s3.GetObjectInput{
 		Bucket: aws.String(c.privateBucket),
 		Key:    aws.String(key),
-	}, func(opts *s3.PresignOptions) {
+	}
+	if filename != "" {
+		input.ResponseContentDisposition = aws.String(fmt.Sprintf(`attachment; filename="%s"`, filename))
+	}
+	req, err := presignClient.PresignGetObject(ctx, input, func(opts *s3.PresignOptions) {
 		opts.Expires = expiry
 	})
 	if err != nil {

@@ -24,13 +24,12 @@ const (
 	enrichStatusTTL   = 24 * time.Hour
 )
 
-// EnrichStatus values stored in Redis under key doc:enrich:{doc_id}.
+// DB enrich_status values (source of truth for persistent state).
+// Fine-grained transient states (pending, processing, failed) live in Redis only,
+// managed entirely by the Python microservice.
 const (
-	EnrichStatusPending    = "pending"
-	EnrichStatusProcessing = "processing"
-	EnrichStatusDone       = "done"
-	EnrichStatusFailed     = "failed"
 	EnrichStatusNotStarted = "not_started"
+	EnrichStatusDone       = "done"
 )
 
 func enrichStatusKey(docID uint) string {
@@ -91,21 +90,13 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 	}
 
 	// Trigger async enrichment on the Python microservice.
-	// The call returns an immediate ACK; actual processing happens in the background.
+	// The call returns an immediate ACK; Python owns all status updates from this point.
 	// A failure here is non-fatal — the document is already saved.
-	accepted, err := s.recommenderClient.EnrichDocument(ctx, uint64(doc.ID), key)
-	if err != nil {
+	if _, err := s.recommenderClient.EnrichDocument(ctx, uint64(doc.ID), key); err != nil {
 		slog.Warn("EnrichDocument gRPC call failed", "docID", doc.ID, "err", err)
-	} else if accepted {
-		if dbErr := s.repo.UpdateEnrichStatus(ctx, doc.ID, EnrichStatusPending); dbErr != nil {
-			slog.Warn("failed to update enrich status in DB", "docID", doc.ID, "err", dbErr)
-		}
-		if cacheErr := s.cacheConn.Set(ctx, enrichStatusKey(doc.ID), EnrichStatusPending, enrichStatusTTL); cacheErr != nil {
-			slog.Warn("failed to set enrich status in Redis", "docID", doc.ID, "err", cacheErr)
-		}
 	}
 
-	downloadURL, err := s.storageClient.PresignGetObject(ctx, key, downloadURLExpiry)
+	downloadURL, err := s.storageClient.PresignGetObject(ctx, key, downloadURLExpiry, downloadFilename(doc.OriginalFileName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate download URL: %w", err)
 	}
@@ -124,7 +115,7 @@ func (s *DocumentService) GetDocument(ctx context.Context, docID uint) (*dto.Doc
 	}
 	doc.ViewCount++
 
-	downloadURL, err := s.storageClient.PresignGetObject(ctx, doc.FileKey, downloadURLExpiry)
+	downloadURL, err := s.storageClient.PresignGetObject(ctx, doc.FileKey, downloadURLExpiry, downloadFilename(doc.OriginalFileName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate download URL: %w", err)
 	}
@@ -143,6 +134,14 @@ func (s *DocumentService) GetEnrichStatus(ctx context.Context, docID uint) (stri
 		return "", app_error.ErrDocumentNotFound
 	}
 	return doc.EnrichStatus, nil
+}
+
+// downloadFilename ensures the filename ends with ".pdf".
+func downloadFilename(original string) string {
+	if strings.HasSuffix(strings.ToLower(original), ".pdf") {
+		return original
+	}
+	return original + ".pdf"
 }
 
 func toDocumentResponse(doc *model.Document, downloadURL string) *dto.DocumentResponse {
