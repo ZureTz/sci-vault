@@ -28,8 +28,8 @@ type Document struct {
 	// Enrichment — filled by Python microservice via LLM / embedding model
 	Authors   pq.StringArray `gorm:"type:text[]"`
 	Summary   string
-	Tags      pq.StringArray  `gorm:"type:text[]"`
-	Embedding pgvector.Vector `gorm:"type:vector(1536)"`
+	Tags      pq.StringArray   `gorm:"type:text[]"`
+	Embedding *pgvector.Vector `gorm:"type:vector(1536)"`
 
 	// User interactions
 	ViewCount uint `gorm:"default:0;not null"`
