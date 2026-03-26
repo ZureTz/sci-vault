@@ -1,4 +1,4 @@
-"""Document servicer – implements RecommenderService.EnrichDocument."""
+"""Document servicer - implements RecommenderService.EnrichDocument."""
 
 import concurrent.futures
 import logging
@@ -12,10 +12,10 @@ from recommender import recommender_pb2
 log = logging.getLogger(__name__)
 
 # Redis-only transient states (fine-grained, 24 h TTL).
-_STATUS_PENDING    = "pending"
+_STATUS_PENDING = "pending"
 _STATUS_PROCESSING = "processing"
-_STATUS_DONE       = "done"
-_STATUS_FAILED     = "failed"
+_STATUS_DONE = "done"
+_STATUS_FAILED = "failed"
 
 # DB persistent states (source of truth, two values only).
 _DB_STATUS_DONE = "done"
@@ -87,7 +87,9 @@ class DocumentServicer:
         try:
             self._redis.set(_enrich_status_key(doc_id), status, ex=_ENRICH_STATUS_TTL)
         except Exception:
-            log.warning("Redis status update failed: doc_id=%d status=%s", doc_id, status)
+            log.warning(
+                "Redis status update failed: doc_id=%d status=%s", doc_id, status
+            )
 
     def _set_db_done(self, doc_id: int) -> None:
         try:

@@ -1,7 +1,7 @@
 """gRPC server-side logging interceptor.
 
 Logs every incoming RPC with method, peer, duration and outcome.
-Register once in server.py – no changes needed to individual servicers.
+Register once in server.py - no changes needed to individual servicers.
 """
 
 import logging
@@ -40,7 +40,10 @@ class LoggingInterceptor(grpc.ServerInterceptor):
                     response = fn(request, context)
                     elapsed_ms = (time.perf_counter() - start) * 1_000
                     log.info(
-                        "gRPC %s | \033[32mOK\033[0m | %.2fms | peer=%s", method, elapsed_ms, peer
+                        "gRPC %s | \033[32mOK\033[0m | %.2fms | peer=%s",
+                        method,
+                        elapsed_ms,
+                        peer,
                     )
                     return response
                 except Exception as exc:
