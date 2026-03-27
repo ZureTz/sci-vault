@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package recommender.v1;
+
+option go_package = "gateway/internal/pb/recommender";
+
+// RecommenderService exposes operations of the recommendation engine.
+service RecommenderService {
+  // Health returns the liveness status of the recommender service.
+  rpc Health(HealthRequest) returns (HealthResponse);
+
+  // EnrichDocument triggers async enrichment (authors, summary, tags, embedding)
+  // for the given document. Returns immediately with accepted=true; the actual
+  // processing happens in the background and status is tracked via Redis.
+  rpc EnrichDocument(EnrichDocumentRequest) returns (EnrichDocumentResponse);
+}
+
+// HealthRequest is an empty message used for health check requests.
+message HealthRequest {}
+
+// HealthResponse contains the status of the recommender service.
+message HealthResponse {
+  // status is "ok" when the service is healthy.
+  string status = 1;
+  // service identifies the responding service.
+  string service = 2;
+}
+
+// EnrichDocumentRequest carries the document to be enriched.
+message EnrichDocumentRequest {
+  // doc_id is the database primary key of the document.
+  uint64 doc_id = 1;
+  // file_key is the S3 object key for the uploaded PDF.
+  string file_key = 2;
+}
+
+// EnrichDocumentResponse is the immediate ACK returned by the Python service.
+message EnrichDocumentResponse {
+  // accepted is true when the enrichment job was successfully queued.
+  bool accepted = 1;
+}
