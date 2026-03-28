@@ -7,7 +7,7 @@ import grpc
 import psycopg
 import redis
 
-from recommender import recommender_pb2
+from pb.recommender.v1 import recommender_pb2
 
 log = logging.getLogger(__name__)
 
