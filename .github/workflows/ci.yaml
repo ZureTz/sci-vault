@@ -10,8 +10,8 @@ jobs:
   buf-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: bufbuild/buf-setup-action@v1
+      - uses: actions/checkout@v6
+      - uses: bufbuild/buf-setup-action@v1.50.0
       - run: buf build
       - run: buf lint
 
@@ -19,9 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: buf-check
     steps:
-      - uses: actions/checkout@v4
-      - uses: bufbuild/buf-setup-action@v1
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: bufbuild/buf-setup-action@v1.50.0
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.26.0"
       - run: |
@@ -31,11 +31,31 @@ jobs:
           go test ./...
           go vet ./...
 
+  python-check:
+    runs-on: ubuntu-latest
+    needs: buf-check
+    steps:
+      - uses: actions/checkout@v6
+      - uses: bufbuild/buf-setup-action@v1.50.0
+      - uses: astral-sh/setup-uv@v7
+      - run: |
+          buf generate
+          cd svc-recommender
+          uv sync
+      - name: Ruff check
+        run: |
+          cd svc-recommender
+          uvx ruff check .
+      - name: Ruff format check
+        run: |
+          cd svc-recommender
+          uvx ruff format --check .
+
   frontend-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v1
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - name: Install frontend deps
