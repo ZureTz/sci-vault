@@ -22,7 +22,7 @@ if not pb_dir.exists():
     )
 sys.path.insert(0, str(pb_dir))
 
-from server import serve
+from server import serve  # noqa: E402
 
 if __name__ == "__main__":
     serve()
