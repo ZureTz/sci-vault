@@ -14,18 +14,26 @@ jobs:
       - uses: bufbuild/buf-setup-action@v1.50.0
       - run: buf build
       - run: buf lint
+      - run: buf generate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: buf-generated
+          path: |
+            svc-gateway/pb/
+            svc-recommender/src/pb/
 
   go-check:
     runs-on: ubuntu-latest
     needs: buf-check
     steps:
       - uses: actions/checkout@v6
-      - uses: bufbuild/buf-setup-action@v1.50.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: buf-generated
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26.0"
       - run: |
-          buf generate
           cd svc-gateway
           go build -v ./...
           go test ./...
@@ -36,10 +44,11 @@ jobs:
     needs: buf-check
     steps:
       - uses: actions/checkout@v6
-      - uses: bufbuild/buf-setup-action@v1.50.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: buf-generated
       - uses: astral-sh/setup-uv@v7
       - run: |
-          buf generate
           cd svc-recommender
           uv sync
       - name: Ruff check
