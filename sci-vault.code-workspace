@@ -32,6 +32,7 @@
       "isready",
       "pgvector",
       "protocolbuffers",
+      "pyproject",
       "PYTHONPATH",
       "pyyaml",
       "rustfs",

@@ -13,7 +13,6 @@ jobs:
       - uses: actions/checkout@v6
       - uses: bufbuild/buf-setup-action@v1.50.0
         with:
-          version: "1.66.1"
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - run: buf --version
       - run: buf build
@@ -37,6 +36,8 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26.0"
+          cache: true
+          cache-dependency-path: svc-gateway/go.sum
       - run: |
           cd svc-gateway
           go build -v ./...
@@ -52,6 +53,12 @@ jobs:
         with:
           name: buf-generated
       - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: "true"
+          cache-dependency-glob: |
+            "svc-recommender/pyproject.toml",
+            "svc-recommender/uv.lock",
+
       - run: |
           cd svc-recommender
           uv sync
