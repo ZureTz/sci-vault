@@ -56,8 +56,8 @@ jobs:
         with:
           enable-cache: "true"
           cache-dependency-glob: |
-            "svc-recommender/pyproject.toml",
-            "svc-recommender/uv.lock",
+            svc-recommender/pyproject.toml
+            svc-recommender/uv.lock
 
       - run: |
           cd svc-recommender
