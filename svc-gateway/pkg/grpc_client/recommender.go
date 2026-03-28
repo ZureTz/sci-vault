@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "gateway/internal/pb/recommender"
+	pb "gateway/internal/pb/recommender/v1"
 )
 
 // RecommenderClient wraps the gRPC connection to svc-recommender.
