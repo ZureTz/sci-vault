@@ -31,7 +31,7 @@ This monorepo contains a complete microservices-based application for research d
 **For Manual Local Development:**
 - [Buf](https://buf.build/docs/cli/installation/) — For gRPC protobuf code generation
 - [Go](https://go.dev/doc/install) 1.26+ — For the gateway service
-- [Python](https://www.python.org/downloads/) 3.10+ with [uv](https://docs.astral.sh/uv/getting-started/installation/) — For the recommender service
+- [Python](https://www.python.org/downloads/) 3.14+ with [uv](https://docs.astral.sh/uv/getting-started/installation/) — For the recommender service
 - [Bun](https://bun.sh/) 1.0+ — For the frontend application
 
 ## Quick Start Using Docker Compose
