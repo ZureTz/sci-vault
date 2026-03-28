@@ -40,7 +40,7 @@ This monorepo contains a complete microservices-based application for research d
 
 A `docker-compose.yaml` is provided at the root to spin up the entire application (Frontend, Gateway, Recommender) along with all required infrastructure services (PostgreSQL, Redis, RustFS) in one command.
 
-*Note: The gRPC stubs will be automatically generated inside the Docker containers during the build process.*
+*Note: When you build the services via the provided `docker-compose.yaml`, the gRPC stubs are generated automatically inside the Docker images using the `workspace_root` additional build context. If you instead run `docker build` directly, you must either pass the same additional context used by Compose or run `buf generate` locally before building; otherwise, the `COPY --from=workspace_root ...` steps will fail and gRPC stubs will not be generated.*
 
 ### 1. Prepare the configuration files for each service:
 
