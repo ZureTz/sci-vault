@@ -79,10 +79,9 @@ class DocumentServicer:
             pdf_bytes = self._download_pdf(file_key)
             log.info("downloaded PDF: doc_id=%d size=%d bytes", doc_id, len(pdf_bytes))
 
-            # TODO: extract text / images from pdf_bytes
-            # TODO: call LLM -> authors, summary, tags
-            # TODO: call embedding model -> 1536-dim vector
-            # TODO: write authors, summary, tags, embedding to documents table
+            # TODO: call LLM using PDF directly -> authors, summary, tags ...
+            # TODO: call embedding model using summary -> 1536-dim vector
+            # TODO: write authors, summary, tags and embedding to documents table
 
             self._set_db_done(doc_id)
             self._set_redis(doc_id, _STATUS_DONE)

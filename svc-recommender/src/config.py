@@ -28,6 +28,9 @@ _DEFAULTS: dict = {
     "s3_access_key": "",
     "s3_secret_key": "",
     "s3_private_bucket": "sci-vault",
+    "google_cloud_project": "",
+    "google_cloud_location": "global",
+    "google_genai_use_vertexai": True,
 }
 
 
@@ -58,6 +61,9 @@ class Config:
     s3_access_key: str
     s3_secret_key: str
     s3_private_bucket: str
+    google_cloud_project: str
+    google_cloud_location: str
+    google_genai_use_vertexai: bool
 
     def __init__(
         self,
@@ -79,6 +85,9 @@ class Config:
         s3_access_key: str = _DEFAULTS["s3_access_key"],
         s3_secret_key: str = _DEFAULTS["s3_secret_key"],
         s3_private_bucket: str = _DEFAULTS["s3_private_bucket"],
+        google_cloud_project: str = _DEFAULTS["google_cloud_project"],
+        google_cloud_location: str = _DEFAULTS["google_cloud_location"],
+        google_genai_use_vertexai: bool = _DEFAULTS["google_genai_use_vertexai"],
     ) -> None:
         self.host = host
         self.port = port
@@ -98,6 +107,9 @@ class Config:
         self.s3_access_key = s3_access_key
         self.s3_secret_key = s3_secret_key
         self.s3_private_bucket = s3_private_bucket
+        self.google_cloud_project = google_cloud_project
+        self.google_cloud_location = google_cloud_location
+        self.google_genai_use_vertexai = google_genai_use_vertexai
 
     @classmethod
     def load(cls, config_path: Path | None = None) -> "Config":
@@ -164,6 +176,12 @@ class Config:
             values["s3_secret_key"] = v
         if (v := os.getenv("S3_PRIVATE_BUCKET")) is not None:
             values["s3_private_bucket"] = v
+        if (v := os.getenv("GOOGLE_CLOUD_PROJECT")) is not None:
+            values["google_cloud_project"] = v
+        if (v := os.getenv("GOOGLE_CLOUD_LOCATION")) is not None:
+            values["google_cloud_location"] = v
+        if (v := os.getenv("GOOGLE_GENAI_USE_VERTEXAI")) is not None:
+            values["google_genai_use_vertexai"] = v.lower() in ("true", "1", "yes")
 
         return cls(
             host=str(values["host"]),
@@ -184,6 +202,9 @@ class Config:
             s3_access_key=str(values["s3_access_key"]),
             s3_secret_key=str(values["s3_secret_key"]),
             s3_private_bucket=str(values["s3_private_bucket"]),
+            google_cloud_project=str(values["google_cloud_project"]),
+            google_cloud_location=str(values["google_cloud_location"]),
+            google_genai_use_vertexai=bool(values["google_genai_use_vertexai"]),
         )
 
     @classmethod
@@ -195,6 +216,20 @@ class Config:
     def addr(self) -> str:
         """gRPC listen address, e.g. '0.0.0.0:50051'."""
         return f"{self.host}:{self.port}"
+
+    def setup_google_env(self) -> None:
+        """Export Google Cloud settings to os.environ so google-genai SDK picks them up."""
+        os.environ.setdefault("GOOGLE_CLOUD_PROJECT", self.google_cloud_project)
+        os.environ.setdefault("GOOGLE_CLOUD_LOCATION", self.google_cloud_location)
+        os.environ.setdefault(
+            "GOOGLE_GENAI_USE_VERTEXAI", str(self.google_genai_use_vertexai)
+        )
+        log.info(
+            "Google env configured: project=%s location=%s vertexai=%s",
+            self.google_cloud_project,
+            self.google_cloud_location,
+            self.google_genai_use_vertexai,
+        )
 
     @property
     def db_dsn(self) -> str:
