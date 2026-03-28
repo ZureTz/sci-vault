@@ -19,3 +19,7 @@ s3_endpoint: "http://localhost:9000"
 s3_access_key: "rustfsadmin"
 s3_secret_key: "rustfsadmin"
 s3_private_bucket: "sci-vault"
+
+google_cloud_project: "YOUR_PROJECT_ID"
+google_cloud_location: "global"
+google_genai_use_vertexai: true
