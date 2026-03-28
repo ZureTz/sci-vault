@@ -2,7 +2,7 @@
 
 import grpc
 
-from recommender import recommender_pb2, recommender_pb2_grpc
+from pb.recommender.v1 import recommender_pb2, recommender_pb2_grpc
 
 
 class HealthServicer(recommender_pb2_grpc.RecommenderServiceServicer):

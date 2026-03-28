@@ -11,7 +11,7 @@ plugins:
       - paths=source_relative
 
   # Python – svc-recommender
-  # Output lands at svc-recommender/src/pb/recommender/recommender_pb2*.py
+  # Output lands at svc-recommender/src/pb/recommender/v1/recommender_pb2*.py
   # (gitignored – regenerate with: buf generate)
   - remote: buf.build/protocolbuffers/python:v34.1
     out: svc-recommender/src/pb

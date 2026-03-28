@@ -8,7 +8,7 @@ from concurrent import futures
 import grpc
 import redis
 
-from recommender import recommender_pb2_grpc
+from pb.recommender.v1 import recommender_pb2_grpc
 from config import Config
 from interceptor.logging import LoggingInterceptor
 from servicer.document import DocumentServicer
