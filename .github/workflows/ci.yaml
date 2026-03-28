@@ -19,7 +19,7 @@ jobs:
         with:
           name: buf-generated
           path: |
-            svc-gateway/pb/
+            svc-gateway/internal/pb/
             svc-recommender/src/pb/
 
   go-check:
@@ -51,6 +51,10 @@ jobs:
       - run: |
           cd svc-recommender
           uv sync
+      - name: Import check
+        run: |
+          cd svc-recommender
+          uv run python -c "import main"
       - name: Ruff check
         run: |
           cd svc-recommender

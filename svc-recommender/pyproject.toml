@@ -15,5 +15,10 @@ dependencies = [
     "types-protobuf>=6.32.1.20260221",
 ]
 
+[dependency-groups]
+dev = [
+    "ruff>=0.15.8",
+]
+
 # src/ and src/pb/ are added to sys.path by main.py at runtime;
 # no installable package is needed for this service.
