@@ -5,8 +5,10 @@ import signal
 import sys
 from concurrent import futures
 
+import boto3
 import grpc
 import redis
+from botocore.client import Config as BotoConfig
 
 from pb.recommender.v1 import recommender_pb2_grpc
 from config import Config
@@ -32,11 +34,20 @@ def create_server(cfg: Config) -> grpc.Server:
         decode_responses=True,
     )
 
+    s3_client = boto3.client(
+        "s3",
+        endpoint_url=cfg.s3_endpoint,
+        aws_access_key_id=cfg.s3_access_key,
+        aws_secret_access_key=cfg.s3_secret_key,
+        config=BotoConfig(signature_version="s3v4"),
+        region_name="ap-east-1",
+    )
+
     class RecommenderServicer(DocumentServicer, HealthServicer):
         pass
 
     recommender_pb2_grpc.add_RecommenderServiceServicer_to_server(
-        RecommenderServicer(redis_client, cfg.db_dsn),
+        RecommenderServicer(redis_client, cfg.db_dsn, s3_client, cfg.s3_private_bucket),
         server,
     )
     server.add_insecure_port(cfg.addr)
