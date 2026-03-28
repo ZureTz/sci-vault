@@ -24,6 +24,10 @@ _DEFAULTS: dict = {
     "db_name": "sci_vault",
     "db_ssl_mode": "disable",
     "db_timezone": "UTC",
+    "s3_endpoint": "http://localhost:9000",
+    "s3_access_key": "",
+    "s3_secret_key": "",
+    "s3_private_bucket": "sci-vault",
 }
 
 
@@ -50,6 +54,10 @@ class Config:
     db_name: str
     db_ssl_mode: str
     db_timezone: str
+    s3_endpoint: str
+    s3_access_key: str
+    s3_secret_key: str
+    s3_private_bucket: str
 
     def __init__(
         self,
@@ -67,6 +75,10 @@ class Config:
         db_name: str = _DEFAULTS["db_name"],
         db_ssl_mode: str = _DEFAULTS["db_ssl_mode"],
         db_timezone: str = _DEFAULTS["db_timezone"],
+        s3_endpoint: str = _DEFAULTS["s3_endpoint"],
+        s3_access_key: str = _DEFAULTS["s3_access_key"],
+        s3_secret_key: str = _DEFAULTS["s3_secret_key"],
+        s3_private_bucket: str = _DEFAULTS["s3_private_bucket"],
     ) -> None:
         self.host = host
         self.port = port
@@ -82,6 +94,10 @@ class Config:
         self.db_name = db_name
         self.db_ssl_mode = db_ssl_mode
         self.db_timezone = db_timezone
+        self.s3_endpoint = s3_endpoint
+        self.s3_access_key = s3_access_key
+        self.s3_secret_key = s3_secret_key
+        self.s3_private_bucket = s3_private_bucket
 
     @classmethod
     def load(cls, config_path: Path | None = None) -> "Config":
@@ -140,6 +156,14 @@ class Config:
             values["db_ssl_mode"] = v
         if (v := os.getenv("DB_TIMEZONE")) is not None:
             values["db_timezone"] = v
+        if (v := os.getenv("S3_ENDPOINT")) is not None:
+            values["s3_endpoint"] = v
+        if (v := os.getenv("S3_ACCESS_KEY")) is not None:
+            values["s3_access_key"] = v
+        if (v := os.getenv("S3_SECRET_KEY")) is not None:
+            values["s3_secret_key"] = v
+        if (v := os.getenv("S3_PRIVATE_BUCKET")) is not None:
+            values["s3_private_bucket"] = v
 
         return cls(
             host=str(values["host"]),
@@ -156,6 +180,10 @@ class Config:
             db_name=str(values["db_name"]),
             db_ssl_mode=str(values["db_ssl_mode"]),
             db_timezone=str(values["db_timezone"]),
+            s3_endpoint=str(values["s3_endpoint"]),
+            s3_access_key=str(values["s3_access_key"]),
+            s3_secret_key=str(values["s3_secret_key"]),
+            s3_private_bucket=str(values["s3_private_bucket"]),
         )
 
     @classmethod

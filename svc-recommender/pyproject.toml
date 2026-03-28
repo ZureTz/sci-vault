@@ -5,6 +5,8 @@ description = "Recommendation engine gRPC service"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "boto3>=1.42.78",
+    "boto3-stubs[s3]>=1.42.78",
     "google-genai>=1.68.0",
     # reason: Caused major outage with gcloud serveless environments: https://github.com/grpc/grpc/issues/41725
     "grpcio==1.78.0",
