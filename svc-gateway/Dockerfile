@@ -1,4 +1,4 @@
-FROM bufbuild/buf:1.47.2 AS pb-builder
+FROM bufbuild/buf:1.66.1 AS pb-builder
 WORKDIR /workspace
 # Copy proto definitions and buf config from the additional context
 COPY --from=workspace_root proto/ ./proto/
