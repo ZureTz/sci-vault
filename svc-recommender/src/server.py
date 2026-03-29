@@ -85,8 +85,6 @@ def serve(cfg: Config | None = None) -> None:
     if cfg is None:
         cfg = Config.load()
 
-    cfg.setup_google_env()
-
     server = create_server(cfg)
 
     log.info("starting svc-recommender on %s", cfg.addr)

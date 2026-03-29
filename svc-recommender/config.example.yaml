@@ -20,6 +20,7 @@ s3_access_key: "rustfsadmin"
 s3_secret_key: "rustfsadmin"
 s3_private_bucket: "sci-vault"
 
-google_cloud_project: "YOUR_PROJECT_ID"
-google_cloud_location: "global"
+# Decides whether to use Vertex AI endpoint or Gemini API endpoint
 google_genai_use_vertexai: true
+# Obtain one at https://aistudio.google.com/app/api-keys or https://console.cloud.google.com/vertex-ai/studio/settings/api-keys
+google_genai_api_key: "YOUR_GEMINI_API_KEY"
