@@ -12,16 +12,16 @@ This monorepo contains a complete microservices-based application for research d
 
 ## Technology Stack
 
-| Layer             | Technologies                                                   |
-| ----------------- | -------------------------------------------------------------- |
-| **Gateway**       | Go 1.26, Gin, GORM, JWT, Redis, gomail                         |
-| **Recommender**   | Python 3.14, gRPC, pgvector                                    |
-| **Frontend**      | SvelteKit (Svelte 5), Vite, Tailwind CSS v4, TypeScript, Axios |
-| **Database**      | PostgreSQL (with pgvector extension)                           |
-| **Cache**         | Redis                                                          |
-| **Storage**       | RustFS (S3-compatible object storage)                          |
-| **Communication** | gRPC (gateway ↔ recommender), REST/HTTP (frontend ↔ gateway)   |
-| **Code Gen**      | Buf (Protocol Buffers)                                         |
+| Layer             | Technologies                                                                  |
+| ----------------- | ----------------------------------------------------------------------------- |
+| **Gateway**       | Go 1.26, Gin, GORM, Viper, JWT, Redis, AWS SDK v2 (S3-compatible RustFS), gomail |
+| **Recommender**   | Python 3.14, gRPC (`grpcio`), Google GenAI (Gemini 3 Flash Preview + `gemini-embedding-001`), psycopg, pgvector, Redis |
+| **Frontend**      | SvelteKit 2 (Svelte 5), Vite 8, Tailwind CSS v4, TypeScript, Axios, Bits UI   |
+| **Database**      | PostgreSQL 18 (with pgvector extension)                                        |
+| **Cache**         | Redis 8.6                                                                       |
+| **Storage**       | RustFS 1.0.0-alpha.89 (S3-compatible object storage)                           |
+| **Communication** | gRPC (gateway ↔ recommender), REST/HTTP (frontend ↔ gateway)                  |
+| **Code Gen**      | Buf (Protocol Buffers)                                                          |
 
 ## Prerequisites
 
