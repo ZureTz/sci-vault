@@ -3,7 +3,7 @@
 import logging
 from typing import Optional
 
-import psycopg
+from psycopg_pool import ConnectionPool
 
 log = logging.getLogger(__name__)
 
@@ -13,8 +13,8 @@ _DB_STATUS_DONE = "done"
 class DocumentRepository:
     """Encapsulates all database operations for the document enrichment workflow."""
 
-    def __init__(self, db_dsn: str) -> None:
-        self._db_dsn = db_dsn
+    def __init__(self, pool: ConnectionPool) -> None:
+        self._pool = pool
 
     def write_enrichment_and_done(
         self,
@@ -34,7 +34,7 @@ class DocumentRepository:
         Raises on failure so the caller can propagate the error.
         """
         try:
-            with psycopg.connect(self._db_dsn) as conn:
+            with self._pool.connection() as conn:
                 conn.execute(
                     """
                     UPDATE documents SET
