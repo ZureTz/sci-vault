@@ -36,12 +36,14 @@ type LogConfig struct {
 }
 
 type StorageConfig struct {
-	Endpoint      string `mapstructure:"endpoint"`
-	AccessKey     string `mapstructure:"access_key"`
-	SecretKey     string `mapstructure:"secret_key"`
-	PrivateBucket string `mapstructure:"private_bucket"`
-	PublicBucket  string `mapstructure:"public_bucket"`
-	UseSSL        bool   `mapstructure:"use_ssl"`
+	Endpoint         string `mapstructure:"endpoint"`
+	AccessKey        string `mapstructure:"access_key"`
+	SecretKey        string `mapstructure:"secret_key"`
+	PrivateBucket    string `mapstructure:"private_bucket"`
+	PublicBucket     string `mapstructure:"public_bucket"`
+	UseSSL           bool   `mapstructure:"use_ssl"`
+	PublicProxyPath  string `mapstructure:"public_proxy_path"`
+	PrivateProxyPath string `mapstructure:"private_proxy_path"`
 }
 
 type DatabaseConfig struct {
