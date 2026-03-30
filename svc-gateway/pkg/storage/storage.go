@@ -18,30 +18,39 @@ import (
 
 type Client struct {
 	s3               *s3.Client
+	s3Presign        *s3.Client // uses presignEndpoint so signed Host matches what the proxy forwards
 	privateBucket    string
 	publicBucket     string
 	publicProxyPath  string
 	privateProxyPath string
 }
 
-func NewClient(endpoint, accessKey, secretKey, privateBucket, publicBucket, publicProxyPath, privateProxyPath string, useSSL bool) *Client {
-	cfg := aws.Config{
-		Region: "ap-east-1",
-		Credentials: aws.NewCredentialsCache(
-			credentials.NewStaticCredentialsProvider(accessKey, secretKey, ""),
-		),
+func NewClient(endpoint, presignEndpoint, accessKey, secretKey, privateBucket, publicBucket, publicProxyPath, privateProxyPath string, useSSL bool) *Client {
+	creds := aws.NewCredentialsCache(
+		credentials.NewStaticCredentialsProvider(accessKey, secretKey, ""),
+	)
+
+	newS3 := func(ep string) *s3.Client {
+		return s3.NewFromConfig(aws.Config{
+			Region:      "ap-east-1",
+			Credentials: creds,
+		}, func(o *s3.Options) {
+			o.BaseEndpoint = aws.String(ep)
+			o.UsePathStyle = true
+		})
 	}
 
-	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String(endpoint)
-		o.UsePathStyle = true
-	})
+	if presignEndpoint == "" {
+		presignEndpoint = endpoint
+	}
 
 	slog.Info("connected to rustfs storage", "endpoint", endpoint,
+		"presignEndpoint", presignEndpoint,
 		"privateBucket", privateBucket, "publicBucket", publicBucket)
 
 	return &Client{
-		s3:               client,
+		s3:               newS3(endpoint),
+		s3Presign:        newS3(presignEndpoint),
 		privateBucket:    privateBucket,
 		publicBucket:     publicBucket,
 		publicProxyPath:  publicProxyPath,
@@ -169,7 +178,7 @@ func (c *Client) PublicObjectURL(key string) string {
 // so rustfs can still validate the request.
 // filename sets the Content-Disposition header so browsers save the file with that name.
 func (c *Client) PrivateObjectURL(ctx context.Context, key string, expiry time.Duration, filename string) (string, error) {
-	presignClient := s3.NewPresignClient(c.s3)
+	presignClient := s3.NewPresignClient(c.s3Presign)
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(c.privateBucket),
 		Key:    aws.String(key),

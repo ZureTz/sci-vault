@@ -22,6 +22,7 @@ database:
 
 storage:
   endpoint: "http://0.0.0.0:9000"
+  presign_endpoint: "http://127.0.0.1:9000"  # must match Host header Vite proxy sends to RustFS
   access_key: "generated_access_key_from_rustfs_console" # Please replace with your actual access key
   secret_key: "generated_secret_key_from_rustfs_console" # Please replace with your actual access secret
   private_bucket: "sci-vault"
