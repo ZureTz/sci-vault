@@ -15,7 +15,7 @@ This monorepo contains a complete microservices-based application for research d
 | Layer             | Technologies                                                                  |
 | ----------------- | ----------------------------------------------------------------------------- |
 | **Gateway**       | Go 1.26, Gin, GORM, Viper, JWT, Redis, AWS SDK v2 (S3-compatible RustFS), gomail |
-| **Recommender**   | Python 3.14, gRPC (`grpcio`), psycopg, pgvector, Redis                        |
+| **Recommender**   | Python 3.14, gRPC (`grpcio`), Google GenAI (Gemini 3 Flash Preview + `gemini-embedding-001`), psycopg, pgvector, Redis |
 | **Frontend**      | SvelteKit 2 (Svelte 5), Vite 8, Tailwind CSS v4, TypeScript, Axios, Bits UI   |
 | **Database**      | PostgreSQL 18 (with pgvector extension)                                        |
 | **Cache**         | Redis 8.6                                                                       |

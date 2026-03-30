@@ -8,6 +8,7 @@ Acting as a core component of a larger microservices architecture, this service 
 
 - **Language**: Python 3.14+
 - **RPC**: gRPC (`grpcio`)
+- **AI / LLM**: Google GenAI (Gemini 3 Flash Preview for metadata enrichment, `gemini-embedding-001` for vector embedding)
 - **Configuration**: YAML + environment variables
 - **Storage / Data**: PostgreSQL (`psycopg`) with `pgvector`, Redis, RustFS (S3 via `boto3`)
 - **Package & Runtime Tooling**: `uv`
