@@ -198,12 +198,11 @@ func (s *UserService) UploadAvatar(ctx context.Context, userID uint, file io.Rea
 		return nil, fmt.Errorf("failed to upload avatar: %w", err)
 	}
 
-	avatarURL := s.storageClient.PublicObjectURL(key)
-	if err := s.profileRepo.UpsertAvatar(ctx, &model.UserProfile{UserID: userID, AvatarURL: avatarURL}); err != nil {
+	if err := s.profileRepo.UpsertAvatar(ctx, &model.UserProfile{UserID: userID, AvatarKey: key}); err != nil {
 		return nil, fmt.Errorf("failed to update profile avatar: %w", err)
 	}
 
-	return &dto.UploadAvatarResponse{AvatarURL: avatarURL}, nil
+	return &dto.UploadAvatarResponse{AvatarURL: s.storageClient.PublicObjectURL(key)}, nil
 }
 
 func (s *UserService) UpdateProfile(ctx context.Context, userID uint, req dto.UpdateProfileRequest) error {
@@ -221,7 +220,7 @@ func (s *UserService) GetAvatar(ctx context.Context, userID uint) (*dto.AvatarRe
 	if err != nil {
 		return nil, err
 	}
-	return &dto.AvatarResponse{AvatarURL: profile.AvatarURL}, nil
+	return &dto.AvatarResponse{AvatarURL: s.storageClient.PublicObjectURL(profile.AvatarKey)}, nil
 }
 
 func (s *UserService) GetProfile(ctx context.Context, userID uint) (*dto.ProfileResponse, error) {
@@ -233,7 +232,7 @@ func (s *UserService) GetProfile(ctx context.Context, userID uint) (*dto.Profile
 		UserID:    profile.UserID,
 		Nickname:  profile.Nickname,
 		Bio:       profile.Bio,
-		AvatarURL: profile.AvatarURL,
+		AvatarURL: s.storageClient.PublicObjectURL(profile.AvatarKey),
 		Website:   profile.Website,
 		Location:  profile.Location,
 	}, nil

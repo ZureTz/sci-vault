@@ -96,7 +96,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 		slog.Warn("EnrichDocument gRPC call failed", "docID", doc.ID, "err", err)
 	}
 
-	downloadURL, err := s.storageClient.PresignGetObject(ctx, key, downloadURLExpiry, downloadFilename(doc.OriginalFileName))
+	downloadURL, err := s.storageClient.PrivateObjectURL(ctx, key, downloadURLExpiry, downloadFilename(doc.OriginalFileName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate download URL: %w", err)
 	}
@@ -115,7 +115,7 @@ func (s *DocumentService) GetDocument(ctx context.Context, docID uint) (*dto.Doc
 	}
 	doc.ViewCount++
 
-	downloadURL, err := s.storageClient.PresignGetObject(ctx, doc.FileKey, downloadURLExpiry, downloadFilename(doc.OriginalFileName))
+	downloadURL, err := s.storageClient.PrivateObjectURL(ctx, doc.FileKey, downloadURLExpiry, downloadFilename(doc.OriginalFileName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate download URL: %w", err)
 	}

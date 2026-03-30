@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -146,9 +148,22 @@ func (c *Client) ListObjects(ctx context.Context, prefix string, isPrivate bool)
 	return keys, nil
 }
 
-// PresignGetObject returns a presigned GET URL for a private object, valid for the given duration.
+func (c *Client) PrivateBucket() string { return c.privateBucket }
+func (c *Client) PublicBucket() string  { return c.publicBucket }
+func (c *Client) S3() *s3.Client        { return c.s3 }
+
+// PublicObjectURL returns the proxy URL for an object in the public bucket.
+// Nginx/Vite proxies /assets/ to the rustfs public bucket.
+func (c *Client) PublicObjectURL(key string) string {
+	return fmt.Sprintf("/assets/%s", key)
+}
+
+// PrivateObjectURL returns a presigned proxy URL for an object in the private bucket.
+// The S3 host and bucket prefix are stripped and replaced with /private/, which
+// Nginx/Vite proxies to the rustfs private bucket. The presign signature is preserved
+// so rustfs can still validate the request.
 // filename sets the Content-Disposition header so browsers save the file with that name.
-func (c *Client) PresignGetObject(ctx context.Context, key string, expiry time.Duration, filename string) (string, error) {
+func (c *Client) PrivateObjectURL(ctx context.Context, key string, expiry time.Duration, filename string) (string, error) {
 	presignClient := s3.NewPresignClient(c.s3)
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(c.privateBucket),
@@ -163,15 +178,11 @@ func (c *Client) PresignGetObject(ctx context.Context, key string, expiry time.D
 	if err != nil {
 		return "", err
 	}
-	return req.URL, nil
-}
-
-func (c *Client) PrivateBucket() string { return c.privateBucket }
-func (c *Client) PublicBucket() string  { return c.publicBucket }
-func (c *Client) S3() *s3.Client        { return c.s3 }
-
-// PublicObjectURL returns the public-facing URL for an object in the public bucket.
-// Nginx/Vite proxies /assets/ to the rustfs public bucket.
-func (c *Client) PublicObjectURL(key string) string {
-	return fmt.Sprintf("/assets/%s", key)
+	u, err := url.Parse(req.URL)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse presigned URL: %w", err)
+	}
+	// Strip /{bucket} prefix from path, replace with /private
+	path := strings.TrimPrefix(u.Path, "/"+c.privateBucket)
+	return "/private" + path + "?" + u.RawQuery, nil
 }

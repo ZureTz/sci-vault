@@ -9,7 +9,7 @@ import (
 )
 
 type UserProfileRepository interface {
-	// UpsertAvatar creates the profile if it does not exist, or updates only avatar_url if it does.
+	// UpsertAvatar creates the profile if it does not exist, or updates only avatar_key if it does.
 	UpsertAvatar(ctx context.Context, profile *model.UserProfile) error
 	// UpsertProfile creates the profile if it does not exist, or updates all non-avatar fields if it does.
 	UpsertProfile(ctx context.Context, profile *model.UserProfile) error
@@ -27,7 +27,7 @@ func NewUserProfileRepo(db *gorm.DB) UserProfileRepository {
 func (r *userProfileRepo) UpsertAvatar(ctx context.Context, profile *model.UserProfile) error {
 	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "user_id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"avatar_url", "updated_at"}),
+		DoUpdates: clause.AssignmentColumns([]string{"avatar_key", "updated_at"}),
 	}).Create(profile).Error
 }
 
