@@ -15,7 +15,7 @@ db_name: "sci_vault"
 db_ssl_mode: "disable"
 db_timezone: "UTC"
 
-s3_endpoint: "http://localhost:9000"
+s3_endpoint: "http://0.0.0.0:9000"
 s3_access_key: "rustfsadmin"
 s3_secret_key: "rustfsadmin"
 s3_private_bucket: "sci-vault"
