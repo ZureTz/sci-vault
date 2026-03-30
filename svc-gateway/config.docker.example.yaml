@@ -22,6 +22,7 @@ database:
 
 storage:
   endpoint: "http://rustfs:9000"
+  presign_endpoint: "http://rustfs:9000"  # must match proxy_set_header Host in nginx /private/ block
   access_key: "rustfsadmin"
   secret_key: "rustfsadmin"
   private_bucket: "sci-vault"
