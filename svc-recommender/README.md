@@ -4,6 +4,15 @@
 
 Acting as a core component of a larger microservices architecture, this service is implemented as a highly scalable gRPC server designed to deliver real-time recommendations to users.
 
+## Tech Stack
+
+- **Language**: Python 3.14+
+- **RPC**: gRPC (`grpcio`)
+- **AI / LLM**: Google GenAI (Gemini 3 Flash Preview for metadata enrichment, `gemini-embedding-001` for vector embedding)
+- **Configuration**: YAML + environment variables
+- **Storage / Data**: PostgreSQL (`psycopg`) with `pgvector`, Redis, RustFS (S3 via `boto3`)
+- **Package & Runtime Tooling**: `uv`
+
 ## Getting Started
 
 Follow the instructions below to set up and run the `svc-recommender` service locally.
@@ -95,6 +104,14 @@ docker compose up -d --build recommender
 ```
 
 Before building or running the `recommender` service via Docker Compose, ensure that the protobuf stubs under `src/pb` have been generated on the host (for example, by running `buf generate` in the appropriate directory). The current Docker image does not generate these stubs during build, so missing stubs will prevent the service from starting correctly.
+When built via the repository `docker-compose.yaml`, protobuf stubs are generated automatically inside the image using Buf and the `workspace_root` additional build context.
+
+If you build this service directly with `docker build` (outside Compose), make sure you either:
+
+1. Provide the same workspace context expected by the Dockerfile, or
+2. Run `buf generate` in the repository root beforehand.
+
+Otherwise, protobuf stubs will be missing and the service will fail to start.
 
 Note: while `docker-compose.yaml` may define environment variables for services such as PostgreSQL and Redis, the `svc-recommender` service does not presently use these settings directly; it only runs the gRPC server and is wired into the broader stack via Docker networking and ports.
 ## License

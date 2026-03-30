@@ -1,6 +1,6 @@
 version: v2
 plugins:
-  # Go – svc-gateway)
+  # Go – svc-gateway
   - remote: buf.build/protocolbuffers/go:v1.36.11
     out: svc-gateway/internal/pb
     opt:
