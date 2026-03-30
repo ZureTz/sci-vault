@@ -2,37 +2,40 @@
 
 import concurrent.futures
 import logging
-from typing import TYPE_CHECKING
+import time
+from typing import Optional
 
 import grpc
-import psycopg
-import redis
+import google.genai as genai
+from pydantic import BaseModel, Field
 
+from google.genai import types
+from infrastructure.genai import DEFAULT_MODEL
 from pb.recommender.v1 import recommender_pb2
-
-if TYPE_CHECKING:
-    from mypy_boto3_s3 import S3Client
+from cache.enrichment import EnrichmentStatusCache
+from repository.document import DocumentRepository
+from storage.document import DocumentStorage
 
 log = logging.getLogger(__name__)
 
-# Redis-only transient states (fine-grained, 24 h TTL).
-_STATUS_PENDING = "pending"
-_STATUS_PROCESSING = "processing"
-_STATUS_DONE = "done"
-_STATUS_FAILED = "failed"
-
-# DB persistent states (source of truth, two values only).
-_DB_STATUS_DONE = "done"
-
-_ENRICH_STATUS_TTL = 24 * 60 * 60  # seconds
+_ENRICH_MAX_ATTEMPTS = 3
+_ENRICH_RETRY_BASE_DELAY = 2.0  # seconds; doubles each attempt
 
 _enrichment_executor = concurrent.futures.ThreadPoolExecutor(
     max_workers=4, thread_name_prefix="enrich"
 )
 
 
-def _enrich_status_key(doc_id: int) -> str:
-    return f"doc:enrich:{doc_id}"
+class DocumentMetadata(BaseModel):
+    year: Optional[int] = Field(
+        None, description="Publication year (e.g. 2024). Null if not found."
+    )
+    doi: Optional[str] = Field(
+        None, description="DOI string (e.g. '10.1145/...'). Null if not found."
+    )
+    authors: list[str] = Field(description="List of author full names.")
+    summary: str = Field(description="Concise 3-5 sentence summary of the paper.")
+    tags: list[str] = Field(description="5-10 relevant keywords or topic labels.")
 
 
 class DocumentServicer:
@@ -40,15 +43,15 @@ class DocumentServicer:
 
     def __init__(
         self,
-        redis_client: redis.Redis,
-        db_dsn: str,
-        s3_client: "S3Client",
-        s3_private_bucket: str,
+        enrich_cache: EnrichmentStatusCache,
+        doc_repo: DocumentRepository,
+        doc_storage: DocumentStorage,
+        genai_client: genai.Client,
     ) -> None:
-        self._redis = redis_client
-        self._db_dsn = db_dsn
-        self._s3 = s3_client
-        self._s3_bucket = s3_private_bucket
+        self._cache = enrich_cache
+        self._doc_repo = doc_repo
+        self._storage = doc_storage
+        self._genai = genai_client
 
     def EnrichDocument(
         self,
@@ -60,7 +63,7 @@ class DocumentServicer:
         file_key: str = request.file_key
 
         # Mark as pending before the task even enters the thread pool.
-        self._set_redis(doc_id, _STATUS_PENDING)
+        self._cache.set_pending(doc_id)
 
         _enrichment_executor.submit(self._run_enrichment, doc_id, file_key)
 
@@ -72,50 +75,94 @@ class DocumentServicer:
     # ------------------------------------------------------------------ #
 
     def _run_enrichment(self, doc_id: int, file_key: str) -> None:
-        """Enrichment pipeline. On success writes DB done; on failure leaves DB unchanged."""
-        self._set_redis(doc_id, _STATUS_PROCESSING)
+        """Enrichment pipeline with retries. On success writes DB done; on failure leaves DB unchanged."""
+        self._cache.set_processing(doc_id)
         log.info("enrichment started: doc_id=%d", doc_id)
-        try:
-            pdf_bytes = self._download_pdf(file_key)
-            log.info("downloaded PDF: doc_id=%d size=%d bytes", doc_id, len(pdf_bytes))
 
-            # TODO: call LLM using PDF directly -> authors, summary, tags ...
-            # TODO: call embedding model using summary -> 1536-dim vector
-            # TODO: write authors, summary, tags and embedding to documents table
+        pdf_bytes = self._storage.download_pdf(file_key)
+        log.info("downloaded PDF: doc_id=%d size=%d bytes", doc_id, len(pdf_bytes))
 
-            self._set_db_done(doc_id)
-            self._set_redis(doc_id, _STATUS_DONE)
-            log.info("enrichment done: doc_id=%d", doc_id)
+        # Cached results — each step is only called if not yet succeeded.
+        metadata: Optional[DocumentMetadata] = None
+        embedding: Optional[list[float]] = None
 
-        except Exception:
-            log.exception("enrichment failed: doc_id=%d", doc_id)
-            # DB stays not_started; Redis records the failure for polling.
-            self._set_redis(doc_id, _STATUS_FAILED)
+        last_exc: Exception | None = None
+        for attempt in range(1, _ENRICH_MAX_ATTEMPTS + 1):
+            try:
+                if metadata is None:
+                    metadata = self._extract_metadata(pdf_bytes)
+                    log.info(
+                        "metadata extracted: doc_id=%d authors=%s tags=%s",
+                        doc_id,
+                        metadata.authors,
+                        metadata.tags,
+                    )
+
+                # TODO: call embedding model using summary -> 1536-dim vector
+                # if embedding is None:
+                #     embedding = self._compute_embedding(metadata.summary)
+
+                self._doc_repo.write_enrichment_and_done(
+                    doc_id=doc_id,
+                    authors=list(metadata.authors),
+                    summary=metadata.summary,
+                    tags=list(metadata.tags),
+                    year=metadata.year,
+                    doi=metadata.doi,
+                    embedding=embedding,
+                )
+                self._cache.set_done(doc_id)
+                log.info("enrichment done: doc_id=%d", doc_id)
+                return
+
+            except Exception as exc:
+                last_exc = exc
+                if attempt < _ENRICH_MAX_ATTEMPTS:
+                    delay = _ENRICH_RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                    log.warning(
+                        "enrichment attempt %d/%d failed: doc_id=%d, retrying in %.1fs: %s",
+                        attempt,
+                        _ENRICH_MAX_ATTEMPTS,
+                        doc_id,
+                        delay,
+                        exc,
+                    )
+                    time.sleep(delay)
+
+        log.exception(
+            "enrichment failed after %d attempts: doc_id=%d",
+            _ENRICH_MAX_ATTEMPTS,
+            doc_id,
+            exc_info=last_exc,
+        )
+        # DB stays not_started; Redis records the failure for polling.
+        self._cache.set_failed(doc_id)
 
     # ------------------------------------------------------------------ #
     # Helpers                                                              #
     # ------------------------------------------------------------------ #
 
-    def _download_pdf(self, file_key: str) -> bytes:
-        """Download a PDF from the private S3 (RustFS) bucket and return raw bytes."""
-        response = self._s3.get_object(Bucket=self._s3_bucket, Key=file_key)
-        return response["Body"].read()
-
-    def _set_redis(self, doc_id: int, status: str) -> None:
-        try:
-            self._redis.set(_enrich_status_key(doc_id), status, ex=_ENRICH_STATUS_TTL)
-        except Exception:
-            log.warning(
-                "Redis status update failed: doc_id=%d status=%s", doc_id, status
-            )
-
-    def _set_db_done(self, doc_id: int) -> None:
-        try:
-            with psycopg.connect(self._db_dsn) as conn:
-                conn.execute(
-                    "UPDATE documents SET enrich_status = %s WHERE id = %s",
-                    (_DB_STATUS_DONE, doc_id),
-                )
-        except Exception:
-            log.warning("DB done update failed: doc_id=%d", doc_id)
-            raise  # re-raise so _run_enrichment marks Redis as failed
+    def _extract_metadata(self, pdf_bytes: bytes) -> DocumentMetadata:
+        """Call LLM with the PDF directly to extract authors, summary, and tags."""
+        response = self._genai.models.generate_content(
+            model=DEFAULT_MODEL,
+            contents=[
+                types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf"),
+                (
+                    "You are an academic paper analyst. "
+                    "Extract the following from this paper:\n"
+                    "- authors: list of author full names\n"
+                    "- summary: a concise 3-5 sentence summary of the paper\n"
+                    "- tags: 5-10 relevant keywords or topic labels\n"
+                    "- year: publication year as an integer (null if not found)\n"
+                    "- doi: DOI string e.g. '10.1145/...' (null if not found)"
+                ),
+            ],
+            config={
+                "response_mime_type": "application/json",
+                "response_json_schema": DocumentMetadata.model_json_schema(),
+            },
+        )
+        if not response.text:
+            raise ValueError("LLM returned empty response")
+        return DocumentMetadata.model_validate_json(response.text)
