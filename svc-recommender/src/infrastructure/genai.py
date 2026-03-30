@@ -28,14 +28,3 @@ def build_genai_client(cfg: Config) -> genai.Client:
 
     log.info("building GenAI client (Gemini API key)")
     return genai.Client(api_key=cfg.google_genai_api_key)
-
-
-# Test genai client factory
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    cfg = Config.load()
-    client = build_genai_client(cfg)
-    response = client.models.generate_content(
-        model="gemini-3-flash-preview", contents="How is the Furry Fandom in Japan?"
-    )
-    print(response.text)
