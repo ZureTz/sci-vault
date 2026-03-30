@@ -1,24 +1,31 @@
-"""Database DSN factory."""
+"""PostgreSQL connection pool factory."""
 
 import logging
+
+from psycopg_pool import ConnectionPool
+from pgvector.psycopg import register_vector
 
 from config import Config
 
 log = logging.getLogger(__name__)
 
 
-def build_db_dsn(cfg: Config) -> str:
-    """Return the PostgreSQL connection string derived from *cfg*.
+def configure(conn):
+    register_vector(conn)
 
-    Centralises DSN construction so callers do not depend directly on
-    :class:`~config.Config` internals.
+
+def build_db_pool(cfg: Config) -> ConnectionPool:
+    """Create and return an open :class:`psycopg_pool.ConnectionPool`.
+
+    The pool is opened eagerly (``open=True``) so connection errors surface
+    at startup rather than on the first request.
     """
     log.info(
-        "building DB DSN (%s@%s:%d/%s sslmode=%s)",
+        "building DB pool (%s@%s:%d/%s sslmode=%s)",
         cfg.db_user,
         cfg.db_host,
         cfg.db_port,
         cfg.db_name,
         cfg.db_ssl_mode,
     )
-    return cfg.db_dsn
+    return ConnectionPool(conninfo=cfg.db_dsn, configure=configure, open=True)

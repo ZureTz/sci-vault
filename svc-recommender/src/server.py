@@ -12,7 +12,7 @@ from config import Config
 from interceptor.logging import LoggingInterceptor
 from infrastructure.cache import build_redis_client
 from infrastructure.genai import build_genai_client
-from infrastructure.database import build_db_dsn
+from infrastructure.database import build_db_pool
 from infrastructure.storage import build_s3_client
 from cache.enrichment import EnrichmentStatusCache
 from repository.document import DocumentRepository
@@ -31,7 +31,7 @@ def create_server(cfg: Config) -> grpc.Server:
     )
 
     enrich_cache = EnrichmentStatusCache(build_redis_client(cfg))
-    doc_repo = DocumentRepository(build_db_dsn(cfg))
+    doc_repo = DocumentRepository(build_db_pool(cfg))
     doc_storage = DocumentStorage(build_s3_client(cfg), cfg.s3_private_bucket)
     genai_client = build_genai_client(cfg)
 

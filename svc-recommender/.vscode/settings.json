@@ -4,8 +4,10 @@
     "./src/pb"
   ],
   "cSpell.words": [
+    "conninfo",
     "genai",
     "grpcio",
+    "pgvector",
     "psycopg",
     "pyyaml",
     "vertexai"
