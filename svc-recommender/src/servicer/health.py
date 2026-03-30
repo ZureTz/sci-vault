@@ -1,4 +1,4 @@
-"""Health servicer - implements RecommenderService.Health."""
+"""Health servicer — implements RecommenderService.Health."""
 
 import grpc
 

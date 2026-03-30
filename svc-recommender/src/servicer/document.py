@@ -1,4 +1,4 @@
-"""Document servicer - implements RecommenderService.EnrichDocument."""
+"""Document servicer — implements RecommenderService.EnrichDocument."""
 
 import concurrent.futures
 import logging
