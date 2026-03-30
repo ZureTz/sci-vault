@@ -73,7 +73,7 @@ func New(configPath string) (*App, error) {
 		return nil, fmt.Errorf("failed to create embedding hnsw index: %w", err)
 	}
 
-	storageClient := storage.NewClient(cfg.Storage.Endpoint, cfg.Storage.AccessKey, cfg.Storage.SecretKey, cfg.Storage.PrivateBucket, cfg.Storage.PublicBucket, cfg.Storage.UseSSL)
+	storageClient := storage.NewClient(cfg.Storage.Endpoint, cfg.Storage.AccessKey, cfg.Storage.SecretKey, cfg.Storage.PrivateBucket, cfg.Storage.PublicBucket, cfg.Storage.PublicProxyPath, cfg.Storage.PrivateProxyPath, cfg.Storage.UseSSL)
 	if err := storageClient.EnsureBuckets(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to ensure storage buckets: %w", err)
 	}

@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -16,12 +17,14 @@ import (
 )
 
 type Client struct {
-	s3            *s3.Client
-	privateBucket string
-	publicBucket  string
+	s3               *s3.Client
+	privateBucket    string
+	publicBucket     string
+	publicProxyPath  string
+	privateProxyPath string
 }
 
-func NewClient(endpoint, accessKey, secretKey, privateBucket, publicBucket string, useSSL bool) *Client {
+func NewClient(endpoint, accessKey, secretKey, privateBucket, publicBucket, publicProxyPath, privateProxyPath string, useSSL bool) *Client {
 	cfg := aws.Config{
 		Region: "ap-east-1",
 		Credentials: aws.NewCredentialsCache(
@@ -38,9 +41,11 @@ func NewClient(endpoint, accessKey, secretKey, privateBucket, publicBucket strin
 		"privateBucket", privateBucket, "publicBucket", publicBucket)
 
 	return &Client{
-		s3:            client,
-		privateBucket: privateBucket,
-		publicBucket:  publicBucket,
+		s3:               client,
+		privateBucket:    privateBucket,
+		publicBucket:     publicBucket,
+		publicProxyPath:  publicProxyPath,
+		privateProxyPath: privateProxyPath,
 	}
 }
 
@@ -153,9 +158,9 @@ func (c *Client) PublicBucket() string  { return c.publicBucket }
 func (c *Client) S3() *s3.Client        { return c.s3 }
 
 // PublicObjectURL returns the proxy URL for an object in the public bucket.
-// Nginx/Vite proxies /assets/ to the rustfs public bucket.
+// Nginx/Vite proxies the configured public_proxy_path to the rustfs public bucket.
 func (c *Client) PublicObjectURL(key string) string {
-	return fmt.Sprintf("/assets/%s", key)
+	return path.Join(c.publicProxyPath, key)
 }
 
 // PrivateObjectURL returns a presigned proxy URL for an object in the private bucket.
@@ -182,7 +187,7 @@ func (c *Client) PrivateObjectURL(ctx context.Context, key string, expiry time.D
 	if err != nil {
 		return "", fmt.Errorf("failed to parse presigned URL: %w", err)
 	}
-	// Strip /{bucket} prefix from path, replace with /private
-	path := strings.TrimPrefix(u.Path, "/"+c.privateBucket)
-	return "/private" + path + "?" + u.RawQuery, nil
+	// Strip /{bucket} prefix from path, join with configured private proxy path
+	objectPath := strings.TrimPrefix(u.Path, "/"+c.privateBucket)
+	return path.Join(c.privateProxyPath, objectPath) + "?" + u.RawQuery, nil
 }

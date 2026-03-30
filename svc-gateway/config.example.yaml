@@ -27,6 +27,8 @@ storage:
   private_bucket: "sci-vault"
   public_bucket: "public-assets"
   use_ssl: false
+  public_proxy_path: "/assets"
+  private_proxy_path: "/private"
 
 mailer:
   host: "smtp.example.com"
