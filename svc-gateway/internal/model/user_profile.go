@@ -9,7 +9,7 @@ type UserProfile struct {
 	User      User   `gorm:"foreignKey:UserID"`
 	Nickname  string `gorm:"size:50"`
 	Bio       string `gorm:"size:500"`
-	AvatarURL string `gorm:"size:1024"`
+	AvatarKey string `gorm:"column:avatar_key;size:512"`
 	Website   string `gorm:"size:255"`
 	Location  string `gorm:"size:100"`
 }
