@@ -3,6 +3,7 @@
 import logging
 from typing import Optional
 
+import numpy as np
 from psycopg_pool import ConnectionPool
 
 log = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ class DocumentRepository:
         tags: list[str],
         year: Optional[int],
         doi: Optional[str],
-        embedding: Optional[list[float]],
+        embedding: np.ndarray,
     ) -> None:
         """Write AI-extracted fields and mark enrich_status=done in one UPDATE.
 

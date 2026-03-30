@@ -7,6 +7,7 @@ from typing import Optional
 
 import grpc
 import google.genai as genai
+import numpy as np
 from pydantic import BaseModel, Field
 
 from google.genai import types
@@ -27,15 +28,28 @@ _enrichment_executor = concurrent.futures.ThreadPoolExecutor(
 
 
 class DocumentMetadata(BaseModel):
+    authors: list[str] = Field(
+        description="List of author full names (e.g. ['John Doe', 'Jane Smith'])."
+    )
+    summary: str = Field(
+        description=(
+            "High-density core summary in academic English, strictly 150-300 words. "
+            "Must cover research background, core methodology, and key results/conclusions. "
+            "Maximize semantic information density for downstream vector embedding. "
+            "Exclude trivial experimental setups, formulas, and reference noise."
+        )
+    )
+    tags: list[str] = Field(
+        description="5-10 highly relevant technical keywords or topic labels in English."
+    )
     year: Optional[int] = Field(
-        None, description="Publication year (e.g. 2024). Null if not found."
+        None,
+        description="Publication year as an integer (e.g. 2024). Null if not explicitly found.",
     )
     doi: Optional[str] = Field(
-        None, description="DOI string (e.g. '10.1145/...'). Null if not found."
+        None,
+        description="Official DOI string exactly as found (e.g. '10.1145/1234.5678'). Null if not explicitly found.",
     )
-    authors: list[str] = Field(description="List of author full names.")
-    summary: str = Field(description="Concise 3-5 sentence summary of the paper.")
-    tags: list[str] = Field(description="5-10 relevant keywords or topic labels.")
 
 
 class DocumentServicer:
@@ -84,7 +98,7 @@ class DocumentServicer:
 
         # Cached results — each step is only called if not yet succeeded.
         metadata: Optional[DocumentMetadata] = None
-        embedding: Optional[list[float]] = None
+        embedding: Optional[np.ndarray] = None
 
         last_exc: Exception | None = None
         for attempt in range(1, _ENRICH_MAX_ATTEMPTS + 1):
@@ -98,9 +112,8 @@ class DocumentServicer:
                         metadata.tags,
                     )
 
-                # TODO: call embedding model using summary -> 1536-dim vector
-                # if embedding is None:
-                #     embedding = self._compute_embedding(metadata.summary)
+                if embedding is None:
+                    embedding = self._compute_embedding(metadata.summary)
 
                 self._doc_repo.write_enrichment_and_done(
                     doc_id=doc_id,
@@ -149,13 +162,17 @@ class DocumentServicer:
             contents=[
                 types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf"),
                 (
-                    "You are an academic paper analyst. "
-                    "Extract the following from this paper:\n"
-                    "- authors: list of author full names\n"
-                    "- summary: a concise 3-5 sentence summary of the paper\n"
-                    "- tags: 5-10 relevant keywords or topic labels\n"
-                    "- year: publication year as an integer (null if not found)\n"
-                    "- doi: DOI string e.g. '10.1145/...' (null if not found)"
+                    """
+                    You are an expert academic paper analyst. Your task is to extract highly condensed metadata from the provided academic document. 
+                    1. "authors": A list of strings containing author full names (e.g., ["John Doe", "Jane Smith"]). 
+                    2. "summary": A high-density core summary written in academic English. 
+                        - Structure: It MUST cover the research background, core methodology, and key results/conclusions.
+                        - Length constraint: Strictly between 150 and 300 words (approximately 7 to 15 sentences).
+                        - Maximize semantic information density for downstream Vector Embedding. Exclude trivial experimental setups, formulas, and reference noise.
+                    3. "tags": A list of 5 to 10 highly relevant technical keywords or topic labels in English.
+                    4. "year": Publication year as an integer (e.g., 2024). Return null if not explicitly found.
+                    5. "doi": The official DOI string exactly as found (e.g., "10.1145/1234.5678"). Return null if not explicitly found.
+                    """
                 ),
             ],
             config={
@@ -166,3 +183,20 @@ class DocumentServicer:
         if not response.text:
             raise ValueError("LLM returned empty response")
         return DocumentMetadata.model_validate_json(response.text)
+
+    def _compute_embedding(self, summary_text: str) -> np.ndarray:
+        """Call embedding model to compute a 1536-dim vector for the summary."""
+
+        response = self._genai.models.embed_content(
+            model="gemini-embedding-001",
+            contents=summary_text,
+            config=types.EmbedContentConfig(
+                task_type="RETRIEVAL_DOCUMENT",
+                output_dimensionality=1536,
+            ),
+        )
+        if not response.embeddings:
+            raise ValueError("embedding model returned empty response")
+
+        [embedding_obj] = response.embeddings
+        return np.array(embedding_obj.values, dtype=np.float32)
