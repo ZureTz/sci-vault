@@ -29,6 +29,7 @@
       "grpcclient",
       "grpcio",
       "healthcheck",
+      "hnsw",
       "isready",
       "pgvector",
       "protocolbuffers",

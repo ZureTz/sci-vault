@@ -26,3 +26,14 @@ func New(cfg *config.DatabaseConfig) (*gorm.DB, error) {
 	slog.Info("database connected", "host", cfg.Host, "dbname", cfg.DBName)
 	return db, nil
 }
+
+// Setup runs one-time database setup: installs required extensions and auto-migrates the given models.
+func Setup(db *gorm.DB, models ...any) error {
+	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS vector").Error; err != nil {
+		return fmt.Errorf("failed to create pgvector extension: %w", err)
+	}
+	if err := db.AutoMigrate(models...); err != nil {
+		return fmt.Errorf("failed to auto migrate database: %w", err)
+	}
+	return nil
+}

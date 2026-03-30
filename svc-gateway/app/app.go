@@ -65,12 +65,12 @@ func New(configPath string) (*App, error) {
 		return nil, fmt.Errorf("failed to create database connection: %w", err)
 	}
 
-	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS vector").Error; err != nil {
-		return nil, fmt.Errorf("failed to create pgvector extension: %w", err)
+	if err := database.Setup(db, &model.User{}, &model.UserProfile{}, &model.Document{}); err != nil {
+		return nil, err
 	}
 
-	if err := db.AutoMigrate(&model.User{}, &model.UserProfile{}, &model.Document{}); err != nil {
-		return nil, fmt.Errorf("failed to auto migrate database: %w", err)
+	if err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_documents_embedding_hnsw ON documents USING hnsw (embedding vector_cosine_ops)`).Error; err != nil {
+		return nil, fmt.Errorf("failed to create embedding hnsw index: %w", err)
 	}
 
 	storageClient := storage.NewClient(cfg.Storage.Endpoint, cfg.Storage.AccessKey, cfg.Storage.SecretKey, cfg.Storage.PrivateBucket, cfg.Storage.PublicBucket, cfg.Storage.UseSSL)
