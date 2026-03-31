@@ -193,7 +193,7 @@ func (s *UserService) UploadAvatar(ctx context.Context, userID uint, file io.Rea
 		ext = ".jpg"
 	}
 
-	key := fmt.Sprintf("avatars/%d/%s%s", userID, time.Now().Format("20060102150405"), ext)
+	key := fmt.Sprintf("avatars/%d/%s%s", userID, time.Now().UTC().Format("20060102150405"), ext)
 	if err := s.storageClient.PutObject(ctx, key, file, contentType, false); err != nil {
 		return nil, fmt.Errorf("failed to upload avatar: %w", err)
 	}

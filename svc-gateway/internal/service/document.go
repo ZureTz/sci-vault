@@ -67,7 +67,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 		return nil, app_error.ErrDocumentInvalidType
 	}
 
-	ts := time.Now()
+	ts := time.Now().UTC()
 	hash := sha256.Sum256([]byte(form.File.Filename + ts.Format(time.RFC3339Nano)))
 	key := fmt.Sprintf("documents/%s/%x", ts.Format("20060102"), hash)
 
