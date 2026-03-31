@@ -69,7 +69,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 
 	ts := time.Now()
 	hash := sha256.Sum256([]byte(form.File.Filename + ts.Format(time.RFC3339Nano)))
-	key := fmt.Sprintf("documents/%s/%x", ts.Format("20060102150405"), hash)
+	key := fmt.Sprintf("documents/%s/%x", ts.Format("20060102"), hash)
 
 	if err := s.storageClient.PutObject(ctx, key, file, contentType, true); err != nil {
 		return nil, fmt.Errorf("failed to upload document: %w", err)
