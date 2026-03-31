@@ -13,6 +13,8 @@
 	"sidebar": {
 		"navigation": "Navigation",
 		"dashboard": "Dashboard",
+		"documents": "Documents",
+		"upload": "Upload",
 		"settings": "Settings",
 		"profile": "Profile",
 		"logout": "Log out"
@@ -20,7 +22,9 @@
 	"breadcrumb": {
 		"dashboard": "Dashboard",
 		"settings": "Settings",
-		"profile": "Profile"
+		"profile": "Profile",
+		"documents": "Documents",
+		"upload": "Upload"
 	},
 	"dashboard": {
 		"title": "Dashboard Overview",
@@ -31,6 +35,27 @@
 	},
 	"common": {
 		"unauthorized": "Your session has expired, please log in again"
+	},
+	"document": {
+		"upload": {
+			"title": "Upload Document",
+			"description": "Upload a scientific paper or document to your vault.",
+			"file_label": "File",
+			"file_placeholder": "Select a PDF or document file",
+			"title_label": "Title",
+			"title_placeholder": "Document title (optional)",
+			"year_label": "Publication Year",
+			"year_placeholder": "e.g. 2024",
+			"doi_label": "DOI",
+			"doi_placeholder": "e.g. 10.1234/example",
+			"submit": "Upload",
+			"submitting": "Uploading...",
+			"success": "Document uploaded successfully",
+			"error": {
+				"file_required": "Please select a file to upload",
+				"failed": "Failed to upload document, please try again"
+			}
+		}
 	},
 	"service": {
 		"internal": {
@@ -67,6 +92,12 @@
 		},
 		"get_profile": {
 			"failed": "Failed to load profile"
+		},
+		"upload_document": {
+			"read_failed": "Failed to read file, please try again",
+			"too_large": "Document exceeds the maximum size limit",
+			"unsupported_type": "Unsupported file type, please upload a PDF or supported document",
+			"failed": "Failed to upload document, please try again"
 		}
 	},
 	"validation": {
