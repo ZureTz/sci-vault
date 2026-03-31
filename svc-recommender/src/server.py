@@ -15,6 +15,7 @@ from infrastructure.genai import GenAI
 from infrastructure.database import Database
 from infrastructure.storage import Storage
 from cache.enrichment import EnrichmentStatusCache
+from genai.document import DocumentGenAI
 from repository.document import DocumentRepository
 from storage.document import DocumentStorage
 from servicer.document import DocumentServicer
@@ -35,6 +36,7 @@ class RecommenderServer:
         enrich_cache = EnrichmentStatusCache(self._cache.client)
         doc_repo = DocumentRepository(self._db.pool)
         doc_storage = DocumentStorage(self._storage.client, cfg.s3_private_bucket)
+        doc_genai = DocumentGenAI(self._genai.client)
 
         class _Servicer(DocumentServicer, HealthServicer):
             pass
@@ -44,7 +46,7 @@ class RecommenderServer:
             interceptors=[LoggingInterceptor()],
         )
         recommender_pb2_grpc.add_RecommenderServiceServicer_to_server(
-            _Servicer(enrich_cache, doc_repo, doc_storage, self._genai.client),
+            _Servicer(enrich_cache, doc_repo, doc_storage, doc_genai),
             self._server,
         )
         self._server.add_insecure_port(cfg.addr)

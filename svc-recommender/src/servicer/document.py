@@ -6,12 +6,9 @@ import time
 from typing import Optional
 
 import grpc
-import google.genai as genai
 import numpy as np
-from pydantic import BaseModel, Field
 
-from google.genai import types
-from infrastructure.genai import DEFAULT_MODEL
+from genai.document import DocumentGenAI, DocumentMetadata
 from pb.recommender.v1 import recommender_pb2
 from cache.enrichment import EnrichmentStatusCache
 from repository.document import DocumentRepository
@@ -27,31 +24,6 @@ _enrichment_executor = concurrent.futures.ThreadPoolExecutor(
 )
 
 
-class DocumentMetadata(BaseModel):
-    authors: list[str] = Field(
-        description="List of author full names (e.g. ['John Doe', 'Jane Smith'])."
-    )
-    summary: str = Field(
-        description=(
-            "High-density core summary in academic English, strictly 150-300 words. "
-            "Must cover research background, core methodology, and key results/conclusions. "
-            "Maximize semantic information density for downstream vector embedding. "
-            "Exclude trivial experimental setups, formulas, and reference noise."
-        )
-    )
-    tags: list[str] = Field(
-        description="5-10 highly relevant technical keywords or topic labels in English."
-    )
-    year: Optional[int] = Field(
-        None,
-        description="Publication year as an integer (e.g. 2024). Null if not explicitly found.",
-    )
-    doi: Optional[str] = Field(
-        None,
-        description="Official DOI string exactly as found (e.g. '10.1145/1234.5678'). Null if not explicitly found.",
-    )
-
-
 class DocumentServicer:
     """Implements the EnrichDocument RPC; Python owns all enrich-status writes."""
 
@@ -60,12 +32,12 @@ class DocumentServicer:
         enrich_cache: EnrichmentStatusCache,
         doc_repo: DocumentRepository,
         doc_storage: DocumentStorage,
-        genai_client: genai.Client,
+        genai: DocumentGenAI,
     ) -> None:
         self._cache = enrich_cache
         self._doc_repo = doc_repo
         self._storage = doc_storage
-        self._genai = genai_client
+        self._genai = genai
 
     def EnrichDocument(
         self,
@@ -104,22 +76,24 @@ class DocumentServicer:
         for attempt in range(1, _ENRICH_MAX_ATTEMPTS + 1):
             try:
                 if metadata is None:
-                    metadata = self._extract_metadata(pdf_bytes)
+                    metadata = self._genai.extract_metadata(pdf_bytes)
                     log.info(
-                        "metadata extracted: doc_id=%d authors=%s tags=%s",
+                        "metadata extracted: doc_id=%d title=%s authors=%s tags=%s",
                         doc_id,
+                        metadata.title,
                         metadata.authors,
                         metadata.tags,
                     )
 
                 if embedding is None:
-                    embedding = self._compute_embedding(metadata.summary)
+                    embedding = self._genai.compute_embedding(metadata.summary)
 
                 self._doc_repo.write_enrichment_and_done(
                     doc_id=doc_id,
-                    authors=list(metadata.authors),
+                    title=metadata.title,
+                    authors=metadata.authors,
                     summary=metadata.summary,
-                    tags=list(metadata.tags),
+                    tags=metadata.tags,
                     year=metadata.year,
                     doi=metadata.doi,
                     embedding=embedding,
@@ -150,53 +124,3 @@ class DocumentServicer:
         )
         # DB stays not_started; Redis records the failure for polling.
         self._cache.set_failed(doc_id)
-
-    # ------------------------------------------------------------------ #
-    # Helpers                                                              #
-    # ------------------------------------------------------------------ #
-
-    def _extract_metadata(self, pdf_bytes: bytes) -> DocumentMetadata:
-        """Call LLM with the PDF directly to extract authors, summary, and tags."""
-        response = self._genai.models.generate_content(
-            model=DEFAULT_MODEL,
-            contents=[
-                types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf"),
-                (
-                    """
-                    You are an expert academic paper analyst. Your task is to extract highly condensed metadata from the provided academic document. 
-                    1. "authors": A list of strings containing author full names (e.g., ["John Doe", "Jane Smith"]). 
-                    2. "summary": A high-density core summary written in academic English. 
-                        - Structure: It MUST cover the research background, core methodology, and key results/conclusions.
-                        - Length constraint: Strictly between 150 and 300 words (approximately 7 to 15 sentences).
-                        - Maximize semantic information density for downstream Vector Embedding. Exclude trivial experimental setups, formulas, and reference noise.
-                    3. "tags": A list of 5 to 10 highly relevant technical keywords or topic labels in English.
-                    4. "year": Publication year as an integer (e.g., 2024). Return null if not explicitly found.
-                    5. "doi": The official DOI string exactly as found (e.g., "10.1145/1234.5678"). Return null if not explicitly found.
-                    """
-                ),
-            ],
-            config={
-                "response_mime_type": "application/json",
-                "response_json_schema": DocumentMetadata.model_json_schema(),
-            },
-        )
-        if not response.text:
-            raise ValueError("LLM returned empty response")
-        return DocumentMetadata.model_validate_json(response.text)
-
-    def _compute_embedding(self, summary_text: str) -> np.ndarray:
-        """Call embedding model to compute a 1536-dim vector for the summary."""
-
-        response = self._genai.models.embed_content(
-            model="gemini-embedding-001",
-            contents=summary_text,
-            config=types.EmbedContentConfig(
-                task_type="RETRIEVAL_DOCUMENT",
-                output_dimensionality=1536,
-            ),
-        )
-        if not response.embeddings:
-            raise ValueError("embedding model returned empty response")
-
-        [embedding_obj] = response.embeddings
-        return np.array(embedding_obj.values, dtype=np.float32)

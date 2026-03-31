@@ -20,6 +20,7 @@ class DocumentRepository:
     def write_enrichment_and_done(
         self,
         doc_id: int,
+        title: str,
         authors: list[str],
         summary: str,
         tags: list[str],
@@ -29,9 +30,10 @@ class DocumentRepository:
     ) -> None:
         """Write AI-extracted fields and mark enrich_status=done in one UPDATE.
 
-        Human-provided year/doi take priority via COALESCE:
-          - year: kept if already set, otherwise filled with AI value
-          - doi:  kept if non-empty, otherwise filled with AI value
+        Human-provided fields take priority via COALESCE:
+          - title: kept if non-empty, otherwise filled with AI value
+          - year:  kept if already set, otherwise filled with AI value
+          - doi:   kept if non-empty, otherwise filled with AI value
         Raises on failure so the caller can propagate the error.
         """
         try:
@@ -39,6 +41,7 @@ class DocumentRepository:
                 conn.execute(
                     """
                     UPDATE documents SET
+                        title          = COALESCE(NULLIF(title, ''), %s),
                         authors        = %s,
                         summary        = %s,
                         tags           = %s,
@@ -49,6 +52,7 @@ class DocumentRepository:
                     WHERE id = %s
                     """,
                     (
+                        title,
                         authors,
                         summary,
                         tags,
