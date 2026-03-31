@@ -2,8 +2,8 @@
 
 from typing import Optional
 
-import google.genai as genai
 import numpy as np
+import google.genai as genai
 from google.genai import types
 from pydantic import BaseModel, Field
 
@@ -41,12 +41,15 @@ class DocumentMetadata(BaseModel):
 class DocumentGenAI:
     """Encapsulates GenAI calls for document enrichment."""
 
-    def __init__(self, client: genai.Client) -> None:
-        self._client = client
+    def __init__(
+        self, metadata_client: genai.Client, embedding_client: genai.Client
+    ) -> None:
+        self._metadata_client = metadata_client
+        self._embedding_client = embedding_client
 
     def extract_metadata(self, pdf_bytes: bytes) -> DocumentMetadata:
         """Call LLM with the PDF directly to extract structured metadata."""
-        response = self._client.models.generate_content(
+        response = self._metadata_client.models.generate_content(
             model=DEFAULT_MODEL,
             contents=[
                 types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf"),
@@ -76,7 +79,7 @@ class DocumentGenAI:
 
     def compute_embedding(self, summary_text: str) -> np.ndarray:
         """Call embedding model to compute a 1536-dim vector for the summary."""
-        response = self._client.models.embed_content(
+        response = self._embedding_client.models.embed_content(
             model="gemini-embedding-001",
             contents=summary_text,
             config=types.EmbedContentConfig(
