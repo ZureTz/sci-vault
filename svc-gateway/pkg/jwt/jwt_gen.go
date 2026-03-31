@@ -36,9 +36,9 @@ func (j *JWTGenerator) GenerateJWT(userID uint, username string) (string, error)
 			Issuer:    issuer,
 			Audience:  audience,
 			Subject:   username,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(j.timeoutHours) * time.Hour)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Duration(j.timeoutHours) * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+			NotBefore: jwt.NewNumericDate(time.Now().UTC()),
 		},
 		CustomClaims: CustomClaims{
 			UserID:       userID,
