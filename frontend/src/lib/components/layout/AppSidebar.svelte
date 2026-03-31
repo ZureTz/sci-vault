@@ -1,11 +1,21 @@
 <script lang="ts">
-	import { Activity, ChevronsUpDown, Compass, LogOut, Settings, User } from 'lucide-svelte';
+	import {
+		Activity,
+		ChevronRight,
+		ChevronsUpDown,
+		Compass,
+		FileText,
+		LogOut,
+		Settings,
+		User
+	} from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import { Collapsible } from 'bits-ui';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Sidebar from '$lib/components/ui/sidebar';
@@ -24,6 +34,11 @@
 
 	const navItems = [
 		{ title: 'sidebar.dashboard', url: '/' as const, icon: Compass },
+		{
+			title: 'sidebar.documents',
+			icon: FileText,
+			items: [{ title: 'sidebar.upload', url: '/documents/upload' as const }]
+		},
 		{ title: 'sidebar.settings', url: '/settings' as const, icon: Settings }
 	];
 
@@ -74,16 +89,51 @@
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					{#each navItems as item (item.title)}
-						<Sidebar.MenuItem>
-							<Sidebar.MenuButton isActive={page.url.pathname === resolve(item.url)}>
-								{#snippet child({ props })}
-									<a href={resolve(item.url)} {...props}>
-										<item.icon />
-										<span>{$_(item.title)}</span>
-									</a>
-								{/snippet}
-							</Sidebar.MenuButton>
-						</Sidebar.MenuItem>
+						{#if item.items}
+							<Collapsible.Root class="group/collapsible">
+								<Sidebar.MenuItem>
+									<Collapsible.Trigger>
+										{#snippet child({ props })}
+											<Sidebar.MenuButton {...props}>
+												<item.icon />
+												<span>{$_(item.title)}</span>
+												<ChevronRight
+													class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+												/>
+											</Sidebar.MenuButton>
+										{/snippet}
+									</Collapsible.Trigger>
+									<Collapsible.Content>
+										<Sidebar.MenuSub>
+											{#each item.items as subItem (subItem.title)}
+												<Sidebar.MenuSubItem>
+													<Sidebar.MenuSubButton
+														isActive={page.url.pathname === resolve(subItem.url)}
+													>
+														{#snippet child({ props })}
+															<a href={resolve(subItem.url)} {...props}>
+																<span>{$_(subItem.title)}</span>
+															</a>
+														{/snippet}
+													</Sidebar.MenuSubButton>
+												</Sidebar.MenuSubItem>
+											{/each}
+										</Sidebar.MenuSub>
+									</Collapsible.Content>
+								</Sidebar.MenuItem>
+							</Collapsible.Root>
+						{:else}
+							<Sidebar.MenuItem>
+								<Sidebar.MenuButton isActive={page.url.pathname === resolve(item.url)}>
+									{#snippet child({ props })}
+										<a href={resolve(item.url)} {...props}>
+											<item.icon />
+											<span>{$_(item.title)}</span>
+										</a>
+									{/snippet}
+								</Sidebar.MenuButton>
+							</Sidebar.MenuItem>
+						{/if}
 					{/each}
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>

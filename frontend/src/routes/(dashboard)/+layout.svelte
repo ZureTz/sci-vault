@@ -26,6 +26,9 @@
 		if (routeId.includes('/profile')) {
 			return [base, { label: $_('breadcrumb.profile') }];
 		}
+		if (routeId.includes('/documents/upload')) {
+			return [base, { label: $_('breadcrumb.documents') }, { label: $_('breadcrumb.upload') }];
+		}
 		return [base];
 	});
 

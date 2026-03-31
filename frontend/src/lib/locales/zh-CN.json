@@ -13,6 +13,8 @@
 	"sidebar": {
 		"navigation": "导航",
 		"dashboard": "仪表盘",
+		"documents": "文献库",
+		"upload": "上传文献",
 		"settings": "设置",
 		"profile": "个人资料",
 		"logout": "退出登录"
@@ -20,7 +22,9 @@
 	"breadcrumb": {
 		"dashboard": "仪表盘",
 		"settings": "设置",
-		"profile": "个人资料"
+		"profile": "个人资料",
+		"documents": "文献库",
+		"upload": "上传文献"
 	},
 	"dashboard": {
 		"title": "仪表盘总览",
@@ -31,6 +35,27 @@
 	},
 	"common": {
 		"unauthorized": "登录已过期，请重新登录"
+	},
+	"document": {
+		"upload": {
+			"title": "上传文献",
+			"description": "将科学论文或文献上传到您的文库。",
+			"file_label": "文件",
+			"file_placeholder": "选择 PDF 或文档文件",
+			"title_label": "标题",
+			"title_placeholder": "文献标题（可选）",
+			"year_label": "发表年份",
+			"year_placeholder": "例如 2024",
+			"doi_label": "DOI",
+			"doi_placeholder": "例如 10.1234/example",
+			"submit": "上传",
+			"submitting": "上传中...",
+			"success": "文献上传成功",
+			"error": {
+				"file_required": "请选择要上传的文件",
+				"failed": "文献上传失败，请稍后重试"
+			}
+		}
 	},
 	"service": {
 		"internal": {
@@ -67,6 +92,12 @@
 		},
 		"get_profile": {
 			"failed": "获取资料失败"
+		},
+		"upload_document": {
+			"read_failed": "读取文件失败，请重试",
+			"too_large": "文献超过最大文件大小限制",
+			"unsupported_type": "不支持的文件类型，请上传 PDF 或受支持的文档格式",
+			"failed": "文献上传失败，请稍后重试"
 		}
 	},
 	"validation": {
