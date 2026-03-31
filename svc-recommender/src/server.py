@@ -36,7 +36,9 @@ class RecommenderServer:
         enrich_cache = EnrichmentStatusCache(self._cache.client)
         doc_repo = DocumentRepository(self._db.pool)
         doc_storage = DocumentStorage(self._storage.client, cfg.s3_private_bucket)
-        doc_genai = DocumentGenAI(self._genai.client)
+        doc_genai = DocumentGenAI(
+            self._genai.metadata_client, self._genai.embedding_client
+        )
 
         class _Servicer(DocumentServicer, HealthServicer):
             pass
