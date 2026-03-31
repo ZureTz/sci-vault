@@ -7,7 +7,7 @@ import (
 
 type UploadDocumentForm struct {
 	File  *multipart.FileHeader `form:"file" binding:"required"`
-	Title string                `form:"title" binding:"required,min=1,max=255"`
+	Title string                `form:"title" binding:"omitempty,max=255"`
 	Year  *int                  `form:"year" binding:"omitempty,min=1000,max=9999"`
 	DOI   string                `form:"doi" binding:"omitempty,max=255"`
 }

@@ -36,7 +36,7 @@ type LogConfig struct {
 }
 
 type StorageConfig struct {
-	Endpoint         string `mapstructure:"endpoint"`
+	Endpoint string `mapstructure:"endpoint"`
 	// PresignEndpoint is the S3 endpoint used when generating presigned URLs.
 	// It must match the Host header that the reverse proxy forwards to RustFS,
 	// because presigned URLs are signed over the Host header.
