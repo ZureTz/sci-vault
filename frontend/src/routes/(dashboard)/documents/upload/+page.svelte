@@ -141,6 +141,9 @@
 					</div>
 				</div>
 
+				<!-- AI metadata enrichment hint -->
+				<p class="text-sm text-muted-foreground">{$_('document.upload.metadata_hint')}</p>
+
 				<Card.Footer class="px-0 pt-2 pb-0">
 					<Button type="submit" class="w-full" disabled={isSubmitting}>
 						{#if isSubmitting}
