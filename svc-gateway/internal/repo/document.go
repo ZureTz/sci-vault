@@ -10,6 +10,7 @@ import (
 type DocumentRepository interface {
 	Create(ctx context.Context, doc *model.Document) error
 	FindByID(ctx context.Context, id uint) (model.Document, error)
+	FindByUserID(ctx context.Context, userID uint, offset, limit int) ([]model.Document, int64, error)
 	IncrementViewCount(ctx context.Context, id uint) error
 	IncrementLikeCount(ctx context.Context, id uint) error
 }
@@ -28,6 +29,19 @@ func (r *documentRepo) Create(ctx context.Context, doc *model.Document) error {
 
 func (r *documentRepo) FindByID(ctx context.Context, id uint) (model.Document, error) {
 	return gorm.G[model.Document](r.db).Where("id = ?", id).First(ctx)
+}
+
+func (r *documentRepo) FindByUserID(ctx context.Context, userID uint, offset, limit int) ([]model.Document, int64, error) {
+	q := gorm.G[model.Document](r.db).Where("uploaded_by_user_id = ?", userID)
+	count, err := q.Count(ctx, "*")
+	if err != nil {
+		return nil, 0, err
+	}
+	docs, err := q.Order("created_at DESC").Offset(offset).Limit(limit).Find(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return docs, count, nil
 }
 
 func (r *documentRepo) IncrementViewCount(ctx context.Context, id uint) error {
