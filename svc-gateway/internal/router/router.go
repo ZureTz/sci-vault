@@ -89,6 +89,7 @@ func (deps *RouterDeps) registerAuthenticatedRoutes(group *gin.RouterGroup, auth
 // Document routes (/api/v1/docs/...)
 func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 	group.POST("/upload", deps.DocumentHandler.UploadDocument)
+	group.GET("/mine", deps.DocumentHandler.ListMyDocuments)
 	group.GET("/:doc_id", deps.DocumentHandler.GetDocument)
 	group.GET("/:doc_id/enrich_status", deps.DocumentHandler.GetEnrichStatus)
 }

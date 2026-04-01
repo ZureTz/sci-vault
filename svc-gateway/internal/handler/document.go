@@ -20,6 +20,7 @@ type DocumentService interface {
 	UploadDocument(ctx context.Context, userID uint, file io.Reader, form dto.UploadDocumentForm) (*dto.DocumentResponse, error)
 	GetDocument(ctx context.Context, docID uint) (*dto.DocumentResponse, error)
 	GetEnrichStatus(ctx context.Context, docID uint) (string, error)
+	ListMyDocuments(ctx context.Context, userID uint, page, pageSize int) (*dto.ListDocumentsResponse, error)
 }
 
 type DocumentHandler struct {
@@ -82,6 +83,35 @@ func (h *DocumentHandler) GetEnrichStatus(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, dto.EnrichStatusResponse{DocID: uri.DocID, Status: status})
+}
+
+func (h *DocumentHandler) ListMyDocuments(c *gin.Context) {
+	claims, err := jwt.GetClaims(c.Request.Context())
+	if err != nil {
+		slog.Warn("ListMyDocuments: missing JWT claims", "err", err)
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
+		return
+	}
+
+	var query dto.ListMyDocumentsQuery
+	if err := c.ShouldBindQuery(&query); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+	if query.Page == 0 {
+		query.Page = 1
+	}
+	if query.PageSize == 0 {
+		query.PageSize = 20
+	}
+
+	resp, err := h.documentService.ListMyDocuments(c.Request.Context(), claims.UserID, query.Page, query.PageSize)
+	if err != nil {
+		slog.Error("ListMyDocuments service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.list_documents.failed")))
+		return
+	}
+	c.JSON(http.StatusOK, resp)
 }
 
 func (h *DocumentHandler) GetDocument(c *gin.Context) {
