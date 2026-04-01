@@ -37,7 +37,10 @@
 		{
 			title: 'sidebar.documents',
 			icon: FileText,
-			items: [{ title: 'sidebar.upload', url: '/documents/upload' as const }]
+			items: [
+				{ title: 'sidebar.my_documents', url: '/documents/mine' as const },
+				{ title: 'sidebar.upload', url: '/documents/upload' as const }
+			]
 		},
 		{ title: 'sidebar.settings', url: '/settings' as const, icon: Settings }
 	];

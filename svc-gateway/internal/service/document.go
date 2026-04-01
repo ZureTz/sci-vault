@@ -141,6 +141,33 @@ func (s *DocumentService) GetEnrichStatus(ctx context.Context, docID uint) (stri
 	return doc.EnrichStatus, nil
 }
 
+func (s *DocumentService) ListMyDocuments(ctx context.Context, userID uint, page, pageSize int) (*dto.ListDocumentsResponse, error) {
+	offset := (page - 1) * pageSize
+	docs, total, err := s.repo.FindByUserID(ctx, userID, offset, pageSize)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list documents: %w", err)
+	}
+
+	items := make([]dto.DocumentListItem, 0, len(docs))
+	for _, doc := range docs {
+		items = append(items, dto.DocumentListItem{
+			ID:               doc.ID,
+			Title:            doc.Title,
+			OriginalFileName: doc.OriginalFileName,
+			FileSize:         doc.FileSize,
+			EnrichStatus:     doc.EnrichStatus,
+			CreatedAt:        doc.CreatedAt,
+		})
+	}
+
+	return &dto.ListDocumentsResponse{
+		Documents: items,
+		Total:     total,
+		Page:      page,
+		PageSize:  pageSize,
+	}, nil
+}
+
 // downloadFilename ensures the filename ends with ".pdf".
 func downloadFilename(original string) string {
 	if strings.HasSuffix(strings.ToLower(original), ".pdf") {
