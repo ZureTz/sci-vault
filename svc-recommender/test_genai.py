@@ -32,7 +32,7 @@ print(f"embedding dim={len(vec)}  first3={vec[:3]}")
 print("\n--- metadata client ---")
 gen_resp = client.metadata_client.models.generate_content(
     model=DEFAULT_MODEL,
-    contents="Reply with exactly one word: OK",
+    contents="How is the furry culture in Japan?",
 )
 assert gen_resp.text, "no text in response"
 print(f"response: {gen_resp.text.strip()!r}")
