@@ -7,6 +7,27 @@ export interface UploadDocumentRequest {
 	doi?: string;
 }
 
+export interface DocumentListItem {
+	id: number;
+	title: string;
+	original_file_name: string;
+	file_size: number;
+	enrich_status: string;
+	created_at: string;
+}
+
+export interface ListDocumentsResponse {
+	documents: DocumentListItem[];
+	total: number;
+	page: number;
+	page_size: number;
+}
+
+export interface EnrichStatusResponse {
+	doc_id: number;
+	status: string;
+}
+
 export interface DocumentResponse {
 	id: number;
 	title: string;
@@ -27,9 +48,18 @@ export interface DocumentResponse {
 }
 
 const documentApi = {
-	/**
-	 * Upload a document to the vault
-	 */
+	listMyDocuments(page = 1, pageSize = 20): Promise<ListDocumentsResponse> {
+		return request.get<ListDocumentsResponse>('/docs/mine', {
+			params: { page, page_size: pageSize }
+		}) as unknown as Promise<ListDocumentsResponse>;
+	},
+
+	getEnrichStatus(docId: number): Promise<EnrichStatusResponse> {
+		return request.get<EnrichStatusResponse>(
+			`/docs/${docId}/enrich_status`
+		) as unknown as Promise<EnrichStatusResponse>;
+	},
+
 	uploadDocument(data: UploadDocumentRequest): Promise<DocumentResponse> {
 		const formData = new FormData();
 		formData.append('file', data.file);

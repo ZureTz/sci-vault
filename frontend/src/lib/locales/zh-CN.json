@@ -15,6 +15,7 @@
 		"dashboard": "仪表盘",
 		"documents": "文献库",
 		"upload": "上传文献",
+		"my_documents": "我的文献",
 		"settings": "设置",
 		"profile": "个人资料",
 		"logout": "退出登录"
@@ -24,7 +25,8 @@
 		"settings": "设置",
 		"profile": "个人资料",
 		"documents": "文献库",
-		"upload": "上传文献"
+		"upload": "上传文献",
+		"my_documents": "我的文献"
 	},
 	"dashboard": {
 		"title": "仪表盘总览",
@@ -37,6 +39,36 @@
 		"unauthorized": "登录已过期，请重新登录"
 	},
 	"document": {
+		"mine": {
+			"title": "我的文献",
+			"description": "查看和管理您已上传的文献。",
+			"empty": "您还没有上传任何文献。",
+			"empty_hint": "上传您的第一篇文献以开始使用。",
+			"go_upload": "上传文献",
+			"table": {
+				"title": "标题",
+				"file_name": "文件名",
+				"file_size": "大小",
+				"status": "状态",
+				"created_at": "上传时间",
+				"actions": "操作"
+			},
+			"status": {
+				"not_started": "待处理",
+				"pending": "排队中",
+				"processing": "正在丰富...",
+				"done": "已完成",
+				"failed": "失败"
+			},
+			"download": "下载",
+			"view": "查看",
+			"loading": "正在加载文献...",
+			"error": "加载文献失败",
+			"pagination": {
+				"prev": "上一页",
+				"next": "下一页"
+			}
+		},
 		"upload": {
 			"title": "上传文献",
 			"description": "将科学论文或文献上传到您的文库。",

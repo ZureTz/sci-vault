@@ -15,6 +15,7 @@
 		"dashboard": "Dashboard",
 		"documents": "Documents",
 		"upload": "Upload",
+		"my_documents": "My Documents",
 		"settings": "Settings",
 		"profile": "Profile",
 		"logout": "Log out"
@@ -24,7 +25,8 @@
 		"settings": "Settings",
 		"profile": "Profile",
 		"documents": "Documents",
-		"upload": "Upload"
+		"upload": "Upload",
+		"my_documents": "My Documents"
 	},
 	"dashboard": {
 		"title": "Dashboard Overview",
@@ -37,6 +39,36 @@
 		"unauthorized": "Your session has expired, please log in again"
 	},
 	"document": {
+		"mine": {
+			"title": "My Documents",
+			"description": "View and manage documents you have uploaded.",
+			"empty": "You haven't uploaded any documents yet.",
+			"empty_hint": "Upload your first document to get started.",
+			"go_upload": "Upload Document",
+			"table": {
+				"title": "Title",
+				"file_name": "File Name",
+				"file_size": "Size",
+				"status": "Status",
+				"created_at": "Uploaded",
+				"actions": "Actions"
+			},
+			"status": {
+				"not_started": "Pending",
+				"pending": "Queued",
+				"processing": "Enriching...",
+				"done": "Done",
+				"failed": "Failed"
+			},
+			"download": "Download",
+			"view": "View",
+			"loading": "Loading documents...",
+			"error": "Failed to load documents",
+			"pagination": {
+				"prev": "Previous",
+				"next": "Next"
+			}
+		},
 		"upload": {
 			"title": "Upload Document",
 			"description": "Upload a scientific paper or document to your vault.",
