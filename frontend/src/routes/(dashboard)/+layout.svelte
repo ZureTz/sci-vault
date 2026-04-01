@@ -26,6 +26,9 @@
 		if (routeId.includes('/profile')) {
 			return [base, { label: $_('breadcrumb.profile') }];
 		}
+		if (routeId.includes('/documents/mine')) {
+			return [base, { label: $_('breadcrumb.documents') }, { label: $_('breadcrumb.my_documents') }];
+		}
 		if (routeId.includes('/documents/upload')) {
 			return [base, { label: $_('breadcrumb.documents') }, { label: $_('breadcrumb.upload') }];
 		}
@@ -59,7 +62,7 @@
 
 <Sidebar.Provider>
 	<AppSidebar />
-	<Sidebar.Inset>
+	<Sidebar.Inset class="min-w-0 overflow-x-clip">
 		<header
 			class="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
 		>
