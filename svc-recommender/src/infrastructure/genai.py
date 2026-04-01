@@ -13,8 +13,9 @@ DEFAULT_MODEL = "gemini-3-flash-preview"
 
 # Metadata extraction uploads a full PDF and may take significant time.
 # Embedding is text-only and should be fast.
-_METADATA_TIMEOUT_SECS = 120
-_EMBEDDING_TIMEOUT_SECS = 30
+# HttpOptions.timeout is in milliseconds.
+_METADATA_TIMEOUT_MS = 120_000
+_EMBEDDING_TIMEOUT_MS = 30_000
 
 
 class GenAI:
@@ -25,8 +26,8 @@ class GenAI:
     """
 
     def __init__(self, cfg: Config) -> None:
-        def _build(timeout: int) -> genai.Client:
-            opts = types.HttpOptions(timeout=timeout)
+        def _build(timeout_ms: int) -> genai.Client:
+            opts = types.HttpOptions(timeout=timeout_ms)
             if cfg.google_genai_use_vertexai:
                 return genai.Client(
                     vertexai=True, api_key=cfg.google_genai_api_key, http_options=opts
@@ -34,13 +35,13 @@ class GenAI:
             return genai.Client(api_key=cfg.google_genai_api_key, http_options=opts)
 
         log.info(
-            "building GenAI clients (Vertex AI=%s, metadata_timeout=%ds, embedding_timeout=%ds)",
+            "building GenAI clients (Vertex AI=%s, metadata_timeout=%dms, embedding_timeout=%dms)",
             cfg.google_genai_use_vertexai,
-            _METADATA_TIMEOUT_SECS,
-            _EMBEDDING_TIMEOUT_SECS,
+            _METADATA_TIMEOUT_MS,
+            _EMBEDDING_TIMEOUT_MS,
         )
-        self._metadata_client = _build(_METADATA_TIMEOUT_SECS)
-        self._embedding_client = _build(_EMBEDDING_TIMEOUT_SECS)
+        self._metadata_client = _build(_METADATA_TIMEOUT_MS)
+        self._embedding_client = _build(_EMBEDDING_TIMEOUT_MS)
 
     @property
     def metadata_client(self) -> genai.Client:
