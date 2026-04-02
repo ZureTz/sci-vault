@@ -75,13 +75,8 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 		return nil, fmt.Errorf("failed to upload document: %w", err)
 	}
 
-	title := form.Title
-	if title == "" {
-		title = form.File.Filename
-	}
-
 	doc := &model.Document{
-		Title:            title,
+		Title:            form.Title,
 		OriginalFileName: form.File.Filename,
 		FileKey:          key,
 		FileSize:         form.File.Size,
