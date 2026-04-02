@@ -27,7 +27,11 @@
 			return [base, { label: $_('breadcrumb.profile') }];
 		}
 		if (routeId.includes('/documents/mine')) {
-			return [base, { label: $_('breadcrumb.documents') }, { label: $_('breadcrumb.my_documents') }];
+			return [
+				base,
+				{ label: $_('breadcrumb.documents') },
+				{ label: $_('breadcrumb.my_documents') }
+			];
 		}
 		if (routeId.includes('/documents/upload')) {
 			return [base, { label: $_('breadcrumb.documents') }, { label: $_('breadcrumb.upload') }];

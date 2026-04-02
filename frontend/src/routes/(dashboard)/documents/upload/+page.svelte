@@ -31,12 +31,12 @@
 
 		isSubmitting = true;
 		try {
-			const yearNum = year ? parseInt(year, 10) : undefined;
+			const yearNum = year ? parseInt(year, 10) : null;
 			await documentApi.uploadDocument({
 				file: selectedFile,
-				title: title || undefined,
+				title: title || null,
 				year: yearNum,
-				doi: doi || undefined
+				doi: doi || null
 			});
 			toast.success($_('document.upload.success'));
 			// Reset form

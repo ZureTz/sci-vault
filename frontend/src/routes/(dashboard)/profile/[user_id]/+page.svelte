@@ -15,7 +15,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import userApi from '$lib/api/user';
+	import userApi, { type ProfileResponse, type UpdateProfileRequest } from '$lib/api/user';
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	let { data }: { data: PageData } = $props();
@@ -23,7 +23,12 @@
 	let profilePromise = $state(untrack(() => data.profile));
 	let currentUserId = $state<number | null>(null);
 	let isEditing = $state(false);
-	let editForm = $state({ nickname: '', bio: '', website: '', location: '' });
+	let editForm = $state<UpdateProfileRequest>({
+		nickname: null,
+		bio: null,
+		website: null,
+		location: null
+	});
 	let fileInput = $state<HTMLInputElement | undefined>(undefined);
 
 	// Re-sync when SvelteKit updates data.profile on param change (e.g. /profile/9 → /profile/11)
@@ -46,17 +51,12 @@
 		}
 	});
 
-	function startEdit(profile: {
-		nickname?: string;
-		bio?: string;
-		website?: string;
-		location?: string;
-	}) {
+	function startEdit(profile: ProfileResponse) {
 		editForm = {
-			nickname: profile.nickname ?? '',
-			bio: profile.bio ?? '',
-			website: profile.website ?? '',
-			location: profile.location ?? ''
+			nickname: profile.nickname,
+			bio: profile.bio,
+			website: profile.website,
+			location: profile.location
 		};
 		isEditing = true;
 	}
@@ -66,6 +66,7 @@
 			if (editForm.website && !/^https?:\/\//.test(editForm.website)) {
 				editForm.website = 'https://' + editForm.website;
 			}
+
 			await userApi.updateProfile(editForm);
 			isEditing = false;
 			profilePromise = userApi.getProfile(userId);
@@ -145,21 +146,34 @@
 							<p class="text-sm text-muted-foreground">{$_('profile.empty_own_profile')}</p>
 							<div class="space-y-1.5">
 								<Label for="nickname">{$_('profile.form.nickname')}</Label>
-								<Input id="nickname" bind:value={editForm.nickname} />
+								<Input
+									id="nickname"
+									value={editForm.nickname ?? ''}
+									oninput={(e) => (editForm.nickname = e.currentTarget.value || null)}
+								/>
 							</div>
 							<div class="space-y-1.5">
 								<Label for="location">{$_('profile.form.location')}</Label>
-								<Input id="location" bind:value={editForm.location} />
+								<Input
+									id="location"
+									value={editForm.location ?? ''}
+									oninput={(e) => (editForm.location = e.currentTarget.value || null)}
+								/>
 							</div>
 							<div class="space-y-1.5">
 								<Label for="website">{$_('profile.form.website')}</Label>
-								<Input id="website" bind:value={editForm.website} />
+								<Input
+									id="website"
+									value={editForm.website ?? ''}
+									oninput={(e) => (editForm.website = e.currentTarget.value || null)}
+								/>
 							</div>
 							<div class="space-y-1.5">
 								<Label for="bio">{$_('profile.form.bio')}</Label>
 								<textarea
 									id="bio"
-									bind:value={editForm.bio}
+									value={editForm.bio ?? ''}
+									oninput={(e) => (editForm.bio = e.currentTarget.value || null)}
 									rows={3}
 									class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 								></textarea>
@@ -239,21 +253,34 @@
 							<div class="space-y-4 pt-2">
 								<div class="space-y-1.5">
 									<Label for="nickname">{$_('profile.form.nickname')}</Label>
-									<Input id="nickname" bind:value={editForm.nickname} />
+									<Input
+										id="nickname"
+										value={editForm.nickname ?? ''}
+										oninput={(e) => (editForm.nickname = e.currentTarget.value || null)}
+									/>
 								</div>
 								<div class="space-y-1.5">
 									<Label for="location">{$_('profile.form.location')}</Label>
-									<Input id="location" bind:value={editForm.location} />
+									<Input
+										id="location"
+										value={editForm.location ?? ''}
+										oninput={(e) => (editForm.location = e.currentTarget.value || null)}
+									/>
 								</div>
 								<div class="space-y-1.5">
 									<Label for="website">{$_('profile.form.website')}</Label>
-									<Input id="website" bind:value={editForm.website} />
+									<Input
+										id="website"
+										value={editForm.website ?? ''}
+										oninput={(e) => (editForm.website = e.currentTarget.value || null)}
+									/>
 								</div>
 								<div class="space-y-1.5">
 									<Label for="bio">{$_('profile.form.bio')}</Label>
 									<textarea
 										id="bio"
-										bind:value={editForm.bio}
+										value={editForm.bio ?? ''}
+										oninput={(e) => (editForm.bio = e.currentTarget.value || null)}
 										rows={3}
 										class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 									></textarea>
