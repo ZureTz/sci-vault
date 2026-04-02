@@ -42,18 +42,18 @@ export interface AvatarResponse {
 
 export interface ProfileResponse {
 	user_id: number;
-	nickname?: string;
-	bio?: string;
-	avatar_url?: string;
-	website?: string;
-	location?: string;
+	nickname: string | null;
+	bio: string | null;
+	avatar_url: string | null;
+	website: string | null;
+	location: string | null;
 }
 
 export interface UpdateProfileRequest {
-	nickname?: string;
-	bio?: string;
-	website?: string;
-	location?: string;
+	nickname: string | null;
+	bio: string | null;
+	website: string | null;
+	location: string | null;
 }
 
 export interface UploadAvatarResponse {

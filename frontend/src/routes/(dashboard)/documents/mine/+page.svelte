@@ -1,14 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { _ } from 'svelte-i18n';
-	import {
-		FileText,
-		Upload,
-		LoaderCircle,
-		CircleCheck,
-		Clock,
-		CircleAlert
-	} from 'lucide-svelte';
+	import { FileText, Upload, LoaderCircle, CircleCheck, Clock, CircleAlert } from 'lucide-svelte';
 
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -152,17 +145,19 @@
 								>
 								<Table.Head class="w-32">{$_('document.mine.table.status')}</Table.Head>
 								<Table.Head class="w-28">{$_('document.mine.table.created_at')}</Table.Head>
-								</Table.Row>
+							</Table.Row>
 						</Table.Header>
 						<Table.Body>
 							{#each documents as doc (doc.id)}
 								<Table.Row>
 									<Table.Cell class="font-medium">
-										<span class="line-clamp-1">{doc.title}</span>
-										<span
-											class="mt-0.5 line-clamp-1 block text-xs font-normal text-muted-foreground"
-											>{doc.original_file_name}</span
-										>
+										<span class="line-clamp-1">{doc.title ?? doc.original_file_name}</span>
+										{#if doc.title}
+											<span
+												class="mt-0.5 line-clamp-1 block text-xs font-normal text-muted-foreground"
+												>{doc.original_file_name}</span
+											>
+										{/if}
 									</Table.Cell>
 									<Table.Cell class="text-right text-xs text-muted-foreground">
 										{formatFileSize(doc.file_size)}
@@ -202,7 +197,7 @@
 									<Table.Cell class="text-xs text-muted-foreground">
 										{formatDate(doc.created_at)}
 									</Table.Cell>
-									</Table.Row>
+								</Table.Row>
 							{/each}
 						</Table.Body>
 					</Table.Root>

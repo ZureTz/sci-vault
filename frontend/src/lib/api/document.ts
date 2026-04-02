@@ -2,14 +2,14 @@ import request from './request';
 
 export interface UploadDocumentRequest {
 	file: File;
-	title?: string;
-	year?: number;
-	doi?: string;
+	title: string | null;
+	year: number | null;
+	doi: string | null;
 }
 
 export interface DocumentListItem {
 	id: number;
-	title: string;
+	title: string | null;
 	original_file_name: string;
 	file_size: number;
 	enrich_status: string;
@@ -30,15 +30,15 @@ export interface EnrichStatusResponse {
 
 export interface DocumentResponse {
 	id: number;
-	title: string;
+	title: string | null;
 	original_file_name: string;
 	file_size: number;
 	content_type: string;
-	year?: number;
-	doi?: string;
+	year: number | null;
+	doi: string | null;
 	enrich_status: string;
 	authors: string[];
-	summary: string;
+	summary: string | null;
 	tags: string[];
 	view_count: number;
 	like_count: number;
@@ -63,9 +63,9 @@ const documentApi = {
 	uploadDocument(data: UploadDocumentRequest): Promise<DocumentResponse> {
 		const formData = new FormData();
 		formData.append('file', data.file);
-		if (data.title) formData.append('title', data.title);
-		if (data.year !== undefined) formData.append('year', String(data.year));
-		if (data.doi) formData.append('doi', data.doi);
+		if (data.title !== null) formData.append('title', data.title);
+		if (data.year !== null) formData.append('year', String(data.year));
+		if (data.doi !== null) formData.append('doi', data.doi);
 		return request.post<FormData, DocumentResponse>('/docs/upload', formData, {
 			headers: { 'Content-Type': 'multipart/form-data' }
 		}) as unknown as Promise<DocumentResponse>;
