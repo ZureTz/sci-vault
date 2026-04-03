@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// TODO: If the file is too large, we might want to change to a different upload method
 type UploadDocumentForm struct {
 	File  *multipart.FileHeader `form:"file" binding:"required"`
 	Title *string               `form:"title" binding:"omitempty,max=255"`
