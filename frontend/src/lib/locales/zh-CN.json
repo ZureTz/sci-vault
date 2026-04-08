@@ -262,6 +262,55 @@
 			"reset_failed": "重置密码失败"
 		}
 	},
+	"welcome": {
+		"hero": {
+			"badge": "AI 驱动的研究平台",
+			"title": "您的智能",
+			"title_highlight": "文献知识库",
+			"subtitle": "上传科学论文，让 AI 自动提取元数据、生成摘要，并在您的知识库中建立语义关联。",
+			"cta_primary": "立即使用",
+			"cta_secondary": "登录"
+		},
+		"features": {
+			"title": "一切您需要的研究管理工具",
+			"subtitle": "Sci-Vault 结合 AI 驱动的信息丰富与语义搜索，助您轻松整理和发现研究资料。",
+			"ai_enrichment": {
+				"title": "AI 元数据提取",
+				"description": "上传 PDF，AI 自动提取标题、作者、出版年份、DOI，并生成简洁摘要。"
+			},
+			"vector_search": {
+				"title": "语义发现",
+				"description": "基于 pgvector 和 Google Gemini 向量嵌入，通过语义相似性搜索找到相关论文。"
+			},
+			"secure_storage": {
+				"title": "安全云存储",
+				"description": "所有文档安全存储，支持基于角色的访问控制和 S3 兼容的对象存储。"
+			}
+		},
+		"workflow": {
+			"title": "工作流程",
+			"step1": {
+				"label": "01",
+				"title": "上传",
+				"description": "将您的 PDF 论文拖入文库"
+			},
+			"step2": {
+				"label": "02",
+				"title": "丰富",
+				"description": "AI 提取元数据并生成向量嵌入"
+			},
+			"step3": {
+				"label": "03",
+				"title": "发现",
+				"description": "搜索和探索您不断增长的知识库"
+			}
+		},
+		"footer": {
+			"copyright": "© 2026 Sci-Vault。为研究者而生。",
+			"sign_in": "登录",
+			"go_to_dashboard": "进入工作台"
+		}
+	},
 	"profile": {
 		"title": "个人资料",
 		"not_found": "找不到个人资料",

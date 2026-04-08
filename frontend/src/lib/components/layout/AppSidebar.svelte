@@ -88,7 +88,7 @@
 
 <Sidebar.Root collapsible="offcanvas" bind:ref {...restProps}>
 	<Sidebar.Header class="h-16 justify-center border-b p-0 transition-[height] ease-linear">
-		<div class="flex items-center gap-2 px-4">
+		<a href={resolve('/welcome')} class="flex items-center gap-2 px-4">
 			<div
 				class="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"
 			>
@@ -98,7 +98,7 @@
 				<span class="font-semibold">{$_('app.title')}</span>
 				<span class="">{$_('app.version')}</span>
 			</div>
-		</div>
+		</a>
 	</Sidebar.Header>
 	<Sidebar.Content>
 		<Sidebar.Group>

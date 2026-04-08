@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { Activity } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
+
 	import ThemeToggle from '$lib/components/layout/ThemeToggle.svelte';
 	import LanguageToggle from '$lib/components/layout/LanguageToggle.svelte';
-
+	import { resolve } from '$app/paths';
 	let { children } = $props();
 </script>
 
@@ -11,7 +12,7 @@
 	<header
 		class="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4"
 	>
-		<div class="flex flex-1 items-center gap-2">
+		<a href={resolve('/welcome')} class="flex flex-1 items-center gap-2">
 			<div
 				class="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"
 			>
@@ -21,7 +22,7 @@
 				<span class="font-semibold">{$_('app.title')}</span>
 				<span class="text-xs text-muted-foreground">{$_('app.version')}</span>
 			</div>
-		</div>
+		</a>
 		<div class="flex items-center gap-2">
 			<ThemeToggle />
 			<LanguageToggle />

@@ -262,6 +262,55 @@
 			"reset_failed": "Failed to reset password"
 		}
 	},
+	"welcome": {
+		"hero": {
+			"badge": "AI-Powered Research Platform",
+			"title": "Your Intelligent",
+			"title_highlight": "Research Vault",
+			"subtitle": "Upload scientific papers and let AI automatically extract metadata, generate summaries, and build semantic connections across your knowledge base.",
+			"cta_primary": "Get Started",
+			"cta_secondary": "Sign In"
+		},
+		"features": {
+			"title": "Everything you need for research management",
+			"subtitle": "Sci-Vault combines AI-powered enrichment with semantic search to help you organize and discover research effortlessly.",
+			"ai_enrichment": {
+				"title": "AI Metadata Enrichment",
+				"description": "Upload a PDF and AI automatically extracts title, authors, publication year, DOI, and generates a concise summary."
+			},
+			"vector_search": {
+				"title": "Semantic Discovery",
+				"description": "Find related papers using vector similarity search powered by pgvector and Google Gemini embeddings."
+			},
+			"secure_storage": {
+				"title": "Secure Cloud Storage",
+				"description": "All your documents stored securely with role-based access control and S3-compatible object storage."
+			}
+		},
+		"workflow": {
+			"title": "How it works",
+			"step1": {
+				"label": "01",
+				"title": "Upload",
+				"description": "Drop your PDF papers into the vault"
+			},
+			"step2": {
+				"label": "02",
+				"title": "Enrich",
+				"description": "AI extracts metadata and generates vector embeddings"
+			},
+			"step3": {
+				"label": "03",
+				"title": "Discover",
+				"description": "Search and explore your growing knowledge base"
+			}
+		},
+		"footer": {
+			"copyright": "© 2026 Sci-Vault. Built for researchers.",
+			"sign_in": "Sign In",
+			"go_to_dashboard": "Go to Dashboard"
+		}
+	},
 	"profile": {
 		"title": "Profile",
 		"not_found": "Profile not found",
