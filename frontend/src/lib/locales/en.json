@@ -103,6 +103,7 @@
 			"success": "Document uploaded successfully",
 			"error": {
 				"file_required": "Please select a file to upload",
+				"invalid_type": "Only PDF files are supported",
 				"failed": "Failed to upload document, please try again"
 			}
 		}

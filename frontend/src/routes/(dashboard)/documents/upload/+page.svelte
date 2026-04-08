@@ -20,6 +20,11 @@
 
 	function handleFileChange(event: Event) {
 		const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+		if (file && !file.name.toLowerCase().endsWith('.pdf')) {
+			toast.error($_('document.upload.error.invalid_type'));
+			(event.target as HTMLInputElement).value = '';
+			return;
+		}
 		selectedFile = file;
 	}
 
@@ -99,7 +104,7 @@
 					<input
 						id="file"
 						type="file"
-						accept=".pdf,.doc,.docx,.txt"
+						accept=".pdf"
 						class="hidden"
 						bind:this={fileInput}
 						onchange={handleFileChange}
