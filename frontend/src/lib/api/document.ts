@@ -69,6 +69,10 @@ const documentApi = {
 		return request.post<FormData, DocumentResponse>('/docs/upload', formData, {
 			headers: { 'Content-Type': 'multipart/form-data' }
 		}) as unknown as Promise<DocumentResponse>;
+	},
+
+	getDocument(docId: number): Promise<DocumentResponse> {
+		return request.get<DocumentResponse>(`/docs/${docId}`) as unknown as Promise<DocumentResponse>;
 	}
 };
 

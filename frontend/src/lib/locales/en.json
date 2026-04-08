@@ -39,6 +39,20 @@
 		"unauthorized": "Your session has expired, please log in again"
 	},
 	"document": {
+		"detail": {
+			"title": "Document Details",
+			"error": "Failed to load document",
+			"metadata": "Metadata",
+			"summary": "AI Summary",
+			"tags": "Extracted Tags",
+			"download": "Download File",
+			"status": "Status",
+			"year": "Year",
+			"size": "File Size",
+			"type": "Content Type",
+			"uploaded": "Uploaded On",
+			"back": "Go Back"
+		},
 		"mine": {
 			"title": "My Documents",
 			"description": "View and manage documents you have uploaded.",
