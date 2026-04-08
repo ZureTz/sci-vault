@@ -13,6 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
@@ -116,7 +117,7 @@ func (c *Client) setPublicReadPolicy(ctx context.Context, name string) error {
 }
 
 func (c *Client) PutObject(ctx context.Context, key string, body io.Reader, contentType string, isPrivate bool) error {
-	input := &s3.PutObjectInput{
+	input := &transfermanager.UploadObjectInput{
 		Bucket: aws.String(c.bucket(isPrivate)),
 		Key:    aws.String(key),
 		Body:   body,
@@ -124,7 +125,8 @@ func (c *Client) PutObject(ctx context.Context, key string, body io.Reader, cont
 	if contentType != "" {
 		input.ContentType = aws.String(contentType)
 	}
-	_, err := c.s3.PutObject(ctx, input)
+	tm := transfermanager.New(c.s3)
+	_, err := tm.UploadObject(ctx, input)
 	return err
 }
 

@@ -16,6 +16,7 @@
 	let year = $state('');
 	let doi = $state('');
 	let isSubmitting = $state(false);
+	let uploadPercent = $state(0);
 
 	function handleFileChange(event: Event) {
 		const file = (event.target as HTMLInputElement).files?.[0] ?? null;
@@ -30,14 +31,13 @@
 		}
 
 		isSubmitting = true;
+		uploadPercent = 0;
 		try {
 			const yearNum = year ? parseInt(year, 10) : null;
-			await documentApi.uploadDocument({
-				file: selectedFile,
-				title: title || null,
-				year: yearNum,
-				doi: doi || null
-			});
+			await documentApi.uploadDocument(
+				{ file: selectedFile, title: title || null, year: yearNum, doi: doi || null },
+				(pct) => (uploadPercent = pct)
+			);
 			toast.success($_('document.upload.success'));
 			// Reset form
 			selectedFile = null;
@@ -143,6 +143,21 @@
 
 				<!-- AI metadata enrichment hint -->
 				<p class="text-sm text-muted-foreground">{$_('document.upload.metadata_hint')}</p>
+
+				{#if isSubmitting}
+					<div class="space-y-1.5">
+						<div class="flex justify-between text-xs text-muted-foreground">
+							<span>{$_('document.upload.submitting')}</span>
+							<span>{uploadPercent}%</span>
+						</div>
+						<div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+							<div
+								class="h-full bg-primary transition-all duration-300"
+								style="width: {uploadPercent}%"
+							></div>
+						</div>
+					</div>
+				{/if}
 
 				<Card.Footer class="px-0 pt-2 pb-0">
 					<Button type="submit" class="w-full" disabled={isSubmitting}>

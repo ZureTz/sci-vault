@@ -60,14 +60,23 @@ const documentApi = {
 		) as unknown as Promise<EnrichStatusResponse>;
 	},
 
-	uploadDocument(data: UploadDocumentRequest): Promise<DocumentResponse> {
+	uploadDocument(
+		data: UploadDocumentRequest,
+		onProgress?: (percent: number) => void
+	): Promise<DocumentResponse> {
 		const formData = new FormData();
 		formData.append('file', data.file);
 		if (data.title !== null) formData.append('title', data.title);
 		if (data.year !== null) formData.append('year', String(data.year));
 		if (data.doi !== null) formData.append('doi', data.doi);
 		return request.post<FormData, DocumentResponse>('/docs/upload', formData, {
-			headers: { 'Content-Type': 'multipart/form-data' }
+			headers: { 'Content-Type': 'multipart/form-data' },
+			timeout: 0,
+			onUploadProgress: onProgress
+				? (e) => {
+						if (e.total) onProgress(Math.round((e.loaded / e.total) * 100));
+					}
+				: undefined
 		}) as unknown as Promise<DocumentResponse>;
 	},
 
