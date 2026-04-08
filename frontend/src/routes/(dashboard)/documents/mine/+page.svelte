@@ -8,11 +8,13 @@
 		CircleCheck,
 		Clock,
 		CircleAlert,
-		Eye
+		Eye,
+		RefreshCw
 	} from 'lucide-svelte';
 
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card';
 	import * as Table from '$lib/components/ui/table';
 	import { Badge } from '$lib/components/ui/badge';
@@ -41,6 +43,19 @@
 			showApiErrors(error, $_('document.mine.error'));
 		} finally {
 			isLoading = false;
+		}
+	}
+
+	async function restartEnrichment(docId: number) {
+		try {
+			await documentApi.restartEnrichment(docId);
+			toast.success($_('service.restart_enrichment.success'));
+			const idx = documents.findIndex((d) => d.id === docId);
+			if (idx !== -1) {
+				documents[idx].enrich_status = 'pending';
+			}
+		} catch (error: unknown) {
+			showApiErrors(error, $_('service.restart_enrichment.failed'));
 		}
 	}
 
@@ -220,14 +235,26 @@
 										{formatDate(doc.created_at)}
 									</Table.Cell>
 									<Table.Cell class="text-right">
-										<Button
-											variant="ghost"
-											size="icon"
-											href={resolve(`/documents/${doc.id}`)}
-											class="h-8 w-8 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-										>
-											<Eye strokeWidth={2.5} class="h-4 w-4" />
-										</Button>
+										<div class="flex justify-end gap-1">
+											{#if doc.enrich_status === 'failed' || doc.enrich_status === 'not_started'}
+												<Button
+													variant="ghost"
+													size="icon"
+													class="h-8 w-8 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+													onclick={() => restartEnrichment(doc.id)}
+												>
+													<RefreshCw strokeWidth={2.5} class="h-4 w-4" />
+												</Button>
+											{/if}
+											<Button
+												variant="ghost"
+												size="icon"
+												href={resolve(`/documents/${doc.id}`)}
+												class="h-8 w-8 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+											>
+												<Eye strokeWidth={2.5} class="h-4 w-4" />
+											</Button>
+										</div>
 									</Table.Cell>
 								</Table.Row>
 							{/each}

@@ -21,6 +21,7 @@ type DocumentService interface {
 	GetDocument(ctx context.Context, docID uint) (*dto.DocumentResponse, error)
 	GetEnrichStatus(ctx context.Context, docID uint) (string, error)
 	ListMyDocuments(ctx context.Context, userID uint, page, pageSize int) (*dto.ListDocumentsResponse, error)
+	RestartEnrichment(ctx context.Context, docID uint) error
 }
 
 type DocumentHandler struct {
@@ -132,4 +133,24 @@ func (h *DocumentHandler) GetDocument(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+}
+
+func (h *DocumentHandler) RestartEnrichment(c *gin.Context) {
+	var uri dto.DocumentIDUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	err := h.documentService.RestartEnrichment(c.Request.Context(), uri.DocID)
+	if err != nil {
+		if errors.Is(err, app_error.ErrDocumentNotFound) {
+			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.restart_enrichment.not_found")))
+			return
+		}
+		slog.Error("RestartEnrichment service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.restart_enrichment.failed")))
+		return
+	}
+	c.JSON(http.StatusOK, utils.MessageResponse("service.restart_enrichment.success"))
 }

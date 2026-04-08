@@ -141,6 +141,26 @@ func (s *DocumentService) GetEnrichStatus(ctx context.Context, docID uint) (stri
 	return doc.EnrichStatus, nil
 }
 
+func (s *DocumentService) RestartEnrichment(ctx context.Context, docID uint) error {
+	doc, err := s.repo.FindByID(ctx, docID)
+	if err != nil {
+		return app_error.ErrDocumentNotFound
+	}
+
+	// Set the enrichment status in Redis to not_started
+	if err := s.cacheConn.Set(ctx, enrichStatusKey(doc.ID), EnrichStatusNotStarted, enrichStatusTTL); err != nil {
+		slog.Warn("Failed to set enrich status in cache", "docID", doc.ID, "err", err)
+	}
+
+	// Trigger async enrichment on the Python microservice.
+	if _, err := s.recommenderClient.EnrichDocument(ctx, uint64(doc.ID), doc.FileKey); err != nil {
+		slog.Warn("EnrichDocument gRPC call failed", "docID", doc.ID, "err", err)
+		return fmt.Errorf("failed to restart enrichment: %w", err)
+	}
+
+	return nil
+}
+
 func (s *DocumentService) ListMyDocuments(ctx context.Context, userID uint, page, pageSize int) (*dto.ListDocumentsResponse, error) {
 	offset := (page - 1) * pageSize
 	docs, total, err := s.repo.FindByUserID(ctx, userID, offset, pageSize)

@@ -51,7 +51,8 @@
 			"size": "文件大小",
 			"type": "文件类型",
 			"uploaded": "上传时间",
-			"back": "返回"
+			"back": "返回",
+			"restart": "重新处理"
 		},
 		"mine": {
 			"title": "我的文献",
@@ -140,11 +141,20 @@
 		"get_profile": {
 			"failed": "获取资料失败"
 		},
+		"get_document": {
+			"not_found": "未找到该文档",
+			"failed": "加载文档失败"
+		},
 		"upload_document": {
 			"read_failed": "读取文件失败，请重试",
 			"too_large": "文献超过最大文件大小限制",
 			"unsupported_type": "不支持的文件类型，请上传 PDF 或受支持的文档格式",
 			"failed": "文献上传失败，请稍后重试"
+		},
+		"restart_enrichment": {
+			"not_found": "未找到该文档",
+			"failed": "重新处理失败，请稍后重试",
+			"success": "已成功重新开始处理"
 		}
 	},
 	"validation": {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import {
 		FileText,
@@ -11,7 +11,8 @@
 		Hash,
 		User,
 		Calendar,
-		BookOpen
+		BookOpen,
+		RefreshCw
 	} from 'lucide-svelte';
 
 	import { goto } from '$app/navigation';
@@ -20,6 +21,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { toast } from 'svelte-sonner';
 	import documentApi, { type DocumentResponse } from '$lib/api/document';
 	import { showApiErrors } from '$lib/utils/api-error';
 
@@ -27,15 +29,49 @@
 
 	let document = $state<DocumentResponse | null>(null);
 	let isLoading = $state(true);
+	let isRestarting = $state(false);
+	let pollTimer = $state<ReturnType<typeof setInterval> | null>(null);
 
-	async function loadDocument() {
-		isLoading = true;
+	async function loadDocument(showSpinner = true) {
+		if (showSpinner) isLoading = true;
 		try {
 			document = await documentApi.getDocument(data.id);
 		} catch (error: unknown) {
 			showApiErrors(error, $_('document.detail.error'));
 		} finally {
-			isLoading = false;
+			if (showSpinner) isLoading = false;
+		}
+	}
+
+	async function pollEnrichStatus() {
+		if (!document) return;
+		const status = document.enrich_status;
+		if (status === 'not_started' || status === 'pending' || status === 'processing') {
+			try {
+				const res = await documentApi.getEnrichStatus(document.id);
+				if (document.enrich_status !== res.status) {
+					document.enrich_status = res.status;
+					if (res.status === 'done') {
+						await loadDocument(false);
+					}
+				}
+			} catch {
+				// silently ignore polling errors
+			}
+		}
+	}
+
+	async function restartEnrichment() {
+		if (!document) return;
+		isRestarting = true;
+		try {
+			await documentApi.restartEnrichment(document.id);
+			toast.success($_('service.restart_enrichment.success'));
+			document.enrich_status = 'pending';
+		} catch (error: unknown) {
+			showApiErrors(error, $_('service.restart_enrichment.failed'));
+		} finally {
+			isRestarting = false;
 		}
 	}
 
@@ -55,6 +91,11 @@
 
 	onMount(() => {
 		loadDocument();
+		pollTimer = setInterval(pollEnrichStatus, 3000);
+	});
+
+	onDestroy(() => {
+		if (pollTimer) clearInterval(pollTimer);
 	});
 </script>
 
@@ -103,10 +144,57 @@
 				<Card.Root>
 					<Card.Header>
 						<div class="flex items-start justify-between gap-4">
-							<div class="space-y-2">
-								<h1 class="text-2xl font-bold tracking-tight">
-									{document.title || document.original_file_name}
-								</h1>
+							<div class="w-full space-y-2">
+								<div class="flex flex-wrap items-center gap-3">
+									<h1 class="text-2xl font-bold tracking-tight">
+										{document.title || document.original_file_name}
+									</h1>
+									<div class="flex items-center gap-2">
+										{#if document.enrich_status === 'done'}
+											<Badge
+												variant="outline"
+												class="border-green-500/30 bg-green-500/10 whitespace-nowrap text-green-700 dark:text-green-400"
+											>
+												<CircleCheck class="mr-1 h-3.5 w-3.5" />
+												{$_('document.mine.status.done')}
+											</Badge>
+										{:else if document.enrich_status === 'failed'}
+											<Badge variant="destructive" class="whitespace-nowrap">
+												<CircleAlert class="mr-1 h-3.5 w-3.5" />
+												{$_('document.mine.status.failed')}
+											</Badge>
+										{:else if document.enrich_status === 'processing'}
+											<Badge
+												variant="outline"
+												class="border-blue-500/30 bg-blue-500/10 whitespace-nowrap text-blue-700 dark:text-blue-400"
+											>
+												<LoaderCircle class="mr-1 h-3.5 w-3.5 animate-spin" />
+												{$_('document.mine.status.processing')}
+											</Badge>
+										{:else}
+											<Badge
+												variant="outline"
+												class="border-yellow-500/30 bg-yellow-500/10 whitespace-nowrap text-yellow-700 dark:text-yellow-400"
+											>
+												<Clock class="mr-1 h-3.5 w-3.5" />
+												{$_(`document.mine.status.${document.enrich_status}`)}
+											</Badge>
+										{/if}
+
+										{#if document.enrich_status === 'failed' || document.enrich_status === 'not_started'}
+											<Button
+												variant="outline"
+												size="sm"
+												class="h-6 px-2 text-xs"
+												onclick={restartEnrichment}
+												disabled={isRestarting}
+											>
+												<RefreshCw class="mr-1 h-3 w-3 {isRestarting ? 'animate-spin' : ''}" />
+												{$_('document.detail.restart')}
+											</Button>
+										{/if}
+									</div>
+								</div>
 								{#if document.title && document.original_file_name !== document.title}
 									<p class="flex items-center text-sm text-muted-foreground">
 										<FileText class="mr-2 h-4 w-4" />
@@ -170,33 +258,6 @@
 					</Card.Header>
 					<Card.Content>
 						<dl class="space-y-4 text-sm">
-							<div class="grid grid-cols-3 gap-2 border-b pb-3">
-								<dt class="col-span-1 text-muted-foreground">{$_('document.detail.status')}</dt>
-								<dd class="col-span-2 text-right">
-									{#if document.enrich_status === 'done'}
-										<span class="inline-flex items-center text-green-600 dark:text-green-400">
-											<CircleCheck class="mr-1 h-3.5 w-3.5" />
-											{$_('document.mine.status.done')}
-										</span>
-									{:else if document.enrich_status === 'failed'}
-										<span class="inline-flex items-center text-red-600 dark:text-red-400">
-											<CircleAlert class="mr-1 h-3.5 w-3.5" />
-											{$_('document.mine.status.failed')}
-										</span>
-									{:else if document.enrich_status === 'processing'}
-										<span class="inline-flex items-center text-blue-600 dark:text-blue-400">
-											<LoaderCircle class="mr-1 h-3.5 w-3.5 animate-spin" />
-											{$_('document.mine.status.processing')}
-										</span>
-									{:else}
-										<span class="inline-flex items-center text-yellow-600 dark:text-yellow-400">
-											<Clock class="mr-1 h-3.5 w-3.5" />
-											{$_(`document.mine.status.${document.enrich_status}`)}
-										</span>
-									{/if}
-								</dd>
-							</div>
-
 							{#if document.year}
 								<div class="grid grid-cols-3 gap-2 border-b pb-3">
 									<dt class="col-span-1 flex items-center text-muted-foreground">

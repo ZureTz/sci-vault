@@ -51,7 +51,8 @@
 			"size": "File Size",
 			"type": "Content Type",
 			"uploaded": "Uploaded On",
-			"back": "Go Back"
+			"back": "Go Back",
+			"restart": "Restart Enrichment"
 		},
 		"mine": {
 			"title": "My Documents",
@@ -140,11 +141,20 @@
 		"get_profile": {
 			"failed": "Failed to load profile"
 		},
+		"get_document": {
+			"not_found": "Document not found",
+			"failed": "Failed to load document"
+		},
 		"upload_document": {
 			"read_failed": "Failed to read file, please try again",
 			"too_large": "Document exceeds the maximum size limit",
 			"unsupported_type": "Unsupported file type, please upload a PDF or supported document",
 			"failed": "Failed to upload document, please try again"
+		},
+		"restart_enrichment": {
+			"not_found": "Document not found",
+			"failed": "Failed to restart enrichment, please try again",
+			"success": "Enrichment task restarted successfully"
 		}
 	},
 	"validation": {
