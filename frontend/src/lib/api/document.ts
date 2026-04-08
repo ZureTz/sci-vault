@@ -1,4 +1,4 @@
-import request from './request';
+import request, { type DefaultResponse } from './request';
 
 export interface UploadDocumentRequest {
 	file: File;
@@ -73,6 +73,12 @@ const documentApi = {
 
 	getDocument(docId: number): Promise<DocumentResponse> {
 		return request.get<DocumentResponse>(`/docs/${docId}`) as unknown as Promise<DocumentResponse>;
+	},
+
+	restartEnrichment(docId: number): Promise<DefaultResponse> {
+		return request.post<DefaultResponse>(
+			`/docs/${docId}/restart_enrichment`
+		) as unknown as Promise<DefaultResponse>;
 	}
 };
 

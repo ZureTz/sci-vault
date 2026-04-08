@@ -92,4 +92,5 @@ func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 	group.GET("/mine", deps.DocumentHandler.ListMyDocuments)
 	group.GET("/:doc_id", deps.DocumentHandler.GetDocument)
 	group.GET("/:doc_id/enrich_status", deps.DocumentHandler.GetEnrichStatus)
+	group.POST("/:doc_id/restart_enrichment", deps.DocumentHandler.RestartEnrichment)
 }
