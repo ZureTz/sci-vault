@@ -13,6 +13,10 @@ service RecommenderService {
   // for the given document. Returns immediately with accepted=true; the actual
   // processing happens in the background and status is tracked via Redis.
   rpc EnrichDocument(EnrichDocumentRequest) returns (EnrichDocumentResponse);
+
+  // TranslateText translates the given text into the target language using LLM,
+  // streaming back translated chunks as they are generated.
+  rpc TranslateText(TranslateTextRequest) returns (stream TranslateTextResponse);
 }
 
 // HealthRequest is an empty message used for health check requests.
@@ -38,4 +42,18 @@ message EnrichDocumentRequest {
 message EnrichDocumentResponse {
   // accepted is true when the enrichment job was successfully queued.
   bool accepted = 1;
+}
+
+// TranslateTextRequest carries the text to translate and the target language.
+message TranslateTextRequest {
+  // text is the source text to translate.
+  string text = 1;
+  // target_language is the BCP-47 language tag (e.g. "zh-CN", "ja", "ko").
+  string target_language = 2;
+}
+
+// TranslateTextResponse carries a chunk of translated text in a streaming response.
+message TranslateTextResponse {
+  // chunk is a piece of the translated text.
+  string chunk = 1;
 }

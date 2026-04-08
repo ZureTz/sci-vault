@@ -60,6 +60,15 @@ func (r *RecommenderClient) EnrichDocument(ctx context.Context, docID uint64, fi
 	return resp.Accepted, nil
 }
 
+// TranslateTextStream opens a server-streaming call for text translation.
+// The caller must consume and close the returned stream.
+func (r *RecommenderClient) TranslateTextStream(ctx context.Context, text, targetLanguage string) (pb.RecommenderService_TranslateTextClient, error) {
+	return r.client.TranslateText(ctx, &pb.TranslateTextRequest{
+		Text:           text,
+		TargetLanguage: targetLanguage,
+	})
+}
+
 // Close releases the underlying gRPC connection.
 func (r *RecommenderClient) Close() error {
 	return r.conn.Close()

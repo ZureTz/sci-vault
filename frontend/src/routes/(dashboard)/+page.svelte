@@ -184,9 +184,7 @@
 			<Card.Root>
 				<Card.Header class="flex flex-row items-center justify-between pb-2">
 					<div>
-						<Card.Title class="text-base font-semibold"
-							>{$_('dashboard.recent.title')}</Card.Title
-						>
+						<Card.Title class="text-base font-semibold">{$_('dashboard.recent.title')}</Card.Title>
 						<Card.Description>{$_('dashboard.recent.description')}</Card.Description>
 					</div>
 					<Button
@@ -270,9 +268,7 @@
 						</div>
 					{:else}
 						<div class="flex flex-col items-center gap-3 py-10">
-							<div
-								class="flex h-12 w-12 items-center justify-center rounded-full bg-muted"
-							>
+							<div class="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
 								<FileText class="h-6 w-6 text-muted-foreground" />
 							</div>
 							<p class="text-sm text-muted-foreground">{$_('dashboard.recent.empty')}</p>
@@ -295,9 +291,7 @@
 			<!-- Enrichment Breakdown -->
 			<Card.Root>
 				<Card.Header class="pb-2">
-					<Card.Title class="text-base font-semibold"
-						>{$_('dashboard.breakdown.title')}</Card.Title
-					>
+					<Card.Title class="text-base font-semibold">{$_('dashboard.breakdown.title')}</Card.Title>
 				</Card.Header>
 				<Card.Content>
 					{#if isLoading}
@@ -313,53 +307,33 @@
 						<div class="space-y-3">
 							<div class="flex items-center justify-between">
 								<div class="flex items-center gap-2">
-									<CircleCheck
-										class="h-4 w-4 text-green-600 dark:text-green-400"
-									/>
+									<CircleCheck class="h-4 w-4 text-green-600 dark:text-green-400" />
 									<span class="text-sm">{$_('document.mine.status.done')}</span>
 								</div>
+								<span class="text-sm font-semibold">{stats.status_breakdown.done}</span>
+							</div>
+							<div class="flex items-center justify-between">
+								<div class="flex items-center gap-2">
+									<LoaderCircle class="h-4 w-4 text-blue-600 dark:text-blue-400" />
+									<span class="text-sm">{$_('document.mine.status.processing')}</span>
+								</div>
+								<span class="text-sm font-semibold">{stats.status_breakdown.processing}</span>
+							</div>
+							<div class="flex items-center justify-between">
+								<div class="flex items-center gap-2">
+									<Clock class="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+									<span class="text-sm">{$_('dashboard.breakdown.queued')}</span>
+								</div>
 								<span class="text-sm font-semibold"
-									>{stats.status_breakdown.done}</span
+									>{stats.status_breakdown.pending + stats.status_breakdown.not_started}</span
 								>
 							</div>
 							<div class="flex items-center justify-between">
 								<div class="flex items-center gap-2">
-									<LoaderCircle
-										class="h-4 w-4 text-blue-600 dark:text-blue-400"
-									/>
-									<span class="text-sm"
-										>{$_('document.mine.status.processing')}</span
-									>
+									<CircleAlert class="h-4 w-4 text-red-600 dark:text-red-400" />
+									<span class="text-sm">{$_('document.mine.status.failed')}</span>
 								</div>
-								<span class="text-sm font-semibold"
-									>{stats.status_breakdown.processing}</span
-								>
-							</div>
-							<div class="flex items-center justify-between">
-								<div class="flex items-center gap-2">
-									<Clock
-										class="h-4 w-4 text-yellow-600 dark:text-yellow-400"
-									/>
-									<span class="text-sm">{$_('dashboard.breakdown.queued')}</span
-									>
-								</div>
-								<span class="text-sm font-semibold"
-									>{stats.status_breakdown.pending +
-										stats.status_breakdown.not_started}</span
-								>
-							</div>
-							<div class="flex items-center justify-between">
-								<div class="flex items-center gap-2">
-									<CircleAlert
-										class="h-4 w-4 text-red-600 dark:text-red-400"
-									/>
-									<span class="text-sm"
-										>{$_('document.mine.status.failed')}</span
-									>
-								</div>
-								<span class="text-sm font-semibold"
-									>{stats.status_breakdown.failed}</span
-								>
+								<span class="text-sm font-semibold">{stats.status_breakdown.failed}</span>
 							</div>
 
 							<!-- Progress bar -->
@@ -370,9 +344,7 @@
 										<span>{$_('dashboard.breakdown.progress')}</span>
 										<span
 											>{Math.round(
-												(stats.status_breakdown.done /
-													stats.total_documents) *
-													100
+												(stats.status_breakdown.done / stats.total_documents) * 100
 											)}%</span
 										>
 									</div>
@@ -392,9 +364,7 @@
 			<!-- Quick Actions -->
 			<Card.Root>
 				<Card.Header class="pb-2">
-					<Card.Title class="text-base font-semibold"
-						>{$_('dashboard.actions.title')}</Card.Title
-					>
+					<Card.Title class="text-base font-semibold">{$_('dashboard.actions.title')}</Card.Title>
 				</Card.Header>
 				<Card.Content class="grid gap-2">
 					<Button

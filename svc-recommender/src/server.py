@@ -16,10 +16,12 @@ from infrastructure.database import Database
 from infrastructure.storage import Storage
 from cache.enrichment import EnrichmentStatusCache
 from genai.document import DocumentGenAI
+from genai.translate import TranslateGenAI
 from repository.document import DocumentRepository
 from storage.document import DocumentStorage
 from servicer.document import DocumentServicer
 from servicer.health import HealthServicer
+from servicer.translate import TranslateServicer
 
 log = logging.getLogger(__name__)
 
@@ -39,16 +41,28 @@ class RecommenderServer:
         doc_genai = DocumentGenAI(
             self._genai.metadata_client, self._genai.embedding_client
         )
+        translate_genai = TranslateGenAI(self._genai.metadata_client)
 
-        class _Servicer(DocumentServicer, HealthServicer):
-            pass
+        _document = DocumentServicer(enrich_cache, doc_repo, doc_storage, doc_genai)
+        _health = HealthServicer()
+        _translate = TranslateServicer(translate_genai)
+
+        class _Servicer(recommender_pb2_grpc.RecommenderServiceServicer):
+            def Health(self, request, context):
+                return _health.Health(request, context)
+
+            def EnrichDocument(self, request, context):
+                return _document.EnrichDocument(request, context)
+
+            def TranslateText(self, request, context):
+                return _translate.TranslateText(request, context)
 
         self._server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=cfg.max_workers),
             interceptors=[LoggingInterceptor()],
         )
         recommender_pb2_grpc.add_RecommenderServiceServicer_to_server(
-            _Servicer(enrich_cache, doc_repo, doc_storage, doc_genai),
+            _Servicer(),
             self._server,
         )
         self._server.add_insecure_port(cfg.addr)

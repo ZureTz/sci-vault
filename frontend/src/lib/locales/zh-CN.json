@@ -82,7 +82,12 @@
 			"type": "文件类型",
 			"uploaded": "上传时间",
 			"back": "返回",
-			"restart": "重新处理"
+			"restart": "重新处理",
+			"translate": "翻译",
+			"translated": "翻译结果",
+			"translate_error": "翻译摘要失败",
+			"show_original": "显示原文",
+			"show_translation": "显示译文"
 		},
 		"mine": {
 			"title": "我的文献",
@@ -184,6 +189,9 @@
 		},
 		"get_dashboard_stats": {
 			"failed": "加载仪表盘统计数据失败"
+		},
+		"translate": {
+			"failed": "翻译服务暂时不可用"
 		},
 		"restart_enrichment": {
 			"not_found": "未找到该文档",

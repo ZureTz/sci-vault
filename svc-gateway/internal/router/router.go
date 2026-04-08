@@ -14,11 +14,12 @@ import (
 
 type RouterDeps struct {
 	// Handlers
-	HealthHandler   *handler.HealthHandler
-	UserHandler     *handler.UserHandler
-	AuthHandler     *handler.AuthHandler
-	DocumentHandler *handler.DocumentHandler
-	StatsHandler    *handler.StatsHandler
+	HealthHandler    *handler.HealthHandler
+	UserHandler      *handler.UserHandler
+	AuthHandler      *handler.AuthHandler
+	DocumentHandler  *handler.DocumentHandler
+	StatsHandler     *handler.StatsHandler
+	TranslateHandler *handler.TranslateHandler
 
 	// Config
 	Config *config.Config
@@ -54,6 +55,10 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 	stats := v1.Group("/stats")
 	stats.Use(middleware.CheckJWT(&deps.Config.JWT))
 	deps.registerStatsRoutes(stats)
+
+	translate := v1.Group("/translate")
+	translate.Use(middleware.CheckJWT(&deps.Config.JWT))
+	deps.registerTranslateRoutes(translate)
 
 	// Assign the configured engine to the router struct
 	return engine
@@ -103,4 +108,9 @@ func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 // Stats routes (/api/v1/stats/...)
 func (deps *RouterDeps) registerStatsRoutes(group *gin.RouterGroup) {
 	group.GET("/dashboard", deps.StatsHandler.GetDashboardStats)
+}
+
+// Translate routes (/api/v1/translate/...)
+func (deps *RouterDeps) registerTranslateRoutes(group *gin.RouterGroup) {
+	group.POST("/summary", deps.TranslateHandler.TranslateSummary)
 }

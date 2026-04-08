@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { _ } from 'svelte-i18n';
+	import { _, locale } from 'svelte-i18n';
 	import {
 		FileText,
 		LoaderCircle,
@@ -12,7 +12,8 @@
 		User,
 		Calendar,
 		BookOpen,
-		RefreshCw
+		RefreshCw,
+		Languages
 	} from 'lucide-svelte';
 
 	import { goto } from '$app/navigation';
@@ -23,6 +24,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { toast } from 'svelte-sonner';
 	import documentApi, { type DocumentResponse } from '$lib/api/document';
+	import { translateSummary } from '$lib/api/translate';
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	let { data } = $props<{ data: { id: number } }>();
@@ -31,6 +33,12 @@
 	let isLoading = $state(true);
 	let isRestarting = $state(false);
 	let pollTimer = $state<ReturnType<typeof setInterval> | null>(null);
+
+	let isTranslating = $state(false);
+	let translatedSummary = $state('');
+	let showOriginal = $state(false);
+
+	let isEnglishLocale = $derived(($locale ?? 'en').startsWith('en'));
 
 	async function loadDocument(showSpinner = true) {
 		if (showSpinner) isLoading = true;
@@ -72,6 +80,33 @@
 			showApiErrors(error, $_('service.restart_enrichment.failed'));
 		} finally {
 			isRestarting = false;
+		}
+	}
+
+	async function handleTranslate() {
+		if (!document?.summary || !$locale) return;
+		isTranslating = true;
+		translatedSummary = '';
+		showOriginal = false;
+		try {
+			await translateSummary(
+				document.summary,
+				$locale,
+				(chunk) => {
+					translatedSummary += chunk;
+				},
+				() => {
+					isTranslating = false;
+				},
+				(error) => {
+					isTranslating = false;
+					toast.error($_('document.detail.translate_error'));
+					console.error('Translation error:', error);
+				}
+			);
+		} catch {
+			isTranslating = false;
+			toast.error($_('document.detail.translate_error'));
 		}
 	}
 
@@ -219,15 +254,50 @@
 
 						{#if document.summary}
 							<div>
-								<h3 class="mb-2 flex items-center gap-2 font-semibold">
-									<BookOpen class="h-4 w-4 text-primary" />
-									{$_('document.detail.summary')}
-								</h3>
+								<div class="mb-2 flex items-center justify-between">
+									<h3 class="flex items-center gap-2 font-semibold">
+										<BookOpen class="h-4 w-4 text-primary" />
+										{$_('document.detail.summary')}
+									</h3>
+									{#if !isEnglishLocale}
+										<Button
+											variant="ghost"
+											size="sm"
+											class="h-7 gap-1.5 text-xs text-muted-foreground"
+											onclick={handleTranslate}
+											disabled={isTranslating}
+										>
+											{#if isTranslating}
+												<LoaderCircle class="h-3.5 w-3.5 animate-spin" />
+											{:else}
+												<Languages class="h-3.5 w-3.5" />
+											{/if}
+											{$_('document.detail.translate')}
+										</Button>
+									{/if}
+								</div>
 								<div
 									class="rounded-lg border bg-muted/30 p-4 text-sm leading-relaxed text-foreground/90"
 								>
-									{document.summary}
+									{#if translatedSummary && !showOriginal}
+										{translatedSummary}{#if isTranslating}<span
+												class="inline-block h-4 w-0.5 animate-pulse bg-foreground/60"
+											></span>{/if}
+									{:else}
+										{document.summary}
+									{/if}
 								</div>
+								{#if translatedSummary || isTranslating}
+									<button
+										class="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+										onclick={() => (showOriginal = !showOriginal)}
+									>
+										<Languages class="h-3 w-3" />
+										{showOriginal
+											? $_('document.detail.show_translation')
+											: $_('document.detail.show_original')}
+									</button>
+								{/if}
 							</div>
 						{/if}
 

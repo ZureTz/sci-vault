@@ -102,14 +102,16 @@ func New(configPath string) (*App, error) {
 	authHandler := handler.NewAuthHandler()
 	documentHandler := handler.NewDocumentHandler(documentService)
 	statsHandler := handler.NewStatsHandler(statsService)
+	translateHandler := handler.NewTranslateHandler(recommenderClient)
 
 	// 5. Initialize router layer (routing and middleware mapping)
 	r := router.NewRouter(&router.RouterDeps{
-		HealthHandler:   healthHandler,
-		UserHandler:     userHandler,
-		AuthHandler:     authHandler,
-		DocumentHandler: documentHandler,
-		StatsHandler:    statsHandler,
+		HealthHandler:    healthHandler,
+		UserHandler:      userHandler,
+		AuthHandler:      authHandler,
+		DocumentHandler:  documentHandler,
+		StatsHandler:     statsHandler,
+		TranslateHandler: translateHandler,
 
 		Config: cfg,
 	})

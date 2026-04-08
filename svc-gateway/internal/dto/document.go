@@ -44,6 +44,11 @@ type EnrichStatusResponse struct {
 	Status string `json:"status"`
 }
 
+type TranslateSummaryRequest struct {
+	Text           string `json:"text" binding:"required"`
+	TargetLanguage string `json:"target_language" binding:"required"`
+}
+
 type DocumentResponse struct {
 	ID               uint      `json:"id"`
 	Title            *string   `json:"title"`

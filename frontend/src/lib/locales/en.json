@@ -82,7 +82,12 @@
 			"type": "Content Type",
 			"uploaded": "Uploaded On",
 			"back": "Go Back",
-			"restart": "Restart Enrichment"
+			"restart": "Restart Enrichment",
+			"translate": "Translate",
+			"translated": "Translated",
+			"translate_error": "Failed to translate summary",
+			"show_original": "Show original",
+			"show_translation": "Show translation"
 		},
 		"mine": {
 			"title": "My Documents",
@@ -184,6 +189,9 @@
 		},
 		"get_dashboard_stats": {
 			"failed": "Failed to load dashboard statistics"
+		},
+		"translate": {
+			"failed": "Translation service is temporarily unavailable"
 		},
 		"restart_enrichment": {
 			"not_found": "Document not found",

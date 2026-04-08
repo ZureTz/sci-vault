@@ -2,14 +2,11 @@
 
 import grpc
 
-from pb.recommender.v1 import recommender_pb2, recommender_pb2_grpc
+from pb.recommender.v1 import recommender_pb2
 
 
-class HealthServicer(recommender_pb2_grpc.RecommenderServiceServicer):
-    """Concrete implementation of the RecommenderService gRPC service.
-
-    Add more RPC methods here as the feature set grows.
-    """
+class HealthServicer:
+    """Implements the Health RPC."""
 
     def Health(
         self,
