@@ -21,6 +21,13 @@ export interface LoginResponse {
 	token: string;
 }
 
+export interface RegisterResponse {
+	user_id: string;
+	username: string;
+	email: string;
+	token: string;
+}
+
 export interface RegisterRequest {
 	username: string;
 	email: string;
@@ -81,7 +88,7 @@ const userApi = {
 	 * Register a new user
 	 */
 	register(data: RegisterRequest) {
-		return request.post<RegisterRequest, DefaultResponse>('/user/register', data);
+		return request.post<RegisterRequest, RegisterResponse>('/user/register', data);
 	},
 
 	/**

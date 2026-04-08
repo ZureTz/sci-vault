@@ -23,6 +23,13 @@ type LoginResponse struct {
 	JWTToken string `json:"token"`
 }
 
+type RegisterResponse struct {
+	UserID   string `json:"user_id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	JWTToken string `json:"token"`
+}
+
 type RegisterRequest struct {
 	Username          string `json:"username" binding:"required,min=3,max=20,custom_username_validator"`
 	Email             string `json:"email" binding:"required,email"`

@@ -20,7 +20,7 @@ import (
 type UserService interface {
 	SendEmailCode(ctx context.Context, req dto.SendEmailCodeRequest) error
 	Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error)
-	Register(ctx context.Context, req dto.RegisterRequest) error
+	Register(ctx context.Context, req dto.RegisterRequest) (*dto.RegisterResponse, error)
 	ResetPassword(ctx context.Context, req dto.ResetPasswordRequest) error
 	UploadAvatar(ctx context.Context, userID uint, file io.Reader, contentType, filename string, size int64) (*dto.UploadAvatarResponse, error)
 	UpdateProfile(ctx context.Context, userID uint, req dto.UpdateProfileRequest) error
@@ -74,7 +74,8 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.Register(c.Request.Context(), req); err != nil {
+	response, err := h.userService.Register(c.Request.Context(), req)
+	if err != nil {
 		if errors.Is(err, app_error.ErrEmailCodeExpired) || errors.Is(err, app_error.ErrEmailCodeMismatch) {
 			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.email_code.invalid")))
 			return
@@ -83,7 +84,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.register.failed")))
 		return
 	}
-	c.JSON(http.StatusCreated, utils.MessageResponse("user registered successfully"))
+	c.JSON(http.StatusCreated, response)
 }
 
 func (h *UserHandler) ResetPassword(c *gin.Context) {

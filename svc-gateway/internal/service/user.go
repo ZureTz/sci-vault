@@ -140,15 +140,15 @@ func (s *UserService) ResetPassword(ctx context.Context, req dto.ResetPasswordRe
 	return nil
 }
 
-func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) error {
+func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) (*dto.RegisterResponse, error) {
 	// Verify email code from Redis
 	cacheKey := fmt.Sprintf("%s:code", req.Email)
 	storedCode, err := s.cacheConn.Get(ctx, cacheKey)
 	if err != nil {
-		return app_error.ErrEmailCodeExpired
+		return nil, app_error.ErrEmailCodeExpired
 	}
 	if storedCode != req.EmailCode {
-		return app_error.ErrEmailCodeMismatch
+		return nil, app_error.ErrEmailCodeMismatch
 	}
 
 	// Delete verification code after successful check
@@ -157,7 +157,7 @@ func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) err
 	// Create new user in the database
 	hashedPassword, err := password.Hash(req.Password) // Implement password hashing
 	if err != nil {
-		return fmt.Errorf("failed to hash password: %w", err)
+		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	newUser := &model.User{
@@ -167,7 +167,7 @@ func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) err
 	}
 	err = s.repo.Create(ctx, newUser)
 	if err != nil {
-		return fmt.Errorf("failed to create user: %w", err)
+		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
 	// Send welcome email asynchronously (don't block registration flow)
@@ -177,7 +177,18 @@ func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) err
 		Body:    fmt.Sprintf("<h1>Hello %s!</h1><p>Welcome to sci-vault!</p>", req.Username),
 	})
 
-	return nil
+	// Generate JWT token
+	jwtToken, err := s.jwtGenerator.GenerateJWT(newUser.ID, newUser.Username)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate JWT token: %w", err)
+	}
+
+	return &dto.RegisterResponse{
+		UserID:   fmt.Sprintf("%d", newUser.ID),
+		Username: newUser.Username,
+		Email:    newUser.Email,
+		JWTToken: jwtToken,
+	}, nil
 }
 
 func (s *UserService) UploadAvatar(ctx context.Context, userID uint, file io.Reader, contentType, filename string, size int64) (*dto.UploadAvatarResponse, error) {
