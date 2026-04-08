@@ -39,6 +39,20 @@
 		"unauthorized": "登录已过期，请重新登录"
 	},
 	"document": {
+		"detail": {
+			"title": "文档详情",
+			"error": "加载文档失败",
+			"metadata": "元数据信息",
+			"summary": "AI 摘要",
+			"tags": "提取标签",
+			"download": "下载文件",
+			"status": "处理状态",
+			"year": "年份",
+			"size": "文件大小",
+			"type": "文件类型",
+			"uploaded": "上传时间",
+			"back": "返回"
+		},
 		"mine": {
 			"title": "我的文献",
 			"description": "查看和管理您已上传的文献。",
