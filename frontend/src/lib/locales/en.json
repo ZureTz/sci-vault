@@ -32,7 +32,35 @@
 	},
 	"dashboard": {
 		"title": "Dashboard Overview",
-		"description": "Welcome to the Sci-Vault Dashboard. Content goes here."
+		"description": "Your research data at a glance.",
+		"error": "Failed to load dashboard data",
+		"quick_upload": "Upload Document",
+		"stats": {
+			"total_documents": "Total Documents",
+			"storage_used": "Storage Used",
+			"total_views": "Total Views",
+			"enrichment": "Enrichment",
+			"enriched": "{count} enriched",
+			"across_documents": "Across {count} documents",
+			"all_time": "All time",
+			"completion_rate": "Completion rate"
+		},
+		"recent": {
+			"title": "Recent Documents",
+			"description": "Your latest uploads",
+			"view_all": "View All",
+			"empty": "No documents uploaded yet."
+		},
+		"breakdown": {
+			"title": "Enrichment Status",
+			"queued": "Queued",
+			"progress": "Enrichment progress"
+		},
+		"actions": {
+			"title": "Quick Actions",
+			"upload": "Upload Document",
+			"my_documents": "My Documents"
+		}
 	},
 	"settings": {
 		"title": "Settings"
@@ -153,6 +181,9 @@
 			"too_large": "Document exceeds the maximum size limit",
 			"unsupported_type": "Unsupported file type, please upload a PDF or supported document",
 			"failed": "Failed to upload document, please try again"
+		},
+		"get_dashboard_stats": {
+			"failed": "Failed to load dashboard statistics"
 		},
 		"restart_enrichment": {
 			"not_found": "Document not found",

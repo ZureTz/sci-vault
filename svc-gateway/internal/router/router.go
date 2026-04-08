@@ -18,6 +18,7 @@ type RouterDeps struct {
 	UserHandler     *handler.UserHandler
 	AuthHandler     *handler.AuthHandler
 	DocumentHandler *handler.DocumentHandler
+	StatsHandler    *handler.StatsHandler
 
 	// Config
 	Config *config.Config
@@ -49,6 +50,10 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 	docs := v1.Group("/docs")
 	docs.Use(middleware.CheckJWT(&deps.Config.JWT))
 	deps.registerDocumentRoutes(docs)
+
+	stats := v1.Group("/stats")
+	stats.Use(middleware.CheckJWT(&deps.Config.JWT))
+	deps.registerStatsRoutes(stats)
 
 	// Assign the configured engine to the router struct
 	return engine
@@ -93,4 +98,9 @@ func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 	group.GET("/:doc_id", deps.DocumentHandler.GetDocument)
 	group.GET("/:doc_id/enrich_status", deps.DocumentHandler.GetEnrichStatus)
 	group.POST("/:doc_id/restart_enrichment", deps.DocumentHandler.RestartEnrichment)
+}
+
+// Stats routes (/api/v1/stats/...)
+func (deps *RouterDeps) registerStatsRoutes(group *gin.RouterGroup) {
+	group.GET("/dashboard", deps.StatsHandler.GetDashboardStats)
 }

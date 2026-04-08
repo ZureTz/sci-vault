@@ -32,7 +32,35 @@
 	},
 	"dashboard": {
 		"title": "仪表盘总览",
-		"description": "欢迎来到 Sci-Vault 仪表盘。内容将在这里显示。"
+		"description": "一览您的研究数据概况。",
+		"error": "加载仪表盘数据失败",
+		"quick_upload": "上传文献",
+		"stats": {
+			"total_documents": "文献总数",
+			"storage_used": "已用存储",
+			"total_views": "总浏览量",
+			"enrichment": "数据丰富",
+			"enriched": "{count} 篇已完成",
+			"across_documents": "共 {count} 篇文献",
+			"all_time": "累计",
+			"completion_rate": "完成率"
+		},
+		"recent": {
+			"title": "最近文献",
+			"description": "您最近上传的文献",
+			"view_all": "查看全部",
+			"empty": "暂未上传任何文献。"
+		},
+		"breakdown": {
+			"title": "处理状态",
+			"queued": "排队中",
+			"progress": "丰富进度"
+		},
+		"actions": {
+			"title": "快捷操作",
+			"upload": "上传文献",
+			"my_documents": "我的文献"
+		}
 	},
 	"settings": {
 		"title": "设置"
@@ -153,6 +181,9 @@
 			"too_large": "文献超过最大文件大小限制",
 			"unsupported_type": "不支持的文件类型，请上传 PDF 或受支持的文档格式",
 			"failed": "文献上传失败，请稍后重试"
+		},
+		"get_dashboard_stats": {
+			"failed": "加载仪表盘统计数据失败"
 		},
 		"restart_enrichment": {
 			"not_found": "未找到该文档",
