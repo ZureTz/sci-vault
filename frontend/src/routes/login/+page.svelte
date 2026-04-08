@@ -109,9 +109,19 @@
 
 		isSubmitting = true;
 		try {
-			await userApi.register(registerForm);
+			const res = await userApi.register(registerForm);
+			
+			localStorage.setItem('token', res.token);
+			localStorage.setItem(
+				'user',
+				JSON.stringify({
+					id: res.user_id,
+					username: res.username,
+					email: res.email
+				})
+			);
 			toast.success($_('login.success.register'));
-			activeTab = 'login';
+			goto(resolve('/'));
 		} catch (error: unknown) {
 			showApiErrors(error, $_('login.error.register_failed'));
 		} finally {
