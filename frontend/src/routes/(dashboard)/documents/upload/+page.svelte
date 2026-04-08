@@ -17,15 +17,40 @@
 	let doi = $state('');
 	let isSubmitting = $state(false);
 	let uploadPercent = $state(0);
+	let isDragging = $state(false);
 
-	function handleFileChange(event: Event) {
-		const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+	function processFile(file: File | null) {
 		if (file && !file.name.toLowerCase().endsWith('.pdf')) {
 			toast.error($_('document.upload.error.invalid_type'));
-			(event.target as HTMLInputElement).value = '';
+			if (fileInput) fileInput.value = '';
 			return;
 		}
 		selectedFile = file;
+	}
+
+	function handleFileChange(event: Event) {
+		const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+		processFile(file);
+	}
+
+	function handleDrop(event: DragEvent) {
+		event.preventDefault();
+		isDragging = false;
+		const file = event.dataTransfer?.files?.[0] ?? null;
+		if (fileInput && event.dataTransfer?.files) {
+			fileInput.files = event.dataTransfer.files;
+		}
+		processFile(file);
+	}
+
+	function handleDragOver(event: DragEvent) {
+		event.preventDefault();
+		isDragging = true;
+	}
+
+	function handleDragLeave(event: DragEvent) {
+		event.preventDefault();
+		isDragging = false;
 	}
 
 	async function handleSubmit(event: SubmitEvent) {
@@ -84,11 +109,18 @@
 				<div class="space-y-1.5">
 					<Label for="file">{$_('document.upload.file_label')}</Label>
 					<div
-						class="flex cursor-pointer items-center gap-3 rounded-md border border-dashed border-input bg-muted/30 px-4 py-5 transition-colors hover:bg-muted/50"
+						class={`flex cursor-pointer items-center gap-3 rounded-md border-2 border-dashed px-4 py-5 transition-colors ${
+							isDragging
+								? 'border-primary bg-primary/10'
+								: 'border-input bg-muted/30 hover:bg-muted/50'
+						}`}
 						role="button"
 						tabindex="0"
 						onclick={() => fileInput?.click()}
 						onkeydown={(e) => e.key === 'Enter' && fileInput?.click()}
+						ondrop={handleDrop}
+						ondragover={handleDragOver}
+						ondragleave={handleDragLeave}
 					>
 						<FileUp class="h-5 w-5 shrink-0 text-muted-foreground" />
 						<span class="text-sm text-muted-foreground">
