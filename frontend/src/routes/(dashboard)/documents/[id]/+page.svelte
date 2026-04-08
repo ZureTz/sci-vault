@@ -3,7 +3,6 @@
 	import { _ } from 'svelte-i18n';
 	import {
 		FileText,
-		Download,
 		LoaderCircle,
 		ArrowLeft,
 		Clock,
@@ -54,12 +53,6 @@
 		});
 	}
 
-	function handleDownload() {
-		if (document?.download_url) {
-			window.open(document.download_url, '_blank');
-		}
-	}
-
 	onMount(() => {
 		loadDocument();
 	});
@@ -78,8 +71,8 @@
 		</Button>
 
 		{#if document && document.download_url}
-			<Button onclick={handleDownload}>
-				<Download class="mr-2 h-4 w-4" />
+			<Button href={document.download_url} target="_blank" rel="noreferrer">
+				<BookOpen class="mr-2 h-4 w-4" />
 				{$_('document.detail.download')}
 			</Button>
 		{/if}

@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { _ } from 'svelte-i18n';
-	import { FileText, Upload, LoaderCircle, CircleCheck, Clock, CircleAlert } from 'lucide-svelte';
+	import {
+		FileText,
+		Upload,
+		LoaderCircle,
+		CircleCheck,
+		Clock,
+		CircleAlert,
+		Eye
+	} from 'lucide-svelte';
 
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -140,24 +148,38 @@
 						<Table.Header>
 							<Table.Row>
 								<Table.Head>{$_('document.mine.table.title')}</Table.Head>
-								<Table.Head class="w-16 text-right"
+								<Table.Head class="w-24 text-right"
 									>{$_('document.mine.table.file_size')}</Table.Head
 								>
 								<Table.Head class="w-32">{$_('document.mine.table.status')}</Table.Head>
-								<Table.Head class="w-28">{$_('document.mine.table.created_at')}</Table.Head>
+								<Table.Head class="w-32">{$_('document.mine.table.created_at')}</Table.Head>
+								<Table.Head class="w-16 text-right">{$_('document.mine.table.actions')}</Table.Head>
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
 							{#each documents as doc (doc.id)}
-								<Table.Row>
+								<Table.Row class="group transition-colors hover:bg-muted/50 hover:shadow-sm">
 									<Table.Cell class="font-medium">
-										<span class="line-clamp-1">{doc.title ?? doc.original_file_name}</span>
-										{#if doc.title}
-											<span
-												class="mt-0.5 line-clamp-1 block text-xs font-normal text-muted-foreground"
-												>{doc.original_file_name}</span
-											>
-										{/if}
+										<a
+											href={resolve(`/documents/${doc.id}`)}
+											class="flex items-center gap-3 rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-primary"
+										>
+											<FileText
+												class="h-4 w-4 shrink-0 text-muted-foreground/70 transition-colors group-hover:text-primary"
+											/>
+											<div>
+												<span
+													class="line-clamp-1 font-medium transition-colors group-hover:text-primary"
+													>{doc.title ?? doc.original_file_name}</span
+												>
+												{#if doc.title}
+													<span
+														class="mt-0.5 line-clamp-1 block text-xs font-normal text-muted-foreground/80 group-hover:text-muted-foreground"
+														>{doc.original_file_name}</span
+													>
+												{/if}
+											</div>
+										</a>
 									</Table.Cell>
 									<Table.Cell class="text-right text-xs text-muted-foreground">
 										{formatFileSize(doc.file_size)}
@@ -196,6 +218,16 @@
 									</Table.Cell>
 									<Table.Cell class="text-xs text-muted-foreground">
 										{formatDate(doc.created_at)}
+									</Table.Cell>
+									<Table.Cell class="text-right">
+										<Button
+											variant="ghost"
+											size="icon"
+											href={resolve(`/documents/${doc.id}`)}
+											class="h-8 w-8 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+										>
+											<Eye strokeWidth={2.5} class="h-4 w-4" />
+										</Button>
 									</Table.Cell>
 								</Table.Row>
 							{/each}
