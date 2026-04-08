@@ -38,10 +38,14 @@ export function validateEmailCode(value: string): string | null {
 	return null;
 }
 
+export function isEmail(value: string): boolean {
+	return value.includes('@');
+}
+
 // Validates login identifier: email or username depending on presence of '@'
 export function validateIdentifier(value: string): string | null {
 	if (!value) return 'validation.identifier.required';
-	return value.includes('@') ? validateEmail(value) : validateUsername(value);
+	return isEmail(value) ? validateEmail(value) : validateUsername(value);
 }
 
 export interface LoginFormErrors {
