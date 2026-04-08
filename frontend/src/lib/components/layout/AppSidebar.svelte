@@ -1,12 +1,14 @@
 <script lang="ts">
 	import {
 		Activity,
+		BookOpen,
 		ChevronRight,
 		ChevronsUpDown,
 		Compass,
 		FileText,
 		LogOut,
 		Settings,
+		Upload,
 		User
 	} from 'lucide-svelte';
 	import { onMount } from 'svelte';
@@ -38,12 +40,24 @@
 			title: 'sidebar.documents',
 			icon: FileText,
 			items: [
-				{ title: 'sidebar.my_documents', url: '/documents/mine' as const },
-				{ title: 'sidebar.upload', url: '/documents/upload' as const }
+				{ title: 'sidebar.my_documents', url: '/documents/mine' as const, icon: FileText },
+				{ title: 'sidebar.upload', url: '/documents/upload' as const, icon: Upload }
 			]
 		},
 		{ title: 'sidebar.settings', url: '/settings' as const, icon: Settings }
 	];
+
+	let isOnDocDetail = $derived(
+		/^\/documents\/[^/]+$/.test(page.url.pathname) &&
+			!page.url.pathname.endsWith('/mine') &&
+			!page.url.pathname.endsWith('/upload')
+	);
+
+	let isDocGroupActive = $derived(
+		isOnDocDetail ||
+			page.url.pathname === resolve('/documents/mine') ||
+			page.url.pathname === resolve('/documents/upload')
+	);
 
 	onMount(async () => {
 		const userStr = localStorage.getItem('user');
@@ -93,7 +107,7 @@
 				<Sidebar.Menu>
 					{#each navItems as item (item.title)}
 						{#if item.items}
-							<Collapsible.Root class="group/collapsible">
+							<Collapsible.Root open={isDocGroupActive} class="group/collapsible">
 								<Sidebar.MenuItem>
 									<Collapsible.Trigger>
 										{#snippet child({ props })}
@@ -115,12 +129,25 @@
 													>
 														{#snippet child({ props })}
 															<a href={resolve(subItem.url)} {...props}>
+																<subItem.icon class="size-3.5" />
 																<span>{$_(subItem.title)}</span>
 															</a>
 														{/snippet}
 													</Sidebar.MenuSubButton>
 												</Sidebar.MenuSubItem>
 											{/each}
+											{#if isOnDocDetail}
+												<Sidebar.MenuSubItem>
+													<Sidebar.MenuSubButton isActive={true}>
+														{#snippet child({ props })}
+															<a href={resolve(`/documents/${page.params.id}`)} {...props}>
+																<BookOpen class="size-3.5" />
+																<span>{$_('sidebar.document_detail')}</span>
+															</a>
+														{/snippet}
+													</Sidebar.MenuSubButton>
+												</Sidebar.MenuSubItem>
+											{/if}
 										</Sidebar.MenuSub>
 									</Collapsible.Content>
 								</Sidebar.MenuItem>

@@ -16,6 +16,7 @@
 		"documents": "Documents",
 		"upload": "Upload",
 		"my_documents": "My Documents",
+		"document_detail": "Document Detail",
 		"settings": "Settings",
 		"profile": "Profile",
 		"logout": "Log out"
@@ -26,7 +27,8 @@
 		"profile": "Profile",
 		"documents": "Documents",
 		"upload": "Upload",
-		"my_documents": "My Documents"
+		"my_documents": "My Documents",
+		"document_detail": "Document Detail"
 	},
 	"dashboard": {
 		"title": "Dashboard Overview",

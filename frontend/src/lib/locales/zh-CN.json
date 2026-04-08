@@ -16,6 +16,7 @@
 		"documents": "文献库",
 		"upload": "上传文献",
 		"my_documents": "我的文献",
+		"document_detail": "文献详情",
 		"settings": "设置",
 		"profile": "个人资料",
 		"logout": "退出登录"
@@ -26,7 +27,8 @@
 		"profile": "个人资料",
 		"documents": "文献库",
 		"upload": "上传文献",
-		"my_documents": "我的文献"
+		"my_documents": "我的文献",
+		"document_detail": "文献详情"
 	},
 	"dashboard": {
 		"title": "仪表盘总览",
