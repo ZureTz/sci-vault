@@ -32,13 +32,17 @@ export async function translateSummary(
 	}
 
 	try {
-		await request.post('/translate/summary', { text, target_language: targetLanguage }, {
-			responseType: 'text',
-			onDownloadProgress: (event) => {
-				const responseText = (event.event?.target as XMLHttpRequest)?.responseText ?? '';
-				parseChunks(responseText);
+		await request.post(
+			'/translate/summary',
+			{ text, target_language: targetLanguage },
+			{
+				responseType: 'text',
+				onDownloadProgress: (event) => {
+					const responseText = (event.event?.target as XMLHttpRequest)?.responseText ?? '';
+					parseChunks(responseText);
+				}
 			}
-		});
+		);
 	} catch (error: unknown) {
 		if (!done) onError(String(error));
 		return;

@@ -42,6 +42,7 @@
 	}
 
 	async function loadStats() {
+		if (!localStorage.getItem('token')) return;
 		isLoading = true;
 		try {
 			stats = await statsApi.getDashboardStats();
