@@ -89,6 +89,11 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 		return nil, fmt.Errorf("failed to save document: %w", err)
 	}
 
+	// Set the enrichment status in Redis with a TTL to not_started
+	if err := s.cacheConn.Set(ctx, enrichStatusKey(doc.ID), EnrichStatusNotStarted, enrichStatusTTL); err != nil {
+		slog.Warn("Failed to set enrich status in cache", "docID", doc.ID, "err", err)
+	}
+
 	// Trigger async enrichment on the Python microservice.
 	// The call returns an immediate ACK; Python owns all status updates from this point.
 	// A failure here is non-fatal — the document is already saved.

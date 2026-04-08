@@ -184,7 +184,7 @@ func (c *Client) PrivateObjectURL(ctx context.Context, key string, expiry time.D
 		Key:    aws.String(key),
 	}
 	if filename != "" {
-		input.ResponseContentDisposition = aws.String(fmt.Sprintf(`attachment; filename="%s"`, filename))
+		input.ResponseContentDisposition = aws.String(fmt.Sprintf(`inline; filename="%s"`, filename))
 	}
 	req, err := presignClient.PresignGetObject(ctx, input, func(opts *s3.PresignOptions) {
 		opts.Expires = expiry
