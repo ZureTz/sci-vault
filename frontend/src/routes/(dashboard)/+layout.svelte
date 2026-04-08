@@ -18,25 +18,36 @@
 	let { children } = $props();
 
 	const crumbs = $derived.by((): { label: string; href?: string }[] => {
-		const routeId = page.route.id ?? '';
+		const routeId = page.route.id;
+		if (!routeId) return [{ label: $_('breadcrumb.dashboard'), href: resolve('/') }];
+
 		const base = { label: $_('breadcrumb.dashboard'), href: resolve('/') };
-		if (routeId.includes('/settings')) {
-			return [base, { label: $_('breadcrumb.settings') }];
+
+		switch (routeId) {
+			case '/(dashboard)/settings':
+				return [base, { label: $_('breadcrumb.settings') }];
+			case '/(dashboard)/profile':
+			case '/(dashboard)/profile/[user_id]':
+				return [base, { label: $_('breadcrumb.profile') }];
+			case '/(dashboard)/documents':
+				return [base, { label: $_('breadcrumb.documents') }];
+			case '/(dashboard)/documents/mine':
+				return [
+					base,
+					{ label: $_('breadcrumb.documents') },
+					{ label: $_('breadcrumb.my_documents') }
+				];
+			case '/(dashboard)/documents/upload':
+				return [base, { label: $_('breadcrumb.documents') }, { label: $_('breadcrumb.upload') }];
+			case '/(dashboard)/documents/[id]':
+				return [
+					base,
+					{ label: $_('breadcrumb.documents') },
+					{ label: $_('breadcrumb.document_detail') }
+				];
+			default:
+				return [base];
 		}
-		if (routeId.includes('/profile')) {
-			return [base, { label: $_('breadcrumb.profile') }];
-		}
-		if (routeId.includes('/documents/mine')) {
-			return [
-				base,
-				{ label: $_('breadcrumb.documents') },
-				{ label: $_('breadcrumb.my_documents') }
-			];
-		}
-		if (routeId.includes('/documents/upload')) {
-			return [base, { label: $_('breadcrumb.documents') }, { label: $_('breadcrumb.upload') }];
-		}
-		return [base];
 	});
 
 	onMount(() => {

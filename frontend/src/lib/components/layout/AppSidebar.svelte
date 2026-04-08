@@ -47,17 +47,9 @@
 		{ title: 'sidebar.settings', url: '/settings' as const, icon: Settings }
 	];
 
-	let isOnDocDetail = $derived(
-		/^\/documents\/[^/]+$/.test(page.url.pathname) &&
-			!page.url.pathname.endsWith('/mine') &&
-			!page.url.pathname.endsWith('/upload')
-	);
+	let isOnDocDetail = $derived(page.route.id === '/(dashboard)/documents/[id]');
 
-	let isDocGroupActive = $derived(
-		isOnDocDetail ||
-			page.url.pathname === resolve('/documents/mine') ||
-			page.url.pathname === resolve('/documents/upload')
-	);
+	let isDocGroupActive = $derived(page.route.id?.startsWith('/(dashboard)/documents') ?? false);
 
 	onMount(async () => {
 		const userStr = localStorage.getItem('user');

@@ -17,6 +17,7 @@
 	import { resolve } from '$app/paths';
 	import {
 		validateEmail,
+		isEmail,
 		validateLoginForm,
 		validateRegisterForm,
 		validateResetForm,
@@ -29,15 +30,31 @@
 	let activeTab = $state<'login' | 'register'>('login');
 
 	// Form states
-	let loginForm = $state({ identifier: '', password: '' });
-	let registerForm = $state({
+	let loginForm = $state<{
+		identifier: string; // Can be username or email
+		password: string;
+	}>({ identifier: '', password: '' });
+
+	let registerForm = $state<{
+		username: string;
+		email: string;
+		password: string;
+		confirmed_password: string;
+		email_code: string;
+	}>({
 		username: '',
 		email: '',
 		password: '',
 		confirmed_password: '',
 		email_code: ''
 	});
-	let resetForm = $state({
+
+	let resetForm = $state<{
+		email: string;
+		email_code: string;
+		password: string;
+		confirmed_password: string;
+	}>({
 		email: '',
 		email_code: '',
 		password: '',
@@ -75,9 +92,8 @@
 		try {
 			// Backend expects username if provided, or email.
 			// The LoginRequest DTO has username and email as optional.
-			const isEmail = loginForm.identifier.includes('@');
 			const res = await userApi.login({
-				[isEmail ? 'email' : 'username']: loginForm.identifier,
+				[isEmail(loginForm.identifier) ? 'email' : 'username']: loginForm.identifier,
 				password: loginForm.password
 			});
 
@@ -110,7 +126,7 @@
 		isSubmitting = true;
 		try {
 			const res = await userApi.register(registerForm);
-			
+
 			localStorage.setItem('token', res.token);
 			localStorage.setItem(
 				'user',
