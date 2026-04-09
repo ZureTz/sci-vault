@@ -54,6 +54,12 @@ const documentApi = {
 		}) as unknown as Promise<ListDocumentsResponse>;
 	},
 
+	listPendingDocuments(): Promise<ListDocumentsResponse> {
+		return request.get<ListDocumentsResponse>(
+			'/docs/pending'
+		) as unknown as Promise<ListDocumentsResponse>;
+	},
+
 	getEnrichStatus(docId: number): Promise<EnrichStatusResponse> {
 		return request.get<EnrichStatusResponse>(
 			`/docs/${docId}/enrich_status`

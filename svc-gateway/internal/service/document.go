@@ -198,6 +198,32 @@ func (s *DocumentService) ListMyDocuments(ctx context.Context, userID uint, page
 	}, nil
 }
 
+func (s *DocumentService) ListPendingDocuments(ctx context.Context, userID uint) (*dto.ListDocumentsResponse, error) {
+	docs, total, err := s.repo.FindByUserIDAndStatus(ctx, userID, EnrichStatusNotStarted, 0, 50)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list pending documents: %w", err)
+	}
+
+	items := make([]dto.DocumentListItem, 0, len(docs))
+	for _, doc := range docs {
+		items = append(items, dto.DocumentListItem{
+			ID:               doc.ID,
+			Title:            doc.Title,
+			OriginalFileName: doc.OriginalFileName,
+			FileSize:         doc.FileSize,
+			EnrichStatus:     doc.EnrichStatus,
+			CreatedAt:        doc.CreatedAt,
+		})
+	}
+
+	return &dto.ListDocumentsResponse{
+		Documents: items,
+		Total:     total,
+		Page:      1,
+		PageSize:  50,
+	}, nil
+}
+
 // downloadFilename ensures the filename ends with ".pdf".
 func downloadFilename(original string) string {
 	if strings.HasSuffix(strings.ToLower(original), ".pdf") {

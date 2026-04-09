@@ -1,13 +1,15 @@
 <script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
-	import { FileUp } from 'lucide-svelte';
+	import { FileUp, LoaderCircle, CircleCheck, Clock, CircleAlert } from 'lucide-svelte';
 
+	import { resolve } from '$app/paths';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import documentApi from '$lib/api/document';
+	import documentApi, { type DocumentListItem } from '$lib/api/document';
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	let fileInput = $state<HTMLInputElement | undefined>(undefined);
@@ -18,6 +20,50 @@
 	let isSubmitting = $state(false);
 	let uploadPercent = $state(0);
 	let isDragging = $state(false);
+
+	let pendingDocuments = $state<DocumentListItem[]>([]);
+	let pollTimer = $state<ReturnType<typeof setInterval> | null>(null);
+
+	async function fetchPendingDocuments() {
+		try {
+			const res = await documentApi.listPendingDocuments();
+			pendingDocuments = res.documents;
+
+			// Poll Enrich Status immediately after fetching pending documents to update any that might have changed since last poll
+			pollEnrichStatus();
+		} catch {
+			// Silently fail on background poll
+		}
+	}
+
+	async function pollEnrichStatus() {
+		if (pendingDocuments.length === 0) return;
+		for (const doc of pendingDocuments) {
+			try {
+				const res = await documentApi.getEnrichStatus(doc.id);
+				const idx = pendingDocuments.findIndex((d) => d.id === doc.id);
+				if (idx !== -1 && pendingDocuments[idx].enrich_status !== res.status) {
+					pendingDocuments[idx].enrich_status = res.status;
+					// If done or failed, we might want to refresh the entire pending list
+					// to clear them out, or just refresh after a short delay
+					if (['done', 'failed'].includes(res.status)) {
+						setTimeout(fetchPendingDocuments, 1000);
+					}
+				}
+			} catch {
+				// skip
+			}
+		}
+	}
+
+	onMount(() => {
+		fetchPendingDocuments();
+		pollTimer = setInterval(pollEnrichStatus, 3000);
+	});
+
+	onDestroy(() => {
+		if (pollTimer) clearInterval(pollTimer);
+	});
 
 	function processFile(file: File | null) {
 		if (file && !file.name.toLowerCase().endsWith('.pdf')) {
@@ -69,6 +115,10 @@
 				(pct) => (uploadPercent = pct)
 			);
 			toast.success($_('document.upload.success'));
+
+			// Refresh the enrichment queue immediately
+			fetchPendingDocuments();
+
 			// Reset form
 			selectedFile = null;
 			title = '';
@@ -123,15 +173,15 @@
 						ondragleave={handleDragLeave}
 					>
 						<FileUp class="h-5 w-5 shrink-0 text-muted-foreground" />
-						<span class="text-sm text-muted-foreground">
+						<div class="flex min-w-0 flex-1 flex-col text-sm text-muted-foreground">
 							{#if selectedFile}
-								<span class="font-medium text-foreground">{selectedFile.name}</span>
-								<span class="ml-2 text-xs">({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)</span
+								<span class="truncate font-medium text-foreground">{selectedFile.name}</span>
+								<span class="mt-0.5 text-xs">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span
 								>
 							{:else}
-								{$_('document.upload.file_placeholder')}
+								<span>{$_('document.upload.file_placeholder')}</span>
 							{/if}
-						</span>
+						</div>
 					</div>
 					<input
 						id="file"
@@ -208,4 +258,56 @@
 			</form>
 		</Card.Content>
 	</Card.Root>
+
+	{#if pendingDocuments.length > 0}
+		<div class="mt-8 space-y-3">
+			<h3 class="px-1 text-sm font-medium text-muted-foreground">
+				{$_('document.upload.pending_queue')}
+			</h3>
+			<div class="grid gap-3">
+				{#each pendingDocuments as doc (doc.id)}
+					<a
+						href={resolve(`/documents/${doc.id}`)}
+						class="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary"
+					>
+						<Card.Root
+							class="flex w-full items-center justify-between overflow-hidden p-4 shadow-sm transition-all hover:bg-muted/50 hover:shadow-md"
+						>
+							<div class="min-w-0 flex-1">
+								<p class="truncate text-sm font-medium">{doc.title ?? doc.original_file_name}</p>
+								{#if doc.title}
+									<p class="truncate text-xs text-muted-foreground">{doc.original_file_name}</p>
+								{/if}
+							</div>
+							<div class="ml-4 flex shrink-0 items-center justify-center">
+								{#if doc.enrich_status === 'done'}
+									<div
+										class="flex items-center text-xs font-medium text-green-600 dark:text-green-500"
+									>
+										<CircleCheck class="mr-1.5 h-4 w-4" />
+										{$_('document.mine.status.done')}
+									</div>
+								{:else if doc.enrich_status === 'failed'}
+									<div class="flex items-center text-xs font-medium text-red-600 dark:text-red-500">
+										<CircleAlert class="mr-1.5 h-4 w-4" />
+										{$_('document.mine.status.failed')}
+									</div>
+								{:else if doc.enrich_status === 'processing'}
+									<div class="flex items-center text-xs font-medium text-primary">
+										<LoaderCircle class="mr-1.5 h-4 w-4 animate-spin" />
+										{$_('document.mine.status.processing')}
+									</div>
+								{:else}
+									<div class="flex items-center text-xs font-medium text-muted-foreground">
+										<Clock class="mr-1.5 h-4 w-4" />
+										{$_(`document.mine.status.${doc.enrich_status}`)}
+									</div>
+								{/if}
+							</div>
+						</Card.Root>
+					</a>
+				{/each}
+			</div>
+		</div>
+	{/if}
 </div>

@@ -44,7 +44,7 @@
 		if (showSpinner) isLoading = true;
 		try {
 			document = await documentApi.getDocument(data.id);
-			
+
 			// Fetch real-time status immediately instead of waiting for the first poll tick
 			pollEnrichStatus();
 		} catch (error: unknown) {
