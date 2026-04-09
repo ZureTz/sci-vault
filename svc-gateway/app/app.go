@@ -65,7 +65,15 @@ func New(configPath string) (*App, error) {
 		return nil, fmt.Errorf("failed to create database connection: %w", err)
 	}
 
-	if err := database.Setup(db, &model.User{}, &model.UserProfile{}, &model.Document{}); err != nil {
+	if err := database.Setup(
+		db,
+		// Model auto-migration
+		&model.User{},
+		&model.UserProfile{},
+		&model.Document{},
+		&model.Lab{},
+		&model.LabMember{},
+	); err != nil {
 		return nil, err
 	}
 
@@ -105,6 +113,7 @@ func New(configPath string) (*App, error) {
 	documentHandler := handler.NewDocumentHandler(documentService)
 	statsHandler := handler.NewStatsHandler(statsService)
 	translateHandler := handler.NewTranslateHandler(translateService)
+	labHandler := handler.NewLabHandler( /* labService, will be added later */ )
 
 	// 5. Initialize router layer (routing and middleware mapping)
 	r := router.NewRouter(&router.RouterDeps{
@@ -114,6 +123,7 @@ func New(configPath string) (*App, error) {
 		DocumentHandler:  documentHandler,
 		StatsHandler:     statsHandler,
 		TranslateHandler: translateHandler,
+		LabHandler:       labHandler,
 
 		Config: cfg,
 	})
