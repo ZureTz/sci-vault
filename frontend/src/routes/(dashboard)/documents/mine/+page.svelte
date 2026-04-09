@@ -39,7 +39,7 @@
 			const res = await documentApi.listMyDocuments(currentPage, PAGE_SIZE);
 			documents = res.documents;
 			total = res.total;
-			
+
 			// Fetch real-time status immediately instead of waiting for the first poll tick
 			pollEnrichStatus();
 		} catch (error: unknown) {
@@ -100,7 +100,7 @@
 
 	onMount(() => {
 		loadDocuments();
-		pollTimer = setInterval(pollEnrichStatus, 5000);
+		pollTimer = setInterval(pollEnrichStatus, 3000);
 	});
 
 	onDestroy(() => {
@@ -112,7 +112,7 @@
 	<title>{$_('document.mine.title')} | Sci-Vault</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-5xl px-4 py-8">
+<div class="container mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
 	<!-- Header -->
 	<div class="mb-6 flex items-center justify-between">
 		<div class="flex items-center gap-3">
@@ -166,18 +166,21 @@
 						<Table.Header>
 							<Table.Row>
 								<Table.Head>{$_('document.mine.table.title')}</Table.Head>
-								<Table.Head class="w-24 text-right"
+								<Table.Head class="hidden w-24 text-right md:table-cell"
 									>{$_('document.mine.table.file_size')}</Table.Head
 								>
-								<Table.Head class="w-32">{$_('document.mine.table.status')}</Table.Head>
-								<Table.Head class="w-32">{$_('document.mine.table.created_at')}</Table.Head>
-								<Table.Head class="w-16 text-right">{$_('document.mine.table.actions')}</Table.Head>
+								<Table.Head class="w-28 sm:w-32">{$_('document.mine.table.status')}</Table.Head>
+								<Table.Head class="hidden w-32 sm:table-cell"
+									>{$_('document.mine.table.created_at')}</Table.Head
+								>
+								<Table.Head class="w-20 text-center">{$_('document.mine.table.actions')}</Table.Head
+								>
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
 							{#each documents as doc (doc.id)}
 								<Table.Row class="group transition-colors hover:bg-muted/50 hover:shadow-sm">
-									<Table.Cell class="font-medium">
+									<Table.Cell class="max-w-48 font-medium sm:max-w-[16rem] md:max-w-[24rem]">
 										<a
 											href={resolve(`/documents/${doc.id}`)}
 											class="flex items-center gap-3 rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-primary"
@@ -185,21 +188,22 @@
 											<FileText
 												class="h-4 w-4 shrink-0 text-muted-foreground/70 transition-colors group-hover:text-primary"
 											/>
-											<div>
+											<div class="min-w-0 flex-1">
 												<span
-													class="line-clamp-1 font-medium transition-colors group-hover:text-primary"
+													class="block truncate font-medium transition-colors group-hover:text-primary"
+													title={doc.title ?? doc.original_file_name}
 													>{doc.title ?? doc.original_file_name}</span
 												>
 												{#if doc.title}
 													<span
-														class="mt-0.5 line-clamp-1 block text-xs font-normal text-muted-foreground/80 group-hover:text-muted-foreground"
-														>{doc.original_file_name}</span
+														class="mt-0.5 block truncate text-xs font-normal text-muted-foreground/80 group-hover:text-muted-foreground"
+														title={doc.original_file_name}>{doc.original_file_name}</span
 													>
 												{/if}
 											</div>
 										</a>
 									</Table.Cell>
-									<Table.Cell class="text-right text-xs text-muted-foreground">
+									<Table.Cell class="hidden text-right text-xs text-muted-foreground md:table-cell">
 										{formatFileSize(doc.file_size)}
 									</Table.Cell>
 									<Table.Cell>
@@ -234,11 +238,11 @@
 											</Badge>
 										{/if}
 									</Table.Cell>
-									<Table.Cell class="text-xs text-muted-foreground">
+									<Table.Cell class="hidden text-xs text-muted-foreground sm:table-cell">
 										{formatDate(doc.created_at)}
 									</Table.Cell>
-									<Table.Cell class="text-right">
-										<div class="flex justify-end gap-1">
+									<Table.Cell class="text-center">
+										<div class="flex justify-center gap-1">
 											{#if doc.enrich_status === 'failed' || doc.enrich_status === 'not_started'}
 												<Button
 													variant="ghost"

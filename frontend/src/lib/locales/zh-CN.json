@@ -134,6 +134,7 @@
 			"submit": "上传",
 			"submitting": "上传中...",
 			"success": "文献上传成功",
+			"pending_queue": "后台解析队列",
 			"error": {
 				"file_required": "请选择要上传的文件",
 				"invalid_type": "仅支持 PDF 文件",

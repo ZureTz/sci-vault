@@ -20,6 +20,7 @@ type DocumentService interface {
 	GetDocument(ctx context.Context, docID uint) (*dto.DocumentResponse, error)
 	GetEnrichStatus(ctx context.Context, docID uint) (string, error)
 	ListMyDocuments(ctx context.Context, userID uint, page, pageSize int) (*dto.ListDocumentsResponse, error)
+	ListPendingDocuments(ctx context.Context, userID uint) (*dto.ListDocumentsResponse, error)
 	RestartEnrichment(ctx context.Context, docID uint) error
 }
 
@@ -108,6 +109,22 @@ func (h *DocumentHandler) ListMyDocuments(c *gin.Context) {
 	resp, err := h.documentService.ListMyDocuments(c.Request.Context(), userID, query.Page, query.PageSize)
 	if err != nil {
 		slog.Error("ListMyDocuments service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.list_documents.failed")))
+		return
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
+func (h *DocumentHandler) ListPendingDocuments(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
+		return
+	}
+
+	resp, err := h.documentService.ListPendingDocuments(c.Request.Context(), userID)
+	if err != nil {
+		slog.Error("ListPendingDocuments service error", "err", err)
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.list_documents.failed")))
 		return
 	}

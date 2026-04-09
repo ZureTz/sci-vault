@@ -95,6 +95,7 @@ func (deps *RouterDeps) registerAuthenticatedRoutes(group *gin.RouterGroup) {
 func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 	group.POST("/upload", deps.DocumentHandler.UploadDocument)
 	group.GET("/mine", deps.DocumentHandler.ListMyDocuments)
+	group.GET("/pending", deps.DocumentHandler.ListPendingDocuments)
 	group.GET("/:doc_id", deps.DocumentHandler.GetDocument)
 	group.GET("/:doc_id/enrich_status", deps.DocumentHandler.GetEnrichStatus)
 	group.POST("/:doc_id/restart_enrichment", deps.DocumentHandler.RestartEnrichment)

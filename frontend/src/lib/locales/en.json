@@ -134,6 +134,7 @@
 			"submit": "Upload",
 			"submitting": "Uploading...",
 			"success": "Document uploaded successfully",
+			"pending_queue": "Background Processing Queue",
 			"error": {
 				"file_required": "Please select a file to upload",
 				"invalid_type": "Only PDF files are supported",
