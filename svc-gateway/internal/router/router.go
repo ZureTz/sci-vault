@@ -41,23 +41,17 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 	v1.GET("/health", deps.HealthHandler.HealthCheck)
 
 	// Register user routes
-	deps.registerUserRoutes(v1.Group("/user"), deps.UserHandler)
+	deps.registerUserRoutes(v1.Group("/user"))
 
 	// Protected routes (require JWT authentication)
 	protected := v1.Group("/")
 	protected.Use(middleware.CheckJWT(&deps.Config.JWT))
-
-	auth := protected.Group("/auth")
-	deps.registerAuthenticatedRoutes(auth, deps.AuthHandler)
-
-	docs := protected.Group("/docs")
-	deps.registerDocumentRoutes(docs)
-
-	stats := protected.Group("/stats")
-	deps.registerStatsRoutes(stats)
-
-	translate := protected.Group("/translate")
-	deps.registerTranslateRoutes(translate)
+	{
+		deps.registerAuthenticatedRoutes(protected.Group("/auth"))
+		deps.registerDocumentRoutes(protected.Group("/docs"))
+		deps.registerStatsRoutes(protected.Group("/stats"))
+		deps.registerTranslateRoutes(protected.Group("/translate"))
+	}
 
 	// Assign the configured engine to the router struct
 	return engine
@@ -72,27 +66,29 @@ func (deps *RouterDeps) registerCustomValidators() {
 }
 
 // User login and registration routes (/api/v1/user)
-func (deps *RouterDeps) registerUserRoutes(group *gin.RouterGroup, userHandler *handler.UserHandler) {
+func (deps *RouterDeps) registerUserRoutes(group *gin.RouterGroup) {
 	// Send email verification code
-	group.POST("/send_email_code", userHandler.SendEmailCode)
+	group.POST("/send_email_code", deps.UserHandler.SendEmailCode)
 
 	// For login and registration
-	group.POST("/login", userHandler.Login)
-	group.POST("/register", userHandler.Register)
-	group.POST("/reset_password", userHandler.ResetPassword)
+	group.POST("/login", deps.UserHandler.Login)
+	group.POST("/register", deps.UserHandler.Register)
+	group.POST("/reset_password", deps.UserHandler.ResetPassword)
 
 	// Protected user routes
 	protected := group.Group("/")
 	protected.Use(middleware.CheckJWT(&deps.Config.JWT))
-	protected.POST("/upload_avatar", userHandler.UploadAvatar)
-	protected.PUT("/profile", userHandler.UpdateProfile)
-	protected.GET("/avatar/:user_id", userHandler.GetAvatar)
-	protected.GET("/profile/:user_id", userHandler.GetProfile)
+	{
+		protected.POST("/upload_avatar", deps.UserHandler.UploadAvatar)
+		protected.PUT("/profile", deps.UserHandler.UpdateProfile)
+		protected.GET("/avatar/:user_id", deps.UserHandler.GetAvatar)
+		protected.GET("/profile/:user_id", deps.UserHandler.GetProfile)
+	}
 }
 
 // Authenticated routes (example: /api/v1/auth/...)
-func (deps *RouterDeps) registerAuthenticatedRoutes(group *gin.RouterGroup, authHandler *handler.AuthHandler) {
-	group.GET("/test", authHandler.Test)
+func (deps *RouterDeps) registerAuthenticatedRoutes(group *gin.RouterGroup) {
+	group.GET("/test", deps.AuthHandler.Test)
 }
 
 // Document routes (/api/v1/docs/...)

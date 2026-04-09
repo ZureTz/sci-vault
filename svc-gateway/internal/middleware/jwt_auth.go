@@ -61,6 +61,13 @@ func CheckJWT(cfg *config.JWTConfig) gin.HandlerFunc {
 		var handler http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {
 			encounteredError = false
 			ctx.Request = r
+
+			// Extract claims and set user info so handlers don't need to parse JWT again
+			if claims, err := jwt.GetClaims(r.Context()); err == nil && claims != nil {
+				ctx.Set("user_id", claims.UserID)
+				ctx.Set("email", claims.Username)
+			}
+
 			ctx.Next()
 		}
 

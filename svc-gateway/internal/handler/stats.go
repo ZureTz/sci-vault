@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"gateway/internal/dto"
-	"gateway/pkg/jwt"
 	"gateway/pkg/utils"
 )
 
@@ -26,14 +25,14 @@ func NewStatsHandler(statsService StatsServiceInterface) *StatsHandler {
 }
 
 func (h *StatsHandler) GetDashboardStats(c *gin.Context) {
-	claims, err := jwt.GetClaims(c.Request.Context())
-	if err != nil {
-		slog.Warn("GetDashboardStats: missing JWT claims", "err", err)
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		slog.Warn("GetDashboardStats: missing user ID in context")
 		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
 		return
 	}
 
-	resp, err := h.statsService.GetDashboardStats(c.Request.Context(), claims.UserID)
+	resp, err := h.statsService.GetDashboardStats(c.Request.Context(), userID)
 	if err != nil {
 		slog.Error("GetDashboardStats service error", "err", err)
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.get_dashboard_stats.failed")))

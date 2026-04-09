@@ -10,7 +10,6 @@ import (
 
 	"gateway/internal/dto"
 	"gateway/pkg/grpc_client"
-	"gateway/pkg/jwt"
 	"gateway/pkg/utils"
 )
 
@@ -24,12 +23,6 @@ func NewTranslateHandler(recommenderClient *grpc_client.RecommenderClient) *Tran
 
 // TranslateSummary streams translated text back to the client as SSE events.
 func (h *TranslateHandler) TranslateSummary(c *gin.Context) {
-	if _, err := jwt.GetClaims(c.Request.Context()); err != nil {
-		slog.Warn("TranslateSummary: missing JWT claims", "err", err)
-		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
-		return
-	}
-
 	var req dto.TranslateSummaryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))

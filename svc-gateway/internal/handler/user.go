@@ -13,7 +13,6 @@ import (
 
 	"gateway/internal/dto"
 	"gateway/pkg/app_error"
-	"gateway/pkg/jwt"
 	"gateway/pkg/utils"
 )
 
@@ -107,9 +106,9 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 }
 
 func (h *UserHandler) UploadAvatar(c *gin.Context) {
-	claims, err := jwt.GetClaims(c.Request.Context())
-	if err != nil {
-		slog.Warn("UploadAvatar: missing JWT claims", "err", err)
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		slog.Warn("UploadAvatar: missing user ID in context")
 		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
 		return
 	}
@@ -128,7 +127,7 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	}
 	defer file.Close()
 
-	resp, err := h.userService.UploadAvatar(c.Request.Context(), claims.UserID,
+	resp, err := h.userService.UploadAvatar(c.Request.Context(), userID,
 		file, form.Avatar.Header.Get("Content-Type"), form.Avatar.Filename, form.Avatar.Size,
 	)
 	if err != nil {
@@ -147,9 +146,9 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 }
 
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
-	claims, err := jwt.GetClaims(c.Request.Context())
-	if err != nil {
-		slog.Warn("UpdateProfile: missing JWT claims", "err", err)
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		slog.Warn("UpdateProfile: missing user ID in context")
 		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
 		return
 	}
@@ -160,7 +159,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.UpdateProfile(c.Request.Context(), claims.UserID, req); err != nil {
+	if err := h.userService.UpdateProfile(c.Request.Context(), userID, req); err != nil {
 		slog.Error("UpdateProfile service error", "err", err)
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.update_profile.failed")))
 		return
