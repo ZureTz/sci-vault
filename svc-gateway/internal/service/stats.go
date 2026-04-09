@@ -12,7 +12,7 @@ import (
 	"gateway/pkg/cache"
 )
 
-const dashboardStatsTTL = 24 * time.Hour
+const dashboardStatsTTL = 1 * time.Hour
 
 func dashboardStatsKey(userID uint) string {
 	return fmt.Sprintf("stats:dashboard:%d", userID)

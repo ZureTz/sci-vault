@@ -125,11 +125,6 @@ func (s *DocumentService) GetDocument(ctx context.Context, docID uint) (*dto.Doc
 	}
 	doc.ViewCount++
 
-	// Invalidate the user's dashboard stats cache to reflect the new view count
-	if _, err := s.cacheConn.Del(ctx, dashboardStatsKey(doc.UploadedByUserID)); err != nil {
-		slog.Warn("Failed to invalidate dashboard stats cache", "userID", doc.UploadedByUserID, "err", err)
-	}
-
 	downloadURL, err := s.storageClient.PrivateObjectURL(ctx, doc.FileKey, downloadURLExpiry, downloadFilename(doc.OriginalFileName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate download URL: %w", err)
