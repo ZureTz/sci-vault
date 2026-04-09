@@ -104,11 +104,10 @@ docker compose up -d --build recommender
 ```
 
 Before building or running the `recommender` service via Docker Compose, ensure that the protobuf stubs under `src/pb` have been generated on the host (for example, by running `buf generate` in the appropriate directory). The current Docker image does not generate these stubs during build, so missing stubs will prevent the service from starting correctly.
-When built via the repository `docker-compose.yaml`, protobuf stubs are generated automatically inside the image using Buf and the `workspace_root` additional build context.
 
 If you build this service directly with `docker build` (outside Compose), make sure you either:
 
-1. Provide the same workspace context expected by the Dockerfile, or
+1. Keep the generated stubs committed under `src/pb`, or
 2. Run `buf generate` in the repository root beforehand.
 
 Otherwise, protobuf stubs will be missing and the service will fail to start.

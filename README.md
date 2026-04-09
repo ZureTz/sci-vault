@@ -29,7 +29,7 @@ This monorepo contains a complete microservices-based application for research d
 - [Docker](https://docs.docker.com/get-docker/) with Docker Compose
 
 **For Manual Local Development:**
-- [Buf](https://buf.build/docs/cli/installation/) — For gRPC protobuf code generation
+- [Buf](https://buf.build/docs/cli/installation/) — Only needed when `.proto` files are changed
 - [Go](https://go.dev/doc/install) 1.26+ — For the gateway service
 - [Python](https://www.python.org/downloads/) 3.14+ with [uv](https://docs.astral.sh/uv/getting-started/installation/) — For the recommender service
 - [Bun](https://bun.sh/) 1.0+ — For the frontend application
@@ -40,7 +40,7 @@ This monorepo contains a complete microservices-based application for research d
 
 A `docker-compose.yaml` is provided at the root to spin up the entire application (Frontend, Gateway, Recommender) along with all required infrastructure services (PostgreSQL, Redis, RustFS) in one command.
 
-*Note: When you build the services via the provided `docker-compose.yaml`, the gRPC stubs are generated automatically inside the Docker images using the `workspace_root` additional build context. If you instead run `docker build` directly, you must either pass the same additional context used by Compose or run `buf generate` locally before building; otherwise, the `COPY --from=workspace_root ...` steps will fail and gRPC stubs will not be generated.*
+*Note: Generated gRPC stubs are committed in this repository. Docker builds no longer generate stubs during image build. Run `buf generate` only when you modify `.proto` files.*
 
 ### 1. Prepare the configuration files for each service:
 
@@ -125,8 +125,8 @@ If you prefer to develop services locally while running only the back-end infras
 docker compose up -d postgres redis rustfs # Add rustfs-volume-helper if first time
 ```
 
-### 2. Generate gRPC Code
-Make sure [Buf](https://buf.build/docs/cli/installation/) is installed.
+### 2. Generate gRPC Code (Only If You Changed `.proto`)
+This step is optional unless you changed files in `proto/`. Make sure [Buf](https://buf.build/docs/cli/installation/) is installed.
 
 ```bash
 buf generate
@@ -186,7 +186,7 @@ sci-vault/
 ## Development Workflow
 
 1. **Start infrastructure**: `docker compose up -d`
-2. **Update Proto Definitions**: Modify files in `proto/` as needed, then run `buf generate`
+2. **Update Proto Definitions (optional)**: Only if you modify files in `proto/`, run `buf generate`
 3. **Develop Services**: Make changes to individual service code
 4. **Run Services**: Start `svc-recommender`, `svc-gateway`, and `frontend` independently
 

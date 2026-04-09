@@ -1,6 +1,3 @@
 # Configurations
 config.yaml
 config.docker.yaml
-
-# Generated Protobuf Code
-internal/pb/
