@@ -12,7 +12,6 @@ import (
 
 	"gateway/internal/dto"
 	"gateway/pkg/app_error"
-	"gateway/pkg/jwt"
 	"gateway/pkg/utils"
 )
 
@@ -33,9 +32,9 @@ func NewDocumentHandler(documentService DocumentService) *DocumentHandler {
 }
 
 func (h *DocumentHandler) UploadDocument(c *gin.Context) {
-	claims, err := jwt.GetClaims(c.Request.Context())
-	if err != nil {
-		slog.Warn("UploadDocument: missing JWT claims", "err", err)
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		slog.Warn("UploadDocument: missing user ID in context")
 		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
 		return
 	}
@@ -54,7 +53,7 @@ func (h *DocumentHandler) UploadDocument(c *gin.Context) {
 	}
 	defer file.Close()
 
-	resp, err := h.documentService.UploadDocument(c.Request.Context(), claims.UserID, file, form)
+	resp, err := h.documentService.UploadDocument(c.Request.Context(), userID, file, form)
 	if err != nil {
 		switch {
 		case errors.Is(err, app_error.ErrDocumentTooLarge):
@@ -87,9 +86,9 @@ func (h *DocumentHandler) GetEnrichStatus(c *gin.Context) {
 }
 
 func (h *DocumentHandler) ListMyDocuments(c *gin.Context) {
-	claims, err := jwt.GetClaims(c.Request.Context())
-	if err != nil {
-		slog.Warn("ListMyDocuments: missing JWT claims", "err", err)
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		slog.Warn("ListMyDocuments: missing user ID in context")
 		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
 		return
 	}
@@ -106,7 +105,7 @@ func (h *DocumentHandler) ListMyDocuments(c *gin.Context) {
 		query.PageSize = 20
 	}
 
-	resp, err := h.documentService.ListMyDocuments(c.Request.Context(), claims.UserID, query.Page, query.PageSize)
+	resp, err := h.documentService.ListMyDocuments(c.Request.Context(), userID, query.Page, query.PageSize)
 	if err != nil {
 		slog.Error("ListMyDocuments service error", "err", err)
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.list_documents.failed")))

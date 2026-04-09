@@ -41,9 +41,8 @@ func (j *JWTGenerator) GenerateJWT(userID uint, username string) (string, error)
 			NotBefore: jwt.NewNumericDate(time.Now().UTC()),
 		},
 		CustomClaims: CustomClaims{
-			UserID:       userID,
-			Username:     username,
-			ShouldReject: false,
+			UserID:   userID,
+			Username: username,
 		},
 	}
 
