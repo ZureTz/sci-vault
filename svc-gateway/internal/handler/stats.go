@@ -12,15 +12,15 @@ import (
 	"gateway/pkg/utils"
 )
 
-type StatsServiceInterface interface {
+type StatsService interface {
 	GetDashboardStats(ctx context.Context, userID uint) (*dto.DashboardStatsResponse, error)
 }
 
 type StatsHandler struct {
-	statsService StatsServiceInterface
+	statsService StatsService
 }
 
-func NewStatsHandler(statsService StatsServiceInterface) *StatsHandler {
+func NewStatsHandler(statsService StatsService) *StatsHandler {
 	return &StatsHandler{statsService: statsService}
 }
 

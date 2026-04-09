@@ -95,14 +95,16 @@ func New(configPath string) (*App, error) {
 	userService := service.NewUserService(userRepo, userAvatarRepo, jwtGenerator, mailSrv, cacheConn, storageClient)
 	documentService := service.NewDocumentService(documentRepo, storageClient, recommenderClient, cacheConn)
 	statsService := service.NewStatsService(statsRepo, cacheConn)
+	healthService := service.NewHealthService(recommenderClient)
+	translateService := service.NewTranslateService(recommenderClient)
 
 	// 4. Initialize handlers layer (HTTP/API)
-	healthHandler := handler.NewHealthHandler(recommenderClient)
+	healthHandler := handler.NewHealthHandler(healthService)
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler()
 	documentHandler := handler.NewDocumentHandler(documentService)
 	statsHandler := handler.NewStatsHandler(statsService)
-	translateHandler := handler.NewTranslateHandler(recommenderClient)
+	translateHandler := handler.NewTranslateHandler(translateService)
 
 	// 5. Initialize router layer (routing and middleware mapping)
 	r := router.NewRouter(&router.RouterDeps{

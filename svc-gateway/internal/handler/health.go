@@ -1,20 +1,23 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-
-	"gateway/pkg/grpc_client"
 )
 
-type HealthHandler struct {
-	recommenderClient *grpc_client.RecommenderClient
+type HealthService interface {
+	CheckRecommender(ctx context.Context) (status string, service string, err error)
 }
 
-func NewHealthHandler(recommenderClient *grpc_client.RecommenderClient) *HealthHandler {
+type HealthHandler struct {
+	healthService HealthService
+}
+
+func NewHealthHandler(healthService HealthService) *HealthHandler {
 	return &HealthHandler{
-		recommenderClient: recommenderClient,
+		healthService: healthService,
 	}
 }
 
@@ -24,7 +27,7 @@ func (h *HealthHandler) HealthCheck(c *gin.Context) {
 		"service": "svc-gateway",
 	}
 
-	resp, err := h.recommenderClient.Health(c.Request.Context())
+	status, srvName, err := h.healthService.CheckRecommender(c.Request.Context())
 	if err != nil {
 		services["svc-recommender"] = gin.H{"status": "unreachable", "error": err.Error()}
 		c.JSON(http.StatusServiceUnavailable, services)
@@ -32,8 +35,8 @@ func (h *HealthHandler) HealthCheck(c *gin.Context) {
 	}
 
 	services["svc-recommender"] = gin.H{
-		"status":  resp.GetStatus(),
-		"service": resp.GetService(),
+		"status":  status,
+		"service": srvName,
 	}
 	c.JSON(http.StatusOK, services)
 }
