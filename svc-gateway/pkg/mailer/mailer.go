@@ -1,7 +1,6 @@
 package mailer
 
 import (
-	"crypto/tls"
 	"log/slog"
 
 	"gopkg.in/gomail.v2"
