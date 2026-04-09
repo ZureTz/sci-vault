@@ -44,20 +44,19 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 	deps.registerUserRoutes(v1.Group("/user"), deps.UserHandler)
 
 	// Protected routes (require JWT authentication)
-	auth := v1.Group("/auth")
-	auth.Use(middleware.CheckJWT(&deps.Config.JWT))
+	protected := v1.Group("/")
+	protected.Use(middleware.CheckJWT(&deps.Config.JWT))
+
+	auth := protected.Group("/auth")
 	deps.registerAuthenticatedRoutes(auth, deps.AuthHandler)
 
-	docs := v1.Group("/docs")
-	docs.Use(middleware.CheckJWT(&deps.Config.JWT))
+	docs := protected.Group("/docs")
 	deps.registerDocumentRoutes(docs)
 
-	stats := v1.Group("/stats")
-	stats.Use(middleware.CheckJWT(&deps.Config.JWT))
+	stats := protected.Group("/stats")
 	deps.registerStatsRoutes(stats)
 
-	translate := v1.Group("/translate")
-	translate.Use(middleware.CheckJWT(&deps.Config.JWT))
+	translate := protected.Group("/translate")
 	deps.registerTranslateRoutes(translate)
 
 	// Assign the configured engine to the router struct
