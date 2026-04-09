@@ -94,6 +94,11 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 		slog.Warn("Failed to set enrich status in cache", "docID", doc.ID, "err", err)
 	}
 
+	// Invalidate the user's dashboard stats cache so they see the fresh data
+	if _, err := s.cacheConn.Del(ctx, dashboardStatsKey(userID)); err != nil {
+		slog.Warn("Failed to invalidate dashboard stats cache", "userID", userID, "err", err)
+	}
+
 	// Trigger async enrichment on the Python microservice.
 	// The call returns an immediate ACK; Python owns all status updates from this point.
 	// A failure here is non-fatal — the document is already saved.
@@ -119,6 +124,11 @@ func (s *DocumentService) GetDocument(ctx context.Context, docID uint) (*dto.Doc
 		return nil, fmt.Errorf("failed to increment view count: %w", err)
 	}
 	doc.ViewCount++
+
+	// Invalidate the user's dashboard stats cache to reflect the new view count
+	if _, err := s.cacheConn.Del(ctx, dashboardStatsKey(doc.UploadedByUserID)); err != nil {
+		slog.Warn("Failed to invalidate dashboard stats cache", "userID", doc.UploadedByUserID, "err", err)
+	}
 
 	downloadURL, err := s.storageClient.PrivateObjectURL(ctx, doc.FileKey, downloadURLExpiry, downloadFilename(doc.OriginalFileName))
 	if err != nil {
@@ -150,6 +160,11 @@ func (s *DocumentService) RestartEnrichment(ctx context.Context, docID uint) err
 	// Set the enrichment status in Redis to not_started
 	if err := s.cacheConn.Set(ctx, enrichStatusKey(doc.ID), EnrichStatusNotStarted, enrichStatusTTL); err != nil {
 		slog.Warn("Failed to set enrich status in cache", "docID", doc.ID, "err", err)
+	}
+
+	// Invalidate the dashboard stats cache so status breakdown counts are fresh
+	if _, err := s.cacheConn.Del(ctx, dashboardStatsKey(doc.UploadedByUserID)); err != nil {
+		slog.Warn("Failed to invalidate dashboard stats cache", "userID", doc.UploadedByUserID, "err", err)
 	}
 
 	// Trigger async enrichment on the Python microservice.
