@@ -39,6 +39,9 @@
 			const res = await documentApi.listMyDocuments(currentPage, PAGE_SIZE);
 			documents = res.documents;
 			total = res.total;
+			
+			// Fetch real-time status immediately instead of waiting for the first poll tick
+			pollEnrichStatus();
 		} catch (error: unknown) {
 			showApiErrors(error, $_('document.mine.error'));
 		} finally {
