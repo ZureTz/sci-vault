@@ -14,7 +14,7 @@ import (
 // Does NOT query the database.
 func ExtractLabID() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		idStr := c.Param("id")
+		idStr := c.Param("lab_id")
 
 		id, err := strconv.ParseUint(idStr, 10, 64)
 		if err != nil || id == 0 || id > math.MaxUint {

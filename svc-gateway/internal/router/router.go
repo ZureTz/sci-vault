@@ -119,7 +119,7 @@ func (deps *RouterDeps) registerLabRoutes(group *gin.RouterGroup) {
 	group.POST("/join", deps.LabHandler.JoinLabByCode)
 
 	// ExtractLabID only applies to routes that have :id param, it doesn't query the database
-	labWithID := group.Group("/:id").Use(middleware.ExtractLabID())
+	labWithID := group.Group("/:lab_id").Use(middleware.ExtractLabID())
 	{
 		// Member accessible operations
 		labWithID.GET("", deps.LabHandler.GetLab)
