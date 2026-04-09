@@ -44,7 +44,7 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 	deps.registerUserRoutes(v1.Group("/user"))
 
 	// Protected routes (require JWT authentication)
-	protected := v1.Group("/")
+	protected := v1.Group("")
 	protected.Use(middleware.CheckJWT(&deps.Config.JWT))
 	{
 		deps.registerAuthenticatedRoutes(protected.Group("/auth"))
@@ -76,7 +76,7 @@ func (deps *RouterDeps) registerUserRoutes(group *gin.RouterGroup) {
 	group.POST("/reset_password", deps.UserHandler.ResetPassword)
 
 	// Protected user routes
-	protected := group.Group("/")
+	protected := group.Group("")
 	protected.Use(middleware.CheckJWT(&deps.Config.JWT))
 	{
 		protected.POST("/upload_avatar", deps.UserHandler.UploadAvatar)
