@@ -20,6 +20,7 @@ type RouterDeps struct {
 	DocumentHandler  *handler.DocumentHandler
 	StatsHandler     *handler.StatsHandler
 	TranslateHandler *handler.TranslateHandler
+	LabHandler       *handler.LabHandler
 
 	// Config
 	Config *config.Config
@@ -51,6 +52,7 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 		deps.registerDocumentRoutes(protected.Group("/docs"))
 		deps.registerStatsRoutes(protected.Group("/stats"))
 		deps.registerTranslateRoutes(protected.Group("/translate"))
+		deps.registerLabRoutes(protected.Group("/labs"))
 	}
 
 	// Assign the configured engine to the router struct
@@ -109,4 +111,20 @@ func (deps *RouterDeps) registerStatsRoutes(group *gin.RouterGroup) {
 // Translate routes (/api/v1/translate/...)
 func (deps *RouterDeps) registerTranslateRoutes(group *gin.RouterGroup) {
 	group.POST("/summary", deps.TranslateHandler.TranslateSummary)
+}
+
+// Lab routes (/api/v1/labs/...)
+func (deps *RouterDeps) registerLabRoutes(group *gin.RouterGroup) {
+	group.POST("", deps.LabHandler.CreateLab)                // Becomes owner automatically
+	group.GET("/:id", deps.LabHandler.GetLab)                // Must be a member to view
+	group.GET("/:id/members", deps.LabHandler.GetLabMembers) // Must be a member to view members
+	group.DELETE("/:id", deps.LabHandler.DeleteLab)          // Owner only
+
+	group.POST("/join", deps.LabHandler.JoinLab)
+
+	group.DELETE("/:id/members/me", deps.LabHandler.LeaveLab) // Leave lab proactively (But owner cannot leave without deleting or transferring ownership first)
+
+	group.POST("/:id/invite-code/reset", deps.LabHandler.ResetInviteCode) // Owner only
+	group.DELETE("/:id/members/:user_id", deps.LabHandler.RemoveMember)   // Owner only
+	group.POST("/:id/transfer", deps.LabHandler.TransferOwnership)        // Owner only
 }

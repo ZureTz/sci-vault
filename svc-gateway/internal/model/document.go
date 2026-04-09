@@ -22,6 +22,11 @@ type Document struct {
 	UploadedByUserID uint `gorm:"not null;index"`
 	UploadedBy       User `gorm:"foreignKey:UploadedByUserID"`
 
+	// Lab association
+	LabID      *uint  `gorm:"index"`
+	Lab        *Lab   `gorm:"foreignKey:LabID"`
+	Visibility string `gorm:"not null;default:'private'"` // private | lab
+
 	// Enrichment pipeline status: not_started | pending | processing | done | failed
 	EnrichStatus string `gorm:"not null;default:'not_started'"`
 
