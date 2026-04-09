@@ -45,7 +45,7 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 	deps.registerUserRoutes(v1.Group("/user"))
 
 	// Protected routes (require JWT authentication)
-	protected := v1.Group("/")
+	protected := v1.Group("")
 	protected.Use(middleware.CheckJWT(&deps.Config.JWT))
 	{
 		deps.registerAuthenticatedRoutes(protected.Group("/auth"))
@@ -78,7 +78,7 @@ func (deps *RouterDeps) registerUserRoutes(group *gin.RouterGroup) {
 	group.POST("/reset_password", deps.UserHandler.ResetPassword)
 
 	// Protected user routes
-	protected := group.Group("/")
+	protected := group.Group("")
 	protected.Use(middleware.CheckJWT(&deps.Config.JWT))
 	{
 		protected.POST("/upload_avatar", deps.UserHandler.UploadAvatar)
@@ -115,16 +115,23 @@ func (deps *RouterDeps) registerTranslateRoutes(group *gin.RouterGroup) {
 
 // Lab routes (/api/v1/labs/...)
 func (deps *RouterDeps) registerLabRoutes(group *gin.RouterGroup) {
-	group.POST("", deps.LabHandler.CreateLab)                // Becomes owner automatically
-	group.GET("/:id", deps.LabHandler.GetLab)                // Must be a member to view
-	group.GET("/:id/members", deps.LabHandler.GetLabMembers) // Must be a member to view members
-	group.DELETE("/:id", deps.LabHandler.DeleteLab)          // Owner only
+	group.POST("", deps.LabHandler.CreateLab)
+	group.POST("/join", deps.LabHandler.JoinLabByCode)
 
-	group.POST("/join", deps.LabHandler.JoinLab)
+	// ExtractLabID only applies to routes that have :id param, it doesn't query the database
+	labWithID := group.Group("/:id").Use(middleware.ExtractLabID())
+	{
+		// Member accessible operations
+		labWithID.GET("", deps.LabHandler.GetLab)
+		labWithID.GET("/members", deps.LabHandler.GetMembers)
+		labWithID.DELETE("/members/me", deps.LabHandler.LeaveLab)
 
-	group.DELETE("/:id/members/me", deps.LabHandler.LeaveLab) // Leave lab proactively (But owner cannot leave without deleting or transferring ownership first)
+		// Owner only operations
+		labWithID.DELETE("/members/:user_id", deps.LabHandler.KickMember)
+		labWithID.POST("/transfer", deps.LabHandler.TransferOwnership)
+		labWithID.DELETE("", deps.LabHandler.DeleteLab) // Dangerous operation, must be owner only
 
-	group.POST("/:id/invite-code/reset", deps.LabHandler.ResetInviteCode) // Owner only
-	group.DELETE("/:id/members/:user_id", deps.LabHandler.RemoveMember)   // Owner only
-	group.POST("/:id/transfer", deps.LabHandler.TransferOwnership)        // Owner only
+		// Invitation code management (owner only)
+		labWithID.POST("/invite-code/reset", deps.LabHandler.ResetInviteCode)
+	}
 }
