@@ -20,41 +20,47 @@
 
 	const crumbs = $derived.by((): { label: string; href?: string }[] => {
 		const routeId = page.route.id;
-		const base = { label: $_('breadcrumb.lab_dashboard'), href: resolve('/') };
-		if (!routeId) return [base];
+
+		// Group roots — clickable links
+		const labBase = { label: $_('breadcrumb.lab_dashboard'), href: resolve('/') };
+		const personalBase = {
+			label: $_('breadcrumb.dashboard'),
+			href: resolve('/mine/dashboard')
+		};
+		// Intermediate group labels — not real pages, so not clickable
+		const documentsCrumb = { label: $_('breadcrumb.documents') };
+		const labsCrumb = { label: $_('breadcrumb.labs') };
+
+		if (!routeId) return [labBase];
 
 		switch (routeId) {
+			// ── Workspace group ───────────────────────────────────────────
 			case '/(dashboard)':
 				return [{ label: $_('breadcrumb.lab_dashboard') }];
-			case '/(dashboard)/mine/dashboard':
-				return [base, { label: $_('breadcrumb.dashboard') }];
 			case '/(dashboard)/settings':
-				return [base, { label: $_('breadcrumb.settings') }];
+				return [labBase, { label: $_('breadcrumb.settings') }];
+			case '/(dashboard)/labs/create':
+				return [labBase, labsCrumb, { label: $_('breadcrumb.create_lab') }];
+			case '/(dashboard)/labs/join':
+				return [labBase, labsCrumb, { label: $_('breadcrumb.join_lab') }];
+
+			// ── Personal group ────────────────────────────────────────────
+			case '/(dashboard)/mine/dashboard':
+				return [{ label: $_('breadcrumb.dashboard') }];
 			case '/(dashboard)/profile':
 			case '/(dashboard)/profile/[user_id]':
-				return [base, { label: $_('breadcrumb.profile') }];
+				return [personalBase, { label: $_('breadcrumb.profile') }];
 			case '/(dashboard)/documents':
-				return [base, { label: $_('breadcrumb.documents') }];
+				return [personalBase, { label: $_('breadcrumb.documents') }];
 			case '/(dashboard)/documents/mine':
-				return [
-					base,
-					{ label: $_('breadcrumb.documents') },
-					{ label: $_('breadcrumb.my_documents') }
-				];
+				return [personalBase, documentsCrumb, { label: $_('breadcrumb.my_documents') }];
 			case '/(dashboard)/documents/upload':
-				return [base, { label: $_('breadcrumb.documents') }, { label: $_('breadcrumb.upload') }];
+				return [personalBase, documentsCrumb, { label: $_('breadcrumb.upload') }];
 			case '/(dashboard)/documents/[id]':
-				return [
-					base,
-					{ label: $_('breadcrumb.documents') },
-					{ label: $_('breadcrumb.document_detail') }
-				];
-			case '/(dashboard)/labs/create':
-				return [base, { label: $_('breadcrumb.create_lab') }];
-			case '/(dashboard)/labs/join':
-				return [base, { label: $_('breadcrumb.join_lab') }];
+				return [personalBase, documentsCrumb, { label: $_('breadcrumb.document_detail') }];
+
 			default:
-				return [base];
+				return [labBase];
 		}
 	});
 
