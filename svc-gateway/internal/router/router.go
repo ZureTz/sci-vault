@@ -105,7 +105,7 @@ func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 
 // Stats routes (/api/v1/stats/...)
 func (deps *RouterDeps) registerStatsRoutes(group *gin.RouterGroup) {
-	group.GET("/dashboard", deps.StatsHandler.GetDashboardStats)
+	group.GET("/mine/dashboard", deps.StatsHandler.GetMyDashboardStats)
 }
 
 // Translate routes (/api/v1/translate/...)

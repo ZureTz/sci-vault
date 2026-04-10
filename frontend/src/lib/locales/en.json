@@ -12,7 +12,10 @@
 	},
 	"sidebar": {
 		"navigation": "Navigation",
-		"dashboard": "Dashboard",
+		"workspace": "Workspace",
+		"personal": "Personal",
+		"lab_dashboard": "Lab Dashboard",
+		"dashboard": "My Dashboard",
 		"documents": "Documents",
 		"upload": "Upload",
 		"my_documents": "My Documents",
@@ -31,7 +34,8 @@
 		"logout": "Log out"
 	},
 	"breadcrumb": {
-		"dashboard": "Dashboard",
+		"lab_dashboard": "Lab Dashboard",
+		"dashboard": "My Dashboard",
 		"settings": "Settings",
 		"profile": "Profile",
 		"documents": "Documents",
@@ -270,6 +274,10 @@
 		"invite_code": {
 			"required": "Invite code is required"
 		}
+	},
+	"lab_dashboard": {
+		"title": "Lab Dashboard",
+		"coming_soon": "Lab-level dashboard is coming soon. For now, head to \"My Dashboard\" for your personal overview."
 	},
 	"lab": {
 		"create": {

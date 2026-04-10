@@ -20,11 +20,14 @@
 
 	const crumbs = $derived.by((): { label: string; href?: string }[] => {
 		const routeId = page.route.id;
-		if (!routeId) return [{ label: $_('breadcrumb.dashboard'), href: resolve('/') }];
-
-		const base = { label: $_('breadcrumb.dashboard'), href: resolve('/') };
+		const base = { label: $_('breadcrumb.lab_dashboard'), href: resolve('/') };
+		if (!routeId) return [base];
 
 		switch (routeId) {
+			case '/(dashboard)':
+				return [{ label: $_('breadcrumb.lab_dashboard') }];
+			case '/(dashboard)/mine/dashboard':
+				return [base, { label: $_('breadcrumb.dashboard') }];
 			case '/(dashboard)/settings':
 				return [base, { label: $_('breadcrumb.settings') }];
 			case '/(dashboard)/profile':
