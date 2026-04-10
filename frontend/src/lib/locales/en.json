@@ -17,6 +17,15 @@
 		"upload": "Upload",
 		"my_documents": "My Documents",
 		"document_detail": "Document Detail",
+		"labs": "Labs",
+		"create_lab": "Create Lab",
+		"join_lab": "Join Lab",
+		"select_lab": "Select a lab",
+		"your_labs": "Your Labs",
+		"members": "members",
+		"no_labs": "No labs yet",
+		"no_labs_hint": "Join or create a lab",
+		"no_labs_desc": "Join an existing lab with an invite code, or create your own.",
 		"settings": "Settings",
 		"profile": "Profile",
 		"logout": "Log out"
@@ -28,8 +37,11 @@
 		"documents": "Documents",
 		"upload": "Upload",
 		"my_documents": "My Documents",
-		"document_detail": "Document Detail"
+		"document_detail": "Document Detail",
+		"create_lab": "Create Lab",
+		"join_lab": "Join Lab"
 	},
+
 	"dashboard": {
 		"title": "Dashboard Overview",
 		"description": "Your research data at a glance.",
@@ -198,6 +210,14 @@
 			"not_found": "Document not found",
 			"failed": "Failed to restart enrichment, please try again",
 			"success": "Enrichment task restarted successfully"
+		},
+		"create_lab": {
+			"failed": "Failed to create lab, please try again"
+		},
+		"join_lab": {
+			"invalid_code": "Invalid invite code",
+			"already_member": "You are already a member of this lab",
+			"failed": "Failed to join lab, please try again"
 		}
 	},
 	"validation": {
@@ -246,6 +266,34 @@
 		},
 		"user_id": {
 			"required": "User ID is required"
+		},
+		"invite_code": {
+			"required": "Invite code is required"
+		}
+	},
+	"lab": {
+		"create": {
+			"title": "Create a Lab",
+			"description": "Start a new lab and invite your team with a code.",
+			"name_label": "Lab Name",
+			"name_placeholder": "e.g. Quantum Biology Lab",
+			"desc_label": "Description",
+			"desc_placeholder": "What does this lab work on?",
+			"optional": "optional",
+			"submit": "Create Lab",
+			"creating": "Creating...",
+			"success": "Lab \"{name}\" created successfully"
+		},
+		"join": {
+			"title": "Join a Lab",
+			"description": "Enter an invite code to join an existing lab.",
+			"code_label": "Invite Code",
+			"code_placeholder": "e.g. ABCD1234",
+			"submit": "Join Lab",
+			"joining": "Joining...",
+			"success": "Successfully joined \"{name}\"",
+			"welcome": "You joined \"{name}\"!",
+			"member_count": "{count} members in this lab"
 		}
 	},
 	"login": {
@@ -361,6 +409,15 @@
 			"location": "Location",
 			"website": "Website",
 			"bio": "Bio"
+		},
+		"labs": {
+			"title": "Labs",
+			"description": "Labs you are currently working in.",
+			"empty": "You haven't joined any labs yet.",
+			"role": {
+				"owner": "Owner",
+				"member": "Member"
+			}
 		},
 		"btn": {
 			"save": "Save",

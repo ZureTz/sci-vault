@@ -2,11 +2,14 @@
 	import {
 		Activity,
 		BookOpen,
+		Check,
 		ChevronRight,
 		ChevronsUpDown,
 		Compass,
 		FileText,
+		FlaskConical,
 		LogOut,
+		Plus,
 		Settings,
 		Upload,
 		User
@@ -23,6 +26,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import userApi from '$lib/api/user';
+	import labApi, { type LabListItem } from '$lib/api/lab';
 
 	let { ref = $bindable(null), ...restProps } = $props();
 
@@ -34,6 +38,12 @@
 	let initDone = $state(false);
 	let avatarUrl = $state<string | undefined>(undefined);
 
+	// Lab selector state
+	let myLabs = $state<LabListItem[]>([]);
+	let labsLoaded = $state(false);
+	let selectedLabId = $state<number | null>(null);
+	let selectedLab = $derived(myLabs.find((l) => l.id === selectedLabId) ?? null);
+
 	const navItems = [
 		{ title: 'sidebar.dashboard', url: '/' as const, icon: Compass },
 		{
@@ -44,12 +54,26 @@
 				{ title: 'sidebar.upload', url: '/documents/upload' as const, icon: Upload }
 			]
 		},
+		{
+			title: 'sidebar.labs',
+			icon: FlaskConical,
+			items: [
+				{ title: 'sidebar.create_lab', url: '/labs/create' as const, icon: FlaskConical },
+				{ title: 'sidebar.join_lab', url: '/labs/join' as const, icon: FlaskConical }
+			]
+		},
 		{ title: 'sidebar.settings', url: '/settings' as const, icon: Settings }
 	];
 
 	let isOnDocDetail = $derived(page.route.id === '/(dashboard)/documents/[id]');
 
 	let isDocGroupActive = $derived(page.route.id?.startsWith('/(dashboard)/documents') ?? false);
+	let isLabGroupActive = $derived(page.route.id?.startsWith('/(dashboard)/labs') ?? false);
+
+	const groupActiveMap: Record<string, boolean> = $derived({
+		'sidebar.documents': isDocGroupActive,
+		'sidebar.labs': isLabGroupActive
+	});
 
 	onMount(async () => {
 		const userStr = localStorage.getItem('user');
@@ -61,26 +85,56 @@
 			}
 		}
 
-		try {
-			const avatar = await userApi.getAvatar(currentUser.id);
-			avatarUrl = avatar.avatar_url;
-		} catch {
-			// silently ignore — avatar falls back to initials
+		// Restore persisted lab selection
+		const storedLabId = localStorage.getItem('active_lab_id');
+		if (storedLabId) selectedLabId = Number(storedLabId);
+
+		// Fetch user avatar and labs in parallel
+		const [, labs] = await Promise.allSettled([
+			userApi
+				.getAvatar(currentUser.id)
+				.then((a) => (avatarUrl = a.avatar_url))
+				.catch(() => {}),
+			labApi.getMyLabs()
+		]);
+
+		if (labs.status === 'fulfilled') {
+			myLabs = labs.value;
+			// If the stored selection is no longer valid, clear it
+			if (selectedLabId !== null && !myLabs.some((l) => l.id === selectedLabId)) {
+				selectLab(null);
+			}
+			// Auto-select if user has exactly one lab and nothing is stored
+			if (selectedLabId === null && myLabs.length === 1) {
+				selectLab(myLabs[0].id);
+			}
 		}
 
+		labsLoaded = true;
 		initDone = true;
 	});
+
+	function selectLab(id: number | null) {
+		selectedLabId = id;
+		if (id === null) {
+			localStorage.removeItem('active_lab_id');
+		} else {
+			localStorage.setItem('active_lab_id', String(id));
+		}
+	}
 
 	function handleLogout() {
 		localStorage.removeItem('token');
 		localStorage.removeItem('user');
+		localStorage.removeItem('active_lab_id');
 		goto(resolve('/login'));
 	}
 </script>
 
 <Sidebar.Root collapsible="offcanvas" bind:ref {...restProps}>
-	<Sidebar.Header class="h-16 justify-center border-b p-0 transition-[height] ease-linear">
-		<a href={resolve('/welcome')} class="flex items-center gap-2 px-4">
+	<Sidebar.Header class="border-b p-0">
+		<!-- App logo -->
+		<a href={resolve('/welcome')} class="flex h-16 items-center gap-2 px-4">
 			<div
 				class="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"
 			>
@@ -91,7 +145,99 @@
 				<span class="">{$_('app.version')}</span>
 			</div>
 		</a>
+
+		<!-- Lab selector -->
+		<div class="px-2 pb-2">
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Sidebar.MenuButton
+							size="lg"
+							class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+							{...props}
+						>
+							{#if !labsLoaded}
+								<Skeleton class="size-8 rounded-lg" />
+								<div class="grid flex-1 gap-1">
+									<Skeleton class="h-3.5 w-28" />
+									<Skeleton class="h-3 w-16" />
+								</div>
+							{:else if selectedLab}
+								<div
+									class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10"
+								>
+									<FlaskConical class="size-4 text-primary" />
+								</div>
+								<div class="grid flex-1 text-left text-sm leading-tight">
+									<span class="truncate font-semibold">{selectedLab.name}</span>
+									<span class="truncate text-xs text-muted-foreground capitalize">
+										{$_(`profile.labs.role.${selectedLab.role}`)}
+									</span>
+								</div>
+							{:else}
+								<div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+									<FlaskConical class="size-4 text-muted-foreground" />
+								</div>
+								<span class="flex-1 text-left text-sm text-muted-foreground">
+									{myLabs.length === 0 ? $_('sidebar.no_labs_hint') : $_('sidebar.select_lab')}
+								</span>
+							{/if}
+							<ChevronsUpDown class="ml-auto size-4 shrink-0 text-muted-foreground" />
+						</Sidebar.MenuButton>
+					{/snippet}
+				</DropdownMenu.Trigger>
+
+				<DropdownMenu.Content
+					class="w-[--bits-dropdown-menu-anchor-width] min-w-56 rounded-lg"
+					side="bottom"
+					align="start"
+					sideOffset={4}
+				>
+					{#if myLabs.length > 0}
+						<DropdownMenu.Label class="text-xs text-muted-foreground">
+							{$_('sidebar.your_labs')}
+						</DropdownMenu.Label>
+						{#each myLabs as lab (lab.id)}
+							<DropdownMenu.Item onclick={() => selectLab(lab.id)} class="gap-2">
+								<div class="flex size-6 shrink-0 items-center justify-center rounded bg-primary/10">
+									<FlaskConical class="size-3.5 text-primary" />
+								</div>
+								<div class="grid flex-1 leading-tight">
+									<span class="truncate text-sm font-medium">{lab.name}</span>
+									<span class="text-xs text-muted-foreground capitalize">
+										{$_(`profile.labs.role.${lab.role}`)}
+										· {lab.member_count}
+										{$_('sidebar.members')}
+									</span>
+								</div>
+								{#if selectedLabId === lab.id}
+									<Check class="ml-auto size-4 text-primary" />
+								{/if}
+							</DropdownMenu.Item>
+						{/each}
+						<DropdownMenu.Separator />
+					{:else}
+						<div class="px-2 py-3 text-center">
+							<p class="text-sm font-medium">{$_('sidebar.no_labs')}</p>
+							<p class="mt-0.5 text-xs text-muted-foreground">{$_('sidebar.no_labs_desc')}</p>
+						</div>
+						<DropdownMenu.Separator />
+					{/if}
+					<DropdownMenu.Group>
+						<DropdownMenu.Item onclick={() => goto(resolve('/labs/create'))} class="gap-2">
+							<Plus class="size-4" />
+							{$_('sidebar.create_lab')}
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={() => goto(resolve('/labs/join'))} class="gap-2">
+							<FlaskConical class="size-4" />
+							{$_('sidebar.join_lab')}
+						</DropdownMenu.Item>
+					</DropdownMenu.Group>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+		</div>
 	</Sidebar.Header>
+
 	<Sidebar.Content>
 		<Sidebar.Group>
 			<Sidebar.GroupLabel>{$_('sidebar.navigation')}</Sidebar.GroupLabel>
@@ -99,7 +245,10 @@
 				<Sidebar.Menu>
 					{#each navItems as item (item.title)}
 						{#if item.items}
-							<Collapsible.Root open={isDocGroupActive} class="group/collapsible">
+							<Collapsible.Root
+								open={groupActiveMap[item.title] ?? false}
+								class="group/collapsible"
+							>
 								<Sidebar.MenuItem>
 									<Collapsible.Trigger>
 										{#snippet child({ props })}
@@ -161,6 +310,7 @@
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
 	</Sidebar.Content>
+
 	<Sidebar.Footer>
 		<Sidebar.Menu>
 			<Sidebar.MenuItem>
