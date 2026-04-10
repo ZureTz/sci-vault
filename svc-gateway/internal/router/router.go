@@ -73,13 +73,19 @@ func (deps *RouterDeps) registerCustomValidators() {
 
 // User login and registration routes (/api/v1/user)
 func (deps *RouterDeps) registerUserRoutes(group *gin.RouterGroup) {
-	// Send email verification code (rate limited: 1 req per min per email)
-	group.POST("/send_email_code", middleware.StrictRateLimit(deps.CacheConn, "send_email_code", 1, time.Minute), deps.UserHandler.SendEmailCode)
+	// Rate Limits mapping
+	// limit 1 req/min per email for sending codes
+	sendCodeRateLimit := middleware.StrictRateLimit(deps.CacheConn, "send_email_code", 1, time.Minute)
+	// limit 10 req/min for register/reset/login
+	loginRateLimit := middleware.StrictRateLimit(deps.CacheConn, "auth_attempt", 10, time.Minute)
+
+	// Send email verification code
+	group.POST("/send_email_code", sendCodeRateLimit, deps.UserHandler.SendEmailCode)
 
 	// For login and registration
-	group.POST("/login", deps.UserHandler.Login)
-	group.POST("/register", deps.UserHandler.Register)
-	group.POST("/reset_password", deps.UserHandler.ResetPassword)
+	group.POST("/login", loginRateLimit, deps.UserHandler.Login)
+	group.POST("/register", loginRateLimit, deps.UserHandler.Register)
+	group.POST("/reset_password", loginRateLimit, deps.UserHandler.ResetPassword)
 
 	// Protected user routes
 	protected := group.Group("")
