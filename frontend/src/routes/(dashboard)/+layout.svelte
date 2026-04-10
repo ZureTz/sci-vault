@@ -45,6 +45,10 @@
 					{ label: $_('breadcrumb.documents') },
 					{ label: $_('breadcrumb.document_detail') }
 				];
+			case '/(dashboard)/labs/create':
+				return [base, { label: $_('breadcrumb.create_lab') }];
+			case '/(dashboard)/labs/join':
+				return [base, { label: $_('breadcrumb.join_lab') }];
 			default:
 				return [base];
 		}

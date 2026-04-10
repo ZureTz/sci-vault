@@ -17,6 +17,15 @@
 		"upload": "上传文献",
 		"my_documents": "我的文献",
 		"document_detail": "文献详情",
+		"labs": "实验室",
+		"create_lab": "创建实验室",
+		"join_lab": "加入实验室",
+		"select_lab": "选择实验室",
+		"your_labs": "我的实验室",
+		"members": "名成员",
+		"no_labs": "暂无实验室",
+		"no_labs_hint": "加入或创建实验室",
+		"no_labs_desc": "使用邀请码加入现有实验室，或创建您自己的实验室。",
 		"settings": "设置",
 		"profile": "个人资料",
 		"logout": "退出登录"
@@ -28,7 +37,9 @@
 		"documents": "文献库",
 		"upload": "上传文献",
 		"my_documents": "我的文献",
-		"document_detail": "文献详情"
+		"document_detail": "文献详情",
+		"create_lab": "创建实验室",
+		"join_lab": "加入实验室"
 	},
 	"dashboard": {
 		"title": "仪表盘总览",
@@ -198,6 +209,14 @@
 			"not_found": "未找到该文档",
 			"failed": "重新处理失败，请稍后重试",
 			"success": "已成功重新开始处理"
+		},
+		"create_lab": {
+			"failed": "创建实验室失败，请稍后重试"
+		},
+		"join_lab": {
+			"invalid_code": "邀请码无效",
+			"already_member": "您已是该实验室的成员",
+			"failed": "加入实验室失败，请稍后重试"
 		}
 	},
 	"validation": {
@@ -246,6 +265,34 @@
 		},
 		"user_id": {
 			"required": "用户 ID 不能为空"
+		},
+		"invite_code": {
+			"required": "邀请码不能为空"
+		}
+	},
+	"lab": {
+		"create": {
+			"title": "创建实验室",
+			"description": "新建一个实验室，并通过邀请码邀请您的团队。",
+			"name_label": "实验室名称",
+			"name_placeholder": "例如 量子生物实验室",
+			"desc_label": "简介",
+			"desc_placeholder": "这个实验室研究什么方向？",
+			"optional": "选填",
+			"submit": "创建实验室",
+			"creating": "创建中...",
+			"success": "实验室「{name}」创建成功"
+		},
+		"join": {
+			"title": "加入实验室",
+			"description": "输入邀请码以加入已有实验室。",
+			"code_label": "邀请码",
+			"code_placeholder": "例如 ABCD1234",
+			"submit": "加入实验室",
+			"joining": "加入中...",
+			"success": "已成功加入「{name}」",
+			"welcome": "您已加入「{name}」！",
+			"member_count": "该实验室共有 {count} 名成员"
 		}
 	},
 	"login": {
@@ -361,6 +408,15 @@
 			"location": "位置",
 			"website": "网站",
 			"bio": "个人简介"
+		},
+		"labs": {
+			"title": "实验室",
+			"description": "您当前所在的实验室。",
+			"empty": "您还未加入任何实验室。",
+			"role": {
+				"owner": "创建者",
+				"member": "成员"
+			}
 		},
 		"btn": {
 			"save": "保存",
