@@ -1,6 +1,8 @@
 package router
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
@@ -8,6 +10,7 @@ import (
 	"gateway/internal/config"
 	"gateway/internal/handler"
 	"gateway/internal/middleware"
+	"gateway/pkg/cache"
 	"gateway/pkg/logger"
 	customValidator "gateway/pkg/validator"
 )
@@ -20,6 +23,9 @@ type RouterDeps struct {
 	DocumentHandler  *handler.DocumentHandler
 	StatsHandler     *handler.StatsHandler
 	TranslateHandler *handler.TranslateHandler
+
+	// Cache connector
+	CacheConn *cache.CacheConnector
 
 	// Config
 	Config *config.Config
@@ -67,8 +73,8 @@ func (deps *RouterDeps) registerCustomValidators() {
 
 // User login and registration routes (/api/v1/user)
 func (deps *RouterDeps) registerUserRoutes(group *gin.RouterGroup) {
-	// Send email verification code
-	group.POST("/send_email_code", deps.UserHandler.SendEmailCode)
+	// Send email verification code (rate limited: 1 req per min per email)
+	group.POST("/send_email_code", middleware.StrictRateLimit(deps.CacheConn, "send_email_code", 1, time.Minute), deps.UserHandler.SendEmailCode)
 
 	// For login and registration
 	group.POST("/login", deps.UserHandler.Login)
