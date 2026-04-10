@@ -108,7 +108,7 @@ Before building or running the `recommender` service via Docker Compose, ensure 
 If you build this service directly with `docker build` (outside Compose), make sure you either:
 
 1. Keep the generated stubs committed under `src/pb`, or
-2. Run `buf generate` in the repository root beforehand.
+2. Run `buf generate` in the repository root, if you changed the proto definitions.
 
 Otherwise, protobuf stubs will be missing and the service will fail to start.
 
