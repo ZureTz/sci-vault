@@ -46,16 +46,9 @@
 	let selectedLabId = $state<number | null>(null);
 	let selectedLab = $derived(myLabs.find((l) => l.id === selectedLabId) ?? null);
 
-	const navItems = [
-		{ title: 'sidebar.dashboard', url: '/' as const, icon: Compass },
-		{
-			title: 'sidebar.documents',
-			icon: FileText,
-			items: [
-				{ title: 'sidebar.my_documents', url: '/documents/mine' as const, icon: FileText },
-				{ title: 'sidebar.upload', url: '/documents/upload' as const, icon: Upload }
-			]
-		},
+	// Lab / workspace-level items
+	const topNavItems = [
+		{ title: 'sidebar.lab_dashboard', url: '/' as const, icon: FlaskConical },
 		{
 			title: 'sidebar.labs',
 			icon: FlaskConical,
@@ -65,6 +58,19 @@
 			]
 		},
 		{ title: 'sidebar.settings', url: '/settings' as const, icon: Settings }
+	];
+
+	// Personal items
+	const bottomNavItems = [
+		{ title: 'sidebar.dashboard', url: '/mine/dashboard' as const, icon: Compass },
+		{
+			title: 'sidebar.documents',
+			icon: FileText,
+			items: [
+				{ title: 'sidebar.my_documents', url: '/documents/mine' as const, icon: FileText },
+				{ title: 'sidebar.upload', url: '/documents/upload' as const, icon: Upload }
+			]
+		}
 	];
 
 	let isOnDocDetail = $derived(page.route.id === '/(dashboard)/documents/[id]');
@@ -237,11 +243,74 @@
 	</Sidebar.Header>
 
 	<Sidebar.Content>
+		<!-- Lab / workspace-level navigation -->
 		<Sidebar.Group>
-			<Sidebar.GroupLabel>{$_('sidebar.navigation')}</Sidebar.GroupLabel>
+			<Sidebar.GroupLabel>{$_('sidebar.workspace')}</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					{#each navItems as item (item.title)}
+					{#each topNavItems as item (item.title)}
+						{#if item.items}
+							<Collapsible.Root
+								open={groupActiveMap[item.title] ?? false}
+								class="group/collapsible"
+							>
+								<Sidebar.MenuItem>
+									<Collapsible.Trigger>
+										{#snippet child({ props })}
+											<Sidebar.MenuButton {...props}>
+												<item.icon />
+												<span>{$_(item.title)}</span>
+												<ChevronRight
+													class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+												/>
+											</Sidebar.MenuButton>
+										{/snippet}
+									</Collapsible.Trigger>
+									<Collapsible.Content>
+										<Sidebar.MenuSub>
+											{#each item.items as subItem (subItem.title)}
+												<Sidebar.MenuSubItem>
+													<Sidebar.MenuSubButton
+														isActive={page.url.pathname === resolve(subItem.url)}
+													>
+														{#snippet child({ props })}
+															<a href={resolve(subItem.url)} {...props}>
+																<subItem.icon class="size-3.5" />
+																<span>{$_(subItem.title)}</span>
+															</a>
+														{/snippet}
+													</Sidebar.MenuSubButton>
+												</Sidebar.MenuSubItem>
+											{/each}
+										</Sidebar.MenuSub>
+									</Collapsible.Content>
+								</Sidebar.MenuItem>
+							</Collapsible.Root>
+						{:else}
+							<Sidebar.MenuItem>
+								<Sidebar.MenuButton isActive={page.url.pathname === resolve(item.url)}>
+									{#snippet child({ props })}
+										<a href={resolve(item.url)} {...props}>
+											<item.icon />
+											<span>{$_(item.title)}</span>
+										</a>
+									{/snippet}
+								</Sidebar.MenuButton>
+							</Sidebar.MenuItem>
+						{/if}
+					{/each}
+				</Sidebar.Menu>
+			</Sidebar.GroupContent>
+		</Sidebar.Group>
+
+		<Sidebar.Separator />
+
+		<!-- Personal navigation -->
+		<Sidebar.Group>
+			<Sidebar.GroupLabel>{$_('sidebar.personal')}</Sidebar.GroupLabel>
+			<Sidebar.GroupContent>
+				<Sidebar.Menu>
+					{#each bottomNavItems as item (item.title)}
 						{#if item.items}
 							<Collapsible.Root
 								open={groupActiveMap[item.title] ?? false}
@@ -311,6 +380,19 @@
 
 	<Sidebar.Footer>
 		<Sidebar.Menu>
+			<!-- Profile shortcut — direct link, no dropdown -->
+			<Sidebar.MenuItem>
+				<Sidebar.MenuButton isActive={page.url.pathname === resolve(`/profile/${currentUser.id}`)}>
+					{#snippet child({ props })}
+						<a href={resolve(`/profile/${currentUser.id}`)} {...props}>
+							<User />
+							<span>{$_('sidebar.profile')}</span>
+						</a>
+					{/snippet}
+				</Sidebar.MenuButton>
+			</Sidebar.MenuItem>
+
+			<!-- User / logout -->
 			<Sidebar.MenuItem>
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
@@ -368,13 +450,6 @@
 								</div>
 							</div>
 						</DropdownMenu.Label>
-						<DropdownMenu.Separator />
-						<DropdownMenu.Group>
-							<DropdownMenu.Item onclick={() => goto(resolve(`/profile/${currentUser.id}`))}>
-								<User />
-								{$_('sidebar.profile')}
-							</DropdownMenu.Item>
-						</DropdownMenu.Group>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item onclick={handleLogout}>
 							<LogOut />

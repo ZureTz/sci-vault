@@ -12,7 +12,10 @@
 	},
 	"sidebar": {
 		"navigation": "导航",
-		"dashboard": "仪表盘",
+		"workspace": "工作区",
+		"personal": "个人",
+		"lab_dashboard": "实验室仪表盘",
+		"dashboard": "我的仪表盘",
 		"documents": "文献库",
 		"upload": "上传文献",
 		"my_documents": "我的文献",
@@ -31,7 +34,8 @@
 		"logout": "退出登录"
 	},
 	"breadcrumb": {
-		"dashboard": "仪表盘",
+		"lab_dashboard": "实验室仪表盘",
+		"dashboard": "我的仪表盘",
 		"settings": "设置",
 		"profile": "个人资料",
 		"documents": "文献库",
@@ -269,6 +273,10 @@
 		"invite_code": {
 			"required": "邀请码不能为空"
 		}
+	},
+	"lab_dashboard": {
+		"title": "实验室仪表盘",
+		"coming_soon": "实验室级别的仪表盘功能即将推出。您可以先访问「我的仪表盘」查看个人概览。"
 	},
 	"lab": {
 		"create": {

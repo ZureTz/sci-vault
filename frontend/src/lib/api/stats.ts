@@ -28,7 +28,7 @@ export interface DashboardStatsResponse {
 const statsApi = {
 	getDashboardStats(): Promise<DashboardStatsResponse> {
 		return request.get<DashboardStatsResponse>(
-			'/stats/dashboard'
+			'/stats/mine/dashboard'
 		) as unknown as Promise<DashboardStatsResponse>;
 	}
 };

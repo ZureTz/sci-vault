@@ -27,11 +27,11 @@ func NewStatsService(repo repo.StatsRepository, cacheConn *cache.CacheConnector)
 	return &StatsService{repo: repo, cacheConn: cacheConn}
 }
 
-func (s *StatsService) GetDashboardStats(ctx context.Context, userID uint) (*dto.DashboardStatsResponse, error) {
+func (s *StatsService) GetMyDashboardStats(ctx context.Context, userID uint) (*dto.MyDashboardStatsResponse, error) {
 	// Try cache first
 	key := dashboardStatsKey(userID)
 	if cached, err := s.cacheConn.Get(ctx, key); err == nil {
-		var resp dto.DashboardStatsResponse
+		var resp dto.MyDashboardStatsResponse
 		if json.Unmarshal([]byte(cached), &resp) == nil {
 			return &resp, nil
 		}
@@ -91,7 +91,7 @@ func (s *StatsService) GetDashboardStats(ctx context.Context, userID uint) (*dto
 		})
 	}
 
-	resp := &dto.DashboardStatsResponse{
+	resp := &dto.MyDashboardStatsResponse{
 		TotalDocuments:  totalDocs,
 		TotalStorage:    totalStorage,
 		TotalViews:      totalViews,
