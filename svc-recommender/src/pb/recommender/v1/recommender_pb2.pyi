@@ -28,7 +28,7 @@ class EnrichDocumentResponse(_message.Message):
     __slots__ = ("accepted",)
     ACCEPTED_FIELD_NUMBER: _ClassVar[int]
     accepted: bool
-    def __init__(self, accepted: bool = ...) -> None: ...
+    def __init__(self, accepted: _Optional[bool] = ...) -> None: ...
 
 class TranslateTextRequest(_message.Message):
     __slots__ = ("text", "target_language")
