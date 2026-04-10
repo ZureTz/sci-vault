@@ -27,16 +27,18 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import userApi from '$lib/api/user';
 	import labApi, { type LabListItem } from '$lib/api/lab';
+	import { getLabsVersion } from '$lib/stores/lab.svelte';
+	import { getUser, getAvatarUrl, setAvatarUrl, clearUser } from '$lib/stores/user.svelte';
 
 	let { ref = $bindable(null), ...restProps } = $props();
 
-	let currentUser = $state({ id: '', username: 'User', email: '' });
+	let currentUser = $derived(getUser());
 	let userInitials = $derived(
 		currentUser.username ? currentUser.username.substring(0, 2).toUpperCase() : 'US'
 	);
 
 	let initDone = $state(false);
-	let avatarUrl = $state<string | undefined>(undefined);
+	let avatarUrl = $derived(getAvatarUrl());
 
 	// Lab selector state
 	let myLabs = $state<LabListItem[]>([]);
@@ -75,42 +77,38 @@
 		'sidebar.labs': isLabGroupActive
 	});
 
-	onMount(async () => {
-		const userStr = localStorage.getItem('user');
-		if (userStr) {
-			try {
-				currentUser = JSON.parse(userStr);
-			} catch (e) {
-				console.error('Failed to parse user info', e);
-			}
+	async function reloadLabs() {
+		const result = await labApi.getMyLabs().catch(() => null);
+		if (result === null) return;
+		myLabs = result;
+		if (selectedLabId !== null && !myLabs.some((l) => l.id === selectedLabId)) {
+			selectLab(null);
 		}
+		if (selectedLabId === null && myLabs.length === 1) {
+			selectLab(myLabs[0].id);
+		}
+		labsLoaded = true;
+	}
 
+	// Re-fetch labs whenever a page signals a change (join / create).
+	$effect(() => {
+		getLabsVersion(); // tracked dependency
+		reloadLabs();
+	});
+
+	onMount(async () => {
 		// Restore persisted lab selection
 		const storedLabId = localStorage.getItem('active_lab_id');
 		if (storedLabId) selectedLabId = Number(storedLabId);
 
-		// Fetch user avatar and labs in parallel
-		const [, labs] = await Promise.allSettled([
+		await Promise.allSettled([
 			userApi
 				.getAvatar(currentUser.id)
-				.then((a) => (avatarUrl = a.avatar_url))
+				.then((a) => setAvatarUrl(a.avatar_url))
 				.catch(() => {}),
-			labApi.getMyLabs()
+			reloadLabs()
 		]);
 
-		if (labs.status === 'fulfilled') {
-			myLabs = labs.value;
-			// If the stored selection is no longer valid, clear it
-			if (selectedLabId !== null && !myLabs.some((l) => l.id === selectedLabId)) {
-				selectLab(null);
-			}
-			// Auto-select if user has exactly one lab and nothing is stored
-			if (selectedLabId === null && myLabs.length === 1) {
-				selectLab(myLabs[0].id);
-			}
-		}
-
-		labsLoaded = true;
 		initDone = true;
 	});
 
@@ -125,8 +123,8 @@
 
 	function handleLogout() {
 		localStorage.removeItem('token');
-		localStorage.removeItem('user');
 		localStorage.removeItem('active_lab_id');
+		clearUser();
 		goto(resolve('/login'));
 	}
 </script>

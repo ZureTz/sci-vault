@@ -12,6 +12,7 @@
 
 	import userApi from '$lib/api/user';
 	import authApi from '$lib/api/auth';
+	import { setUser } from '$lib/stores/user.svelte';
 	import { showApiErrors } from '$lib/utils/api-error';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -98,14 +99,7 @@
 			});
 
 			localStorage.setItem('token', res.token);
-			localStorage.setItem(
-				'user',
-				JSON.stringify({
-					id: res.user_id,
-					username: res.username,
-					email: res.email
-				})
-			);
+			setUser({ id: res.user_id, username: res.username, email: res.email });
 			toast.success($_('login.success.login'));
 			goto(resolve('/'));
 		} catch (error: unknown) {
@@ -128,14 +122,7 @@
 			const res = await userApi.register(registerForm);
 
 			localStorage.setItem('token', res.token);
-			localStorage.setItem(
-				'user',
-				JSON.stringify({
-					id: res.user_id,
-					username: res.username,
-					email: res.email
-				})
-			);
+			setUser({ id: res.user_id, username: res.username, email: res.email });
 			toast.success($_('login.success.register'));
 			goto(resolve('/'));
 		} catch (error: unknown) {

@@ -26,6 +26,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import userApi, { type ProfileResponse, type UpdateProfileRequest } from '$lib/api/user';
+	import { setAvatarUrl } from '$lib/stores/user.svelte';
 	import labApi, { type LabListItem } from '$lib/api/lab';
 	import { showApiErrors } from '$lib/utils/api-error';
 
@@ -110,6 +111,9 @@
 		try {
 			await userApi.uploadAvatar(file);
 			profilePromise = userApi.getProfile(userId);
+			// Reflect the new avatar immediately in the sidebar
+			const avatar = await userApi.getAvatar(String(userId)).catch(() => null);
+			if (avatar) setAvatarUrl(avatar.avatar_url);
 			toast.success($_('profile.success.avatar_updated'));
 		} catch (error: unknown) {
 			showApiErrors(error, $_('profile.error.upload_failed'));

@@ -8,6 +8,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import labApi from '$lib/api/lab';
+	import { invalidateLabs } from '$lib/stores/lab.svelte';
 
 	let inviteCode = $state('');
 	let submitting = $state(false);
@@ -22,6 +23,7 @@
 			const lab = await labApi.joinLabByCode({ invite_code: code });
 			joinedLab = { name: lab.name, member_count: lab.member_count };
 			inviteCode = '';
+			invalidateLabs();
 			toast.success($_('lab.join.success', { values: { name: lab.name } }));
 		} catch (err: unknown) {
 			const status = (err as { response?: { status?: number } })?.response?.status;

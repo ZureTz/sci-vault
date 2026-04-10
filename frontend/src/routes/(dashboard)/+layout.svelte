@@ -9,6 +9,7 @@
 	import { page } from '$app/state';
 
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
+	import { clearUser } from '$lib/stores/user.svelte';
 	import ThemeToggle from '$lib/components/layout/ThemeToggle.svelte';
 	import LanguageToggle from '$lib/components/layout/LanguageToggle.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar';
@@ -66,14 +67,14 @@
 			const currentTime = Date.now() / 1000;
 			if (decoded.exp && decoded.exp < currentTime) {
 				localStorage.removeItem('token');
-				localStorage.removeItem('user');
+				clearUser();
 				toast.error('Token expired, please login again.');
 				goto(resolve('/login'));
 			}
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		} catch (error: unknown) {
 			localStorage.removeItem('token');
-			localStorage.removeItem('user');
+			clearUser();
 			goto(resolve('/login'));
 		}
 	});

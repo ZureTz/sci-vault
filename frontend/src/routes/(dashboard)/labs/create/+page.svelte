@@ -10,6 +10,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import labApi from '$lib/api/lab';
+	import { invalidateLabs } from '$lib/stores/lab.svelte';
 
 	let name = $state('');
 	let description = $state('');
@@ -24,6 +25,7 @@
 				name: name.trim(),
 				description: description.trim() || undefined
 			});
+			invalidateLabs();
 			toast.success($_('lab.create.success', { values: { name: lab.name } }));
 			goto(resolve('/labs/join'));
 		} catch {
