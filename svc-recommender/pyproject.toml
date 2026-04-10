@@ -25,5 +25,8 @@ dev = [
     "ruff>=0.15.8",
 ]
 
+[tool.ruff]
+extend-exclude = ["src/pb"]
+
 # src/ and src/pb/ are added to sys.path by main.py at runtime;
 # no installable package is needed for this service.

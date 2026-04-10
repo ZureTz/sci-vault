@@ -1,9 +1,3 @@
-FROM bufbuild/buf:1.66.1 AS pb-builder
-WORKDIR /workspace
-COPY --from=workspace_root proto/ ./proto/
-COPY --from=workspace_root buf.yaml buf.gen.yaml ./
-RUN buf generate
-
 FROM astral/uv:python3.14-alpine
 
 WORKDIR /app
@@ -15,8 +9,6 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
 COPY . .
-# Bring in the generated python stubs
-COPY --from=pb-builder /workspace/svc-recommender/src/pb/ ./src/pb/
 
 EXPOSE 50051
 

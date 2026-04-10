@@ -1,7 +1,6 @@
 package mailer
 
 import (
-	"crypto/tls"
 	"log/slog"
 
 	"gopkg.in/gomail.v2"
@@ -20,7 +19,6 @@ type Mailer struct {
 
 func NewMailer(host string, port int, username, password string) *Mailer {
 	d := gomail.NewDialer(host, port, username, password)
-	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	slog.Info("mailer initialized", "host", host, "port", port, "username", username)
 
