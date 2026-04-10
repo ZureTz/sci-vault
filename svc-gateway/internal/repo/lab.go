@@ -1,0 +1,126 @@
+package repo
+
+import (
+	"context"
+	"time"
+
+	"gorm.io/gorm"
+
+	"gateway/internal/model"
+)
+
+// MemberInfo carries member fields joined from the users table.
+type MemberInfo struct {
+	UserID   uint
+	Username string
+	Role     string
+	JoinedAt time.Time
+}
+
+// LabWithRole carries lab fields alongside the requesting user's membership role and total member count.
+type LabWithRole struct {
+	ID          uint
+	Name        string
+	Description *string
+	InviteCode  string
+	OwnerID     uint
+	Role        string
+	MemberCount int64
+}
+
+type LabRepository interface {
+	CreateWithOwner(ctx context.Context, lab *model.Lab) error
+	FindByInviteCode(ctx context.Context, code string) (model.Lab, error)
+	FindMember(ctx context.Context, labID, userID uint) (model.LabMember, error)
+	AddMember(ctx context.Context, member *model.LabMember) error
+	CountMembers(ctx context.Context, labID uint) (int64, error)
+	FindLabsByUserID(ctx context.Context, userID uint) ([]LabWithRole, error)
+	FindByID(ctx context.Context, labID uint) (model.Lab, error)
+	FindMembersByLabID(ctx context.Context, labID uint) ([]MemberInfo, error)
+	RemoveMember(ctx context.Context, labID, userID uint) error
+}
+
+type labRepo struct {
+	db *gorm.DB
+}
+
+func NewLabRepo(db *gorm.DB) LabRepository {
+	return &labRepo{db: db}
+}
+
+// CreateWithOwner creates the lab and adds the owner as a member atomically.
+func (r *labRepo) CreateWithOwner(ctx context.Context, lab *model.Lab) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(lab).Error; err != nil {
+			return err
+		}
+		return tx.Create(&model.LabMember{
+			LabID:  lab.ID,
+			UserID: lab.OwnerID,
+			Role:   "owner",
+		}).Error
+	})
+}
+
+func (r *labRepo) FindByInviteCode(ctx context.Context, code string) (model.Lab, error) {
+	return gorm.G[model.Lab](r.db).Where("invite_code = ?", code).First(ctx)
+}
+
+func (r *labRepo) FindMember(ctx context.Context, labID, userID uint) (model.LabMember, error) {
+	return gorm.G[model.LabMember](r.db).Where("lab_id = ? AND user_id = ?", labID, userID).First(ctx)
+}
+
+func (r *labRepo) AddMember(ctx context.Context, member *model.LabMember) error {
+	return gorm.G[model.LabMember](r.db).Create(ctx, member)
+}
+
+func (r *labRepo) CountMembers(ctx context.Context, labID uint) (int64, error) {
+	return gorm.G[model.LabMember](r.db).Where("lab_id = ?", labID).Count(ctx, "*")
+}
+
+func (r *labRepo) FindByID(ctx context.Context, labID uint) (model.Lab, error) {
+	return gorm.G[model.Lab](r.db).Where("id = ?", labID).First(ctx)
+}
+
+func (r *labRepo) FindMembersByLabID(ctx context.Context, labID uint) ([]MemberInfo, error) {
+	var lab model.Lab
+	err := r.db.WithContext(ctx).
+		Preload("Members", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at ASC")
+		}).
+		Preload("Members.User").
+		First(&lab, labID).Error
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]MemberInfo, len(lab.Members))
+	for i, m := range lab.Members {
+		results[i] = MemberInfo{
+			UserID:   m.UserID,
+			Username: m.User.Username,
+			Role:     m.Role,
+			JoinedAt: m.CreatedAt,
+		}
+	}
+	return results, nil
+}
+
+func (r *labRepo) RemoveMember(ctx context.Context, labID, userID uint) error {
+	return r.db.WithContext(ctx).
+		Where("lab_id = ? AND user_id = ?", labID, userID).
+		Delete(&model.LabMember{}).Error
+}
+
+func (r *labRepo) FindLabsByUserID(ctx context.Context, userID uint) ([]LabWithRole, error) {
+	var results []LabWithRole
+	err := r.db.WithContext(ctx).Raw(`
+		SELECT l.id, l.name, l.description, l.invite_code, l.owner_id, lm.role,
+		       (SELECT COUNT(*) FROM lab_members lm2 WHERE lm2.lab_id = l.id AND lm2.deleted_at IS NULL) AS member_count
+		FROM labs l
+		JOIN lab_members lm ON lm.lab_id = l.id AND lm.user_id = ? AND lm.deleted_at IS NULL
+		WHERE l.deleted_at IS NULL
+		ORDER BY l.created_at DESC
+	`, userID).Scan(&results).Error
+	return results, err
+}

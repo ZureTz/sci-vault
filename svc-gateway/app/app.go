@@ -98,6 +98,7 @@ func New(configPath string) (*App, error) {
 	userAvatarRepo := repo.NewUserProfileRepo(db)
 	documentRepo := repo.NewDocumentRepo(db)
 	statsRepo := repo.NewStatsRepo(db)
+	labRepo := repo.NewLabRepo(db)
 
 	// 3. Initialize services layer (business logic)
 	userService := service.NewUserService(userRepo, userAvatarRepo, jwtGenerator, mailSrv, cacheConn, storageClient)
@@ -105,6 +106,7 @@ func New(configPath string) (*App, error) {
 	statsService := service.NewStatsService(statsRepo, cacheConn)
 	healthService := service.NewHealthService(recommenderClient)
 	translateService := service.NewTranslateService(recommenderClient)
+	labService := service.NewLabService(labRepo)
 
 	// 4. Initialize handlers layer (HTTP/API)
 	healthHandler := handler.NewHealthHandler(healthService)
@@ -113,7 +115,7 @@ func New(configPath string) (*App, error) {
 	documentHandler := handler.NewDocumentHandler(documentService)
 	statsHandler := handler.NewStatsHandler(statsService)
 	translateHandler := handler.NewTranslateHandler(translateService)
-	labHandler := handler.NewLabHandler( /* labService, will be added later */ )
+	labHandler := handler.NewLabHandler(labService)
 
 	// 5. Initialize router layer (routing and middleware mapping)
 	r := router.NewRouter(&router.RouterDeps{

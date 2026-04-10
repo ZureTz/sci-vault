@@ -115,6 +115,7 @@ func (deps *RouterDeps) registerTranslateRoutes(group *gin.RouterGroup) {
 
 // Lab routes (/api/v1/labs/...)
 func (deps *RouterDeps) registerLabRoutes(group *gin.RouterGroup) {
+	group.GET("", deps.LabHandler.GetMyLabs)
 	group.POST("", deps.LabHandler.CreateLab)
 	group.POST("/join", deps.LabHandler.JoinLabByCode)
 

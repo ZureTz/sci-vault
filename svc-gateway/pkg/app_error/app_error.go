@@ -13,4 +13,10 @@ var (
 	ErrDocumentTooLarge    = errors.New("document file too large")
 	ErrDocumentInvalidType = errors.New("unsupported document type; only PDF is accepted")
 	ErrDocumentNotFound    = errors.New("document not found")
+
+	ErrLabNotFound       = errors.New("lab not found")
+	ErrInvalidInviteCode = errors.New("invalid invite code")
+	ErrAlreadyMember     = errors.New("already a member of this lab")
+	ErrNotMember         = errors.New("user is not a member of this lab")
+	ErrOwnerCannotLeave  = errors.New("owner cannot leave; transfer ownership first")
 )
