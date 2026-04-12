@@ -22,7 +22,8 @@ type LabService interface {
 	GetMyLabs(ctx context.Context, userID uint) ([]dto.LabListItem, error)
 	GetLab(ctx context.Context, labID, userID uint) (*dto.LabDetailResponse, error)
 	GetMembers(ctx context.Context, labID, userID uint) ([]dto.LabMemberInfo, error)
-	LeaveLab(ctx context.Context, labID, userID uint) error
+	RequestLeaveLab(ctx context.Context, labID, userID uint) error
+	LeaveLab(ctx context.Context, labID, userID uint, emailCode string) error
 	KickMember(ctx context.Context, labID, requesterID, targetUserID uint) error
 	TransferOwnership(ctx context.Context, labID, requesterID, targetUserID uint) error
 	RequestDeleteLab(ctx context.Context, labID, requesterID uint) error
@@ -148,6 +149,30 @@ func (h *LabHandler) GetMembers(c *gin.Context) {
 	c.JSON(http.StatusOK, members)
 }
 
+func (h *LabHandler) RequestLeaveLab(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized")))
+		return
+	}
+	labID := c.GetUint("lab_id")
+
+	if err := h.labService.RequestLeaveLab(c.Request.Context(), labID, userID); err != nil {
+		if errors.Is(err, app_error.ErrNotMember) {
+			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.leave_lab.not_member")))
+			return
+		}
+		if errors.Is(err, app_error.ErrOwnerCannotLeave) {
+			c.JSON(http.StatusConflict, utils.ErrorResponse(fmt.Errorf("service.leave_lab.owner_cannot_leave")))
+			return
+		}
+		slog.Error("RequestLeaveLab service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.request_leave_lab.failed")))
+		return
+	}
+	c.JSON(http.StatusOK, utils.MessageResponse("confirmation code sent to your email"))
+}
+
 func (h *LabHandler) LeaveLab(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -156,13 +181,27 @@ func (h *LabHandler) LeaveLab(c *gin.Context) {
 	}
 	labID := c.GetUint("lab_id")
 
-	if err := h.labService.LeaveLab(c.Request.Context(), labID, userID); err != nil {
+	var req dto.LeaveLabRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	if err := h.labService.LeaveLab(c.Request.Context(), labID, userID, req.EmailCode); err != nil {
 		if errors.Is(err, app_error.ErrNotMember) {
 			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.leave_lab.not_member")))
 			return
 		}
 		if errors.Is(err, app_error.ErrOwnerCannotLeave) {
 			c.JSON(http.StatusConflict, utils.ErrorResponse(fmt.Errorf("service.leave_lab.owner_cannot_leave")))
+			return
+		}
+		if errors.Is(err, app_error.ErrEmailCodeExpired) {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.leave_lab.code_expired")))
+			return
+		}
+		if errors.Is(err, app_error.ErrEmailCodeMismatch) {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.leave_lab.code_mismatch")))
 			return
 		}
 		slog.Error("LeaveLab service error", "err", err)

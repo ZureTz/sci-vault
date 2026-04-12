@@ -2,12 +2,8 @@ package service
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base32"
 	"errors"
 	"fmt"
-	"math/big"
-	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -17,6 +13,7 @@ import (
 	"gateway/internal/repo"
 	"gateway/pkg/app_error"
 	"gateway/pkg/cache"
+	"gateway/pkg/codegen"
 	"gateway/pkg/mailer"
 )
 
@@ -37,7 +34,7 @@ func NewLabService(labRepo repo.LabRepository, userRepo repo.UserRepository, cac
 }
 
 func (s *LabService) CreateLab(ctx context.Context, ownerID uint, req dto.CreateLabRequest) (*dto.JoinLabResponse, error) {
-	inviteCode, err := generateInviteCode()
+	inviteCode, err := codegen.InviteCode()
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +158,56 @@ func (s *LabService) GetMembers(ctx context.Context, labID, userID uint) ([]dto.
 	return items, nil
 }
 
-func (s *LabService) LeaveLab(ctx context.Context, labID, userID uint) error {
+func (s *LabService) RequestLeaveLab(ctx context.Context, labID, userID uint) error {
+	member, err := s.repo.FindMember(ctx, labID, userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrNotMember
+		}
+		return err
+	}
+	if member.Role == model.LabRoleOwner {
+		return app_error.ErrOwnerCannotLeave
+	}
+
+	lab, err := s.repo.FindByID(ctx, labID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrLabNotFound
+		}
+		return err
+	}
+
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to find user: %w", err)
+	}
+
+	code, err := codegen.VerificationCode()
+	if err != nil {
+		return err
+	}
+
+	cacheKey := fmt.Sprintf("lab_leave:%d:%d:code", labID, userID)
+	if err := s.cacheConn.Set(ctx, cacheKey, code, 5*time.Minute); err != nil {
+		return fmt.Errorf("failed to store verification code: %w", err)
+	}
+
+	s.mailer.SendMail(&mailer.MailRequest{
+		To:      []string{user.Email},
+		Subject: fmt.Sprintf("Confirm leaving lab \"%s\"", lab.Name),
+		Body: fmt.Sprintf(
+			"<p>You requested to leave the lab <strong>%s</strong>.</p>"+
+				"<p>Your confirmation code is: <strong>%s</strong></p>"+
+				"<p>This code will expire in 5 minutes. If you did not request this, please ignore this email.</p>",
+			lab.Name, code,
+		),
+	})
+
+	return nil
+}
+
+func (s *LabService) LeaveLab(ctx context.Context, labID, userID uint, emailCode string) error {
 	member, err := s.repo.FindMember(ctx, labID, userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -173,6 +219,16 @@ func (s *LabService) LeaveLab(ctx context.Context, labID, userID uint) error {
 	if member.Role == model.LabRoleOwner {
 		return app_error.ErrOwnerCannotLeave
 	}
+
+	cacheKey := fmt.Sprintf("lab_leave:%d:%d:code", labID, userID)
+	storedCode, err := s.cacheConn.Get(ctx, cacheKey)
+	if err != nil {
+		return app_error.ErrEmailCodeExpired
+	}
+	if storedCode != emailCode {
+		return app_error.ErrEmailCodeMismatch
+	}
+	defer s.cacheConn.Del(context.Background(), cacheKey)
 
 	return s.repo.RemoveMember(ctx, labID, userID)
 }
@@ -274,12 +330,10 @@ func (s *LabService) RequestDeleteLab(ctx context.Context, labID, requesterID ui
 		return fmt.Errorf("failed to find owner: %w", err)
 	}
 
-	max := big.NewInt(900000)
-	n, err := rand.Int(rand.Reader, max)
+	code, err := codegen.VerificationCode()
 	if err != nil {
-		return fmt.Errorf("failed to generate secure code: %w", err)
+		return err
 	}
-	code := fmt.Sprintf("%06d", n.Int64()+100000)
 
 	cacheKey := fmt.Sprintf("lab_delete:%d:code", labID)
 	if err := s.cacheConn.Set(ctx, cacheKey, code, 5*time.Minute); err != nil {
@@ -348,7 +402,7 @@ func (s *LabService) ResetInviteCode(ctx context.Context, labID, requesterID uin
 		return "", app_error.ErrNotOwner
 	}
 
-	newCode, err := generateInviteCode()
+	newCode, err := codegen.InviteCode()
 	if err != nil {
 		return "", err
 	}
@@ -357,14 +411,4 @@ func (s *LabService) ResetInviteCode(ctx context.Context, labID, requesterID uin
 		return "", err
 	}
 	return newCode, nil
-}
-
-// generateInviteCode returns an 8-character uppercase alphanumeric code.
-func generateInviteCode() (string, error) {
-	b := make([]byte, 5)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	// base32 of 5 bytes = exactly 8 characters, no padding needed
-	return strings.ToUpper(base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(b)), nil
 }
