@@ -6,6 +6,17 @@ import (
 	"gorm.io/gorm"
 )
 
+// DB enrich_status values (source of truth for persistent state).
+// Fine-grained transient states (pending, processing, failed) live in Redis only,
+// managed entirely by the Python microservice.
+const (
+	EnrichStatusNotStarted = "not_started"
+	EnrichStatusPending    = "pending"
+	EnrichStatusProcessing = "processing"
+	EnrichStatusFailed     = "failed"
+	EnrichStatusDone       = "done"
+)
+
 type Document struct {
 	gorm.Model
 

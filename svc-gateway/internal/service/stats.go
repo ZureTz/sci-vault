@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gateway/internal/dto"
+	"gateway/internal/model"
 	"gateway/internal/repo"
 	"gateway/pkg/cache"
 )
@@ -66,15 +67,15 @@ func (s *StatsService) GetMyDashboardStats(ctx context.Context, userID uint) (*d
 	var breakdown dto.StatusBreakdown
 	for _, sc := range statusCounts {
 		switch sc.EnrichStatus {
-		case "not_started":
+		case model.EnrichStatusNotStarted:
 			breakdown.NotStarted = sc.Count
-		case "pending":
+		case model.EnrichStatusPending:
 			breakdown.Pending = sc.Count
-		case "processing":
+		case model.EnrichStatusProcessing:
 			breakdown.Processing = sc.Count
-		case "done":
+		case model.EnrichStatusDone:
 			breakdown.Done = sc.Count
-		case "failed":
+		case model.EnrichStatusFailed:
 			breakdown.Failed = sc.Count
 		}
 	}

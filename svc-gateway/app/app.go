@@ -127,6 +127,8 @@ func New(configPath string) (*App, error) {
 		TranslateHandler: translateHandler,
 		LabHandler:       labHandler,
 
+		CacheConn: cacheConn,
+
 		Config: cfg,
 	})
 
