@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import {
 		Copy,
 		Check,
@@ -15,6 +14,7 @@
 
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -45,27 +45,32 @@
 	let emailCode = $state('');
 	let deleting = $state(false);
 
-	async function loadData() {
-		if (!activeLab) {
+	$effect(() => {
+		const lab = getActiveLab();
+		if (lab) {
+			isLoading = true;
+			Promise.all([labApi.getLab(lab.id), labApi.getMembers(lab.id)])
+				.then(([labRes, memberList]) => {
+					labDetail = labRes;
+					members = memberList.filter((m) => m.role !== 'owner');
+					// Reset delete form state on lab switch
+					deleteStep = 1;
+					confirmName = '';
+					emailCode = '';
+					transferTargetId = '';
+				})
+				.catch((error: unknown) => {
+					showApiErrors(error, $_('service.get_lab.failed'));
+				})
+				.finally(() => {
+					isLoading = false;
+				});
+		} else {
+			labDetail = null;
+			members = [];
 			isLoading = false;
-			return;
 		}
-		isLoading = true;
-		try {
-			const [lab, memberList] = await Promise.all([
-				labApi.getLab(activeLab.id),
-				labApi.getMembers(activeLab.id)
-			]);
-			labDetail = lab;
-			members = memberList.filter((m) => m.role !== 'owner');
-		} catch (error: unknown) {
-			showApiErrors(error, $_('service.get_lab.failed'));
-		} finally {
-			isLoading = false;
-		}
-	}
-
-	onMount(loadData);
+	});
 
 	async function copyInviteCode() {
 		if (!labDetail) return;
@@ -81,9 +86,6 @@
 
 	async function handleResetInviteCode() {
 		if (!activeLab || !labDetail) return;
-		const confirmed = confirm($_('lab.settings.reset_confirm'));
-		if (!confirmed) return;
-
 		resettingCode = true;
 		try {
 			const res = await labApi.resetInviteCode(activeLab.id);
@@ -96,18 +98,12 @@
 		}
 	}
 
+	let transferTarget = $derived(members.find((m) => m.user_id === Number(transferTargetId)));
+
 	async function handleTransfer() {
 		if (!activeLab) return;
 		const targetId = Number(transferTargetId);
 		if (!targetId) return;
-
-		const target = members.find((m) => m.user_id === targetId);
-		if (!target) return;
-
-		const confirmed = confirm(
-			$_('lab.settings.transfer_confirm', { values: { name: target.username } })
-		);
-		if (!confirmed) return;
 
 		transferring = true;
 		try {
@@ -241,15 +237,30 @@
 						<p class="mb-3 text-sm text-muted-foreground">
 							{$_('lab.settings.reset_invite_code_desc')}
 						</p>
-						<Button
-							variant="outline"
-							class="gap-2"
-							disabled={resettingCode}
-							onclick={handleResetInviteCode}
-						>
-							<RefreshCw class="size-4 {resettingCode ? 'animate-spin' : ''}" />
-							{$_('lab.settings.reset_invite_code')}
-						</Button>
+						<AlertDialog.Root>
+							<AlertDialog.Trigger
+								class="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground"
+								disabled={resettingCode}
+							>
+								<RefreshCw class="size-4 {resettingCode ? 'animate-spin' : ''}" />
+								{$_('lab.settings.reset_invite_code')}
+							</AlertDialog.Trigger>
+							<AlertDialog.Content>
+								<AlertDialog.Header>
+									<AlertDialog.Title>{$_('lab.settings.reset_invite_code')}</AlertDialog.Title>
+									<AlertDialog.Description>
+										{$_('lab.settings.reset_confirm')}
+									</AlertDialog.Description>
+								</AlertDialog.Header>
+								<AlertDialog.Footer>
+									<AlertDialog.Cancel>{$_('profile.btn.cancel')}</AlertDialog.Cancel>
+									<AlertDialog.Action onclick={handleResetInviteCode}>
+										<RefreshCw class="size-3.5" />
+										{$_('lab.settings.reset_invite_code')}
+									</AlertDialog.Action>
+								</AlertDialog.Footer>
+							</AlertDialog.Content>
+						</AlertDialog.Root>
 					</div>
 				</Card.Content>
 			</Card.Root>
@@ -281,15 +292,32 @@
 									{/each}
 								</select>
 							</div>
-							<Button
-								variant="outline"
-								class="gap-2"
-								disabled={!transferTargetId || transferring}
-								onclick={handleTransfer}
-							>
-								<ArrowRightLeft class="size-4" />
-								{$_('lab.settings.transfer_btn')}
-							</Button>
+							<AlertDialog.Root>
+								<AlertDialog.Trigger
+									class="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
+									disabled={!transferTargetId || transferring}
+								>
+									<ArrowRightLeft class="size-4" />
+									{$_('lab.settings.transfer_btn')}
+								</AlertDialog.Trigger>
+								<AlertDialog.Content>
+									<AlertDialog.Header>
+										<AlertDialog.Title>{$_('lab.settings.transfer_section')}</AlertDialog.Title>
+										<AlertDialog.Description>
+											{$_('lab.settings.transfer_confirm', {
+												values: { name: transferTarget?.username ?? '' }
+											})}
+										</AlertDialog.Description>
+									</AlertDialog.Header>
+									<AlertDialog.Footer>
+										<AlertDialog.Cancel>{$_('profile.btn.cancel')}</AlertDialog.Cancel>
+										<AlertDialog.Action variant="destructive" onclick={handleTransfer}>
+											<ArrowRightLeft class="size-3.5" />
+											{$_('lab.settings.transfer_btn')}
+										</AlertDialog.Action>
+									</AlertDialog.Footer>
+								</AlertDialog.Content>
+							</AlertDialog.Root>
 						</div>
 					{/if}
 				</Card.Content>

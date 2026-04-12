@@ -25,7 +25,6 @@
 		"join_lab": "Join Lab",
 		"select_lab": "Select a lab",
 		"your_labs": "Your Labs",
-		"members": "members",
 		"no_labs": "No labs yet",
 		"no_labs_hint": "Join or create a lab",
 		"no_labs_desc": "Join an existing lab with an invite code, or create your own.",
@@ -272,9 +271,15 @@
 			"failed": "Failed to reset invite code",
 			"success": "Invite code has been reset"
 		},
+		"request_leave_lab": {
+			"failed": "Failed to send confirmation code",
+			"success": "Confirmation code sent to your email"
+		},
 		"leave_lab": {
 			"not_member": "You are not a member of this lab",
 			"owner_cannot_leave": "Owner cannot leave the lab; transfer ownership first",
+			"code_expired": "Verification code has expired",
+			"code_mismatch": "Incorrect verification code",
 			"failed": "Failed to leave lab",
 			"success": "You have left the lab"
 		}
@@ -345,6 +350,14 @@
 		"quick_actions": "Quick Actions",
 		"view_members": "View Members",
 		"lab_settings": "Lab Settings",
+		"lab_settings_hint": "Invite code, transfer & more",
+		"leave_lab": "Leave Lab",
+		"leave_lab_hint": "Remove yourself from this lab",
+		"leave_confirm": "Leave \"{name}\"?",
+		"leave_step1_desc": "A confirmation code will be sent to your email.",
+		"leave_send_code": "Send Code",
+		"leave_step2": "Enter the verification code sent to your email",
+		"leave_code_label": "Verification code",
 		"owner_badge": "Owner"
 	},
 	"lab": {
