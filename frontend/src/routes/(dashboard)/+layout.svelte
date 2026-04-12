@@ -29,7 +29,7 @@
 		};
 		// Intermediate group labels — not real pages, so not clickable
 		const documentsCrumb = { label: $_('breadcrumb.documents') };
-		const labsCrumb = { label: $_('breadcrumb.labs') };
+		const accountCrumb = { label: $_('sidebar.account') };
 
 		if (!routeId) return [labBase];
 
@@ -37,19 +37,18 @@
 			// ── Workspace group ───────────────────────────────────────────
 			case '/(dashboard)':
 				return [{ label: $_('breadcrumb.lab_dashboard') }];
-			case '/(dashboard)/settings':
-				return [labBase, { label: $_('breadcrumb.settings') }];
 			case '/(dashboard)/labs/create':
-				return [labBase, labsCrumb, { label: $_('breadcrumb.create_lab') }];
+				return [labBase, { label: $_('breadcrumb.create_lab') }];
 			case '/(dashboard)/labs/join':
-				return [labBase, labsCrumb, { label: $_('breadcrumb.join_lab') }];
+				return [labBase, { label: $_('breadcrumb.join_lab') }];
+			case '/(dashboard)/members':
+				return [labBase, { label: $_('breadcrumb.lab_members') }];
+			case '/(dashboard)/lab-settings':
+				return [labBase, { label: $_('breadcrumb.lab_settings') }];
 
 			// ── Personal group ────────────────────────────────────────────
 			case '/(dashboard)/mine/dashboard':
 				return [{ label: $_('breadcrumb.dashboard') }];
-			case '/(dashboard)/profile':
-			case '/(dashboard)/profile/[user_id]':
-				return [personalBase, { label: $_('breadcrumb.profile') }];
 			case '/(dashboard)/documents':
 				return [personalBase, { label: $_('breadcrumb.documents') }];
 			case '/(dashboard)/documents/mine':
@@ -58,6 +57,11 @@
 				return [personalBase, documentsCrumb, { label: $_('breadcrumb.upload') }];
 			case '/(dashboard)/documents/[id]':
 				return [personalBase, documentsCrumb, { label: $_('breadcrumb.document_detail') }];
+			case '/(dashboard)/profile':
+			case '/(dashboard)/profile/[user_id]':
+				return [personalBase, accountCrumb, { label: $_('breadcrumb.profile') }];
+			case '/(dashboard)/settings':
+				return [personalBase, accountCrumb, { label: $_('breadcrumb.settings') }];
 
 			default:
 				return [labBase];
