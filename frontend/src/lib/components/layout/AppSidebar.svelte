@@ -12,7 +12,8 @@
 		Plus,
 		Settings,
 		Upload,
-		User
+		User,
+		Users
 	} from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
@@ -27,7 +28,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import userApi from '$lib/api/user';
 	import labApi, { type LabListItem } from '$lib/api/lab';
-	import { getLabsVersion } from '$lib/stores/lab.svelte';
+	import { getLabsVersion, getActiveLab, setActiveLab } from '$lib/stores/lab.svelte';
 	import { getUser, getAvatarUrl, setAvatarUrl, clearUser } from '$lib/stores/user.svelte';
 
 	let { ref = $bindable(null), ...restProps } = $props();
@@ -49,19 +50,12 @@
 	// Lab / workspace-level items
 	const topNavItems = [
 		{ title: 'sidebar.lab_dashboard', url: '/' as const, icon: FlaskConical },
-		{
-			title: 'sidebar.labs',
-			icon: FlaskConical,
-			items: [
-				{ title: 'sidebar.create_lab', url: '/labs/create' as const, icon: FlaskConical },
-				{ title: 'sidebar.join_lab', url: '/labs/join' as const, icon: FlaskConical }
-			]
-		},
-		{ title: 'sidebar.settings', url: '/settings' as const, icon: Settings }
+		{ title: 'sidebar.lab_members', url: '/members' as const, icon: Users },
+		{ title: 'sidebar.lab_settings', url: '/lab-settings' as const, icon: Settings }
 	];
 
 	// Personal items
-	const bottomNavItems = [
+	let bottomNavItems = $derived([
 		{ title: 'sidebar.dashboard', url: '/mine/dashboard' as const, icon: Compass },
 		{
 			title: 'sidebar.documents',
@@ -70,17 +64,27 @@
 				{ title: 'sidebar.my_documents', url: '/documents/mine' as const, icon: FileText },
 				{ title: 'sidebar.upload', url: '/documents/upload' as const, icon: Upload }
 			]
+		},
+		{
+			title: 'sidebar.account',
+			icon: User,
+			items: [
+				{ title: 'sidebar.profile', url: `/profile/${currentUser.id}` as const, icon: User },
+				{ title: 'sidebar.settings', url: '/settings' as const, icon: Settings }
+			]
 		}
-	];
+	]);
 
 	let isOnDocDetail = $derived(page.route.id === '/(dashboard)/documents/[id]');
 
 	let isDocGroupActive = $derived(page.route.id?.startsWith('/(dashboard)/documents') ?? false);
-	let isLabGroupActive = $derived(page.route.id?.startsWith('/(dashboard)/labs') ?? false);
+	let isAccountGroupActive = $derived(
+		page.route.id?.startsWith('/(dashboard)/profile') || page.route.id === '/(dashboard)/settings'
+	);
 
 	const groupActiveMap: Record<string, boolean> = $derived({
 		'sidebar.documents': isDocGroupActive,
-		'sidebar.labs': isLabGroupActive
+		'sidebar.account': isAccountGroupActive
 	});
 
 	async function reloadLabs() {
@@ -93,6 +97,13 @@
 		if (selectedLabId === null && myLabs.length === 1) {
 			selectLab(myLabs[0].id);
 		}
+		// Keep active lab store in sync (e.g. if name/role changed)
+		if (selectedLabId !== null) {
+			const current = myLabs.find((l) => l.id === selectedLabId);
+			if (current) {
+				setActiveLab({ id: current.id, name: current.name, role: current.role });
+			}
+		}
 		labsLoaded = true;
 	}
 
@@ -103,9 +114,9 @@
 	});
 
 	onMount(async () => {
-		// Restore persisted lab selection
-		const storedLabId = localStorage.getItem('active_lab_id');
-		if (storedLabId) selectedLabId = Number(storedLabId);
+		// Restore persisted lab selection from store
+		const storedLab = getActiveLab();
+		if (storedLab) selectedLabId = storedLab.id;
 
 		await Promise.allSettled([
 			userApi
@@ -121,15 +132,18 @@
 	function selectLab(id: number | null) {
 		selectedLabId = id;
 		if (id === null) {
-			localStorage.removeItem('active_lab_id');
+			setActiveLab(null);
 		} else {
-			localStorage.setItem('active_lab_id', String(id));
+			const lab = myLabs.find((l) => l.id === id);
+			if (lab) {
+				setActiveLab({ id: lab.id, name: lab.name, role: lab.role });
+			}
 		}
 	}
 
 	function handleLogout() {
 		localStorage.removeItem('token');
-		localStorage.removeItem('active_lab_id');
+		setActiveLab(null);
 		clearUser();
 		goto(resolve('/login'));
 	}
@@ -249,55 +263,16 @@
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					{#each topNavItems as item (item.title)}
-						{#if item.items}
-							<Collapsible.Root
-								open={groupActiveMap[item.title] ?? false}
-								class="group/collapsible"
-							>
-								<Sidebar.MenuItem>
-									<Collapsible.Trigger>
-										{#snippet child({ props })}
-											<Sidebar.MenuButton {...props}>
-												<item.icon />
-												<span>{$_(item.title)}</span>
-												<ChevronRight
-													class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
-												/>
-											</Sidebar.MenuButton>
-										{/snippet}
-									</Collapsible.Trigger>
-									<Collapsible.Content>
-										<Sidebar.MenuSub>
-											{#each item.items as subItem (subItem.title)}
-												<Sidebar.MenuSubItem>
-													<Sidebar.MenuSubButton
-														isActive={page.url.pathname === resolve(subItem.url)}
-													>
-														{#snippet child({ props })}
-															<a href={resolve(subItem.url)} {...props}>
-																<subItem.icon class="size-3.5" />
-																<span>{$_(subItem.title)}</span>
-															</a>
-														{/snippet}
-													</Sidebar.MenuSubButton>
-												</Sidebar.MenuSubItem>
-											{/each}
-										</Sidebar.MenuSub>
-									</Collapsible.Content>
-								</Sidebar.MenuItem>
-							</Collapsible.Root>
-						{:else}
-							<Sidebar.MenuItem>
-								<Sidebar.MenuButton isActive={page.url.pathname === resolve(item.url)}>
-									{#snippet child({ props })}
-										<a href={resolve(item.url)} {...props}>
-											<item.icon />
-											<span>{$_(item.title)}</span>
-										</a>
-									{/snippet}
-								</Sidebar.MenuButton>
-							</Sidebar.MenuItem>
-						{/if}
+						<Sidebar.MenuItem>
+							<Sidebar.MenuButton isActive={page.url.pathname === resolve(item.url)}>
+								{#snippet child({ props })}
+									<a href={resolve(item.url)} {...props}>
+										<item.icon />
+										<span>{$_(item.title)}</span>
+									</a>
+								{/snippet}
+							</Sidebar.MenuButton>
+						</Sidebar.MenuItem>
 					{/each}
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
@@ -380,18 +355,6 @@
 
 	<Sidebar.Footer>
 		<Sidebar.Menu>
-			<!-- Profile shortcut — direct link, no dropdown -->
-			<Sidebar.MenuItem>
-				<Sidebar.MenuButton isActive={page.url.pathname === resolve(`/profile/${currentUser.id}`)}>
-					{#snippet child({ props })}
-						<a href={resolve(`/profile/${currentUser.id}`)} {...props}>
-							<User />
-							<span>{$_('sidebar.profile')}</span>
-						</a>
-					{/snippet}
-				</Sidebar.MenuButton>
-			</Sidebar.MenuItem>
-
 			<!-- User / logout -->
 			<Sidebar.MenuItem>
 				<DropdownMenu.Root>
