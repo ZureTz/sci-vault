@@ -49,6 +49,10 @@ export interface TransferOwnershipRequest {
 	target_user_id: number;
 }
 
+export interface LeaveLabRequest {
+	email_code: string;
+}
+
 export interface DeleteLabRequest {
 	confirm_name: string;
 	email_code: string;
@@ -79,8 +83,14 @@ const labApi = {
 		return request.get(`/labs/${labId}/members`) as unknown as Promise<LabMemberInfo[]>;
 	},
 
-	leaveLab(labId: number): Promise<DefaultResponse> {
-		return request.delete(`/labs/${labId}/members/me`) as unknown as Promise<DefaultResponse>;
+	requestLeaveLab(labId: number): Promise<DefaultResponse> {
+		return request.post(`/labs/${labId}/leave-request`) as unknown as Promise<DefaultResponse>;
+	},
+
+	leaveLab(labId: number, data: LeaveLabRequest): Promise<DefaultResponse> {
+		return request.delete(`/labs/${labId}/members/me`, {
+			data
+		}) as unknown as Promise<DefaultResponse>;
 	},
 
 	kickMember(labId: number, userId: number): Promise<DefaultResponse> {

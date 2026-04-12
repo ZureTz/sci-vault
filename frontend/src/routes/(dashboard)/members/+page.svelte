@@ -1,15 +1,14 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { Crown, UserMinus, FlaskConical } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import * as Card from '$lib/components/ui/card';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import labApi, { type LabMemberInfo } from '$lib/api/lab';
 	import { getActiveLab } from '$lib/stores/lab.svelte';
@@ -22,30 +21,29 @@
 	let isLoading = $state(true);
 	let kickingUserId = $state<number | null>(null);
 
-	async function loadMembers() {
-		if (!activeLab) {
+	$effect(() => {
+		const lab = getActiveLab();
+		if (lab) {
+			isLoading = true;
+			labApi
+				.getMembers(lab.id)
+				.then((result) => {
+					members = result;
+				})
+				.catch((error: unknown) => {
+					showApiErrors(error, $_('service.get_members.failed'));
+				})
+				.finally(() => {
+					isLoading = false;
+				});
+		} else {
+			members = [];
 			isLoading = false;
-			return;
 		}
-		isLoading = true;
-		try {
-			members = await labApi.getMembers(activeLab.id);
-		} catch (error: unknown) {
-			showApiErrors(error, $_('service.get_members.failed'));
-		} finally {
-			isLoading = false;
-		}
-	}
-
-	onMount(loadMembers);
+	});
 
 	async function handleKick(member: LabMemberInfo) {
 		if (!activeLab) return;
-		const confirmed = confirm(
-			$_('lab.members.remove_confirm', { values: { name: member.username } })
-		);
-		if (!confirmed) return;
-
 		kickingUserId = member.user_id;
 		try {
 			await labApi.kickMember(activeLab.id, member.user_id);
@@ -158,16 +156,35 @@
 									{/if}
 
 									{#if activeLab.role === 'owner' && member.role !== 'owner' && member.user_id !== Number(currentUser.id)}
-										<Button
-											variant="ghost"
-											size="sm"
-											class="h-8 gap-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
-											disabled={kickingUserId === member.user_id}
-											onclick={() => handleKick(member)}
-										>
-											<UserMinus class="size-3.5" />
-											{$_('lab.members.remove')}
-										</Button>
+										<AlertDialog.Root>
+											<AlertDialog.Trigger
+												class="inline-flex h-8 items-center gap-1 rounded-md px-3 text-sm text-destructive hover:bg-destructive/10 hover:text-destructive"
+											>
+												<UserMinus class="size-3.5" />
+												{$_('lab.members.remove')}
+											</AlertDialog.Trigger>
+											<AlertDialog.Content>
+												<AlertDialog.Header>
+													<AlertDialog.Title>{$_('lab.members.remove')}</AlertDialog.Title>
+													<AlertDialog.Description>
+														{$_('lab.members.remove_confirm', {
+															values: { name: member.username }
+														})}
+													</AlertDialog.Description>
+												</AlertDialog.Header>
+												<AlertDialog.Footer>
+													<AlertDialog.Cancel>{$_('profile.btn.cancel')}</AlertDialog.Cancel>
+													<AlertDialog.Action
+														variant="destructive"
+														disabled={kickingUserId === member.user_id}
+														onclick={() => handleKick(member)}
+													>
+														<UserMinus class="size-3.5" />
+														{$_('lab.members.remove')}
+													</AlertDialog.Action>
+												</AlertDialog.Footer>
+											</AlertDialog.Content>
+										</AlertDialog.Root>
 									{/if}
 								</div>
 							</div>
