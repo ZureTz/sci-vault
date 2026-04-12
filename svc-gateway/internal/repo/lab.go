@@ -38,6 +38,9 @@ type LabRepository interface {
 	FindByID(ctx context.Context, labID uint) (model.Lab, error)
 	FindMembersByLabID(ctx context.Context, labID uint) ([]MemberInfo, error)
 	RemoveMember(ctx context.Context, labID, userID uint) error
+	TransferOwnership(ctx context.Context, labID, oldOwnerID, newOwnerID uint) error
+	DeleteLab(ctx context.Context, labID uint) error
+	UpdateInviteCode(ctx context.Context, labID uint, newCode string) error
 }
 
 type labRepo struct {
@@ -57,7 +60,7 @@ func (r *labRepo) CreateWithOwner(ctx context.Context, lab *model.Lab) error {
 		return tx.Create(&model.LabMember{
 			LabID:  lab.ID,
 			UserID: lab.OwnerID,
-			Role:   "owner",
+			Role:   model.LabRoleOwner,
 		}).Error
 	})
 }
@@ -110,6 +113,37 @@ func (r *labRepo) RemoveMember(ctx context.Context, labID, userID uint) error {
 	return r.db.WithContext(ctx).
 		Where("lab_id = ? AND user_id = ?", labID, userID).
 		Delete(&model.LabMember{}).Error
+}
+
+// TransferOwnership atomically updates the lab owner and swaps member roles.
+func (r *labRepo) TransferOwnership(ctx context.Context, labID, oldOwnerID, newOwnerID uint) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.Lab{}).Where("id = ?", labID).Update("owner_id", newOwnerID).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&model.LabMember{}).
+			Where("lab_id = ? AND user_id = ?", labID, oldOwnerID).
+			Update("role", model.LabRoleMember).Error; err != nil {
+			return err
+		}
+		return tx.Model(&model.LabMember{}).
+			Where("lab_id = ? AND user_id = ?", labID, newOwnerID).
+			Update("role", model.LabRoleOwner).Error
+	})
+}
+
+// DeleteLab soft-deletes the lab and all its memberships atomically.
+func (r *labRepo) DeleteLab(ctx context.Context, labID uint) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("lab_id = ?", labID).Delete(&model.LabMember{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&model.Lab{}, labID).Error
+	})
+}
+
+func (r *labRepo) UpdateInviteCode(ctx context.Context, labID uint, newCode string) error {
+	return r.db.WithContext(ctx).Model(&model.Lab{}).Where("id = ?", labID).Update("invite_code", newCode).Error
 }
 
 func (r *labRepo) FindLabsByUserID(ctx context.Context, userID uint) ([]LabWithRole, error) {

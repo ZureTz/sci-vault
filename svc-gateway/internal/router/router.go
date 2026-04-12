@@ -130,7 +130,8 @@ func (deps *RouterDeps) registerLabRoutes(group *gin.RouterGroup) {
 		// Owner only operations
 		labWithID.DELETE("/members/:user_id", deps.LabHandler.KickMember)
 		labWithID.POST("/transfer", deps.LabHandler.TransferOwnership)
-		labWithID.DELETE("", deps.LabHandler.DeleteLab) // Dangerous operation, must be owner only
+		labWithID.POST("/delete-request", deps.LabHandler.RequestDeleteLab) // Step 1: send email confirmation code
+		labWithID.DELETE("", deps.LabHandler.DeleteLab)                     // Step 2: confirm with lab name + email code
 
 		// Invitation code management (owner only)
 		labWithID.POST("/invite-code/reset", deps.LabHandler.ResetInviteCode)

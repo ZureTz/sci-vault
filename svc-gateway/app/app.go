@@ -106,7 +106,7 @@ func New(configPath string) (*App, error) {
 	statsService := service.NewStatsService(statsRepo, cacheConn)
 	healthService := service.NewHealthService(recommenderClient)
 	translateService := service.NewTranslateService(recommenderClient)
-	labService := service.NewLabService(labRepo)
+	labService := service.NewLabService(labRepo, userRepo, cacheConn, mailSrv)
 
 	// 4. Initialize handlers layer (HTTP/API)
 	healthHandler := handler.NewHealthHandler(healthService)

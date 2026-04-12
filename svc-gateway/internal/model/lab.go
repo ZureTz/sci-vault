@@ -2,6 +2,11 @@ package model
 
 import "gorm.io/gorm"
 
+const (
+	LabRoleOwner  = "owner"
+	LabRoleMember = "member"
+)
+
 type Lab struct {
 	gorm.Model
 	Name        string `gorm:"not null"`

@@ -5,7 +5,10 @@ import (
 	"crypto/rand"
 	"encoding/base32"
 	"errors"
+	"fmt"
+	"math/big"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -13,14 +16,24 @@ import (
 	"gateway/internal/model"
 	"gateway/internal/repo"
 	"gateway/pkg/app_error"
+	"gateway/pkg/cache"
+	"gateway/pkg/mailer"
 )
 
 type LabService struct {
-	repo repo.LabRepository
+	repo      repo.LabRepository
+	userRepo  repo.UserRepository
+	cacheConn *cache.CacheConnector
+	mailer    *mailer.Mailer
 }
 
-func NewLabService(labRepo repo.LabRepository) *LabService {
-	return &LabService{repo: labRepo}
+func NewLabService(labRepo repo.LabRepository, userRepo repo.UserRepository, cacheConn *cache.CacheConnector, mailer *mailer.Mailer) *LabService {
+	return &LabService{
+		repo:      labRepo,
+		userRepo:  userRepo,
+		cacheConn: cacheConn,
+		mailer:    mailer,
+	}
 }
 
 func (s *LabService) CreateLab(ctx context.Context, ownerID uint, req dto.CreateLabRequest) (*dto.JoinLabResponse, error) {
@@ -69,7 +82,7 @@ func (s *LabService) JoinLabByCode(ctx context.Context, userID uint, req dto.Joi
 	if err := s.repo.AddMember(ctx, &model.LabMember{
 		LabID:  lab.ID,
 		UserID: userID,
-		Role:   "member",
+		Role:   model.LabRoleMember,
 	}); err != nil {
 		return nil, err
 	}
@@ -157,7 +170,7 @@ func (s *LabService) LeaveLab(ctx context.Context, labID, userID uint) error {
 		return err
 	}
 
-	if member.Role == "owner" {
+	if member.Role == model.LabRoleOwner {
 		return app_error.ErrOwnerCannotLeave
 	}
 
@@ -181,6 +194,169 @@ func (s *LabService) GetMyLabs(ctx context.Context, userID uint) ([]dto.LabListI
 		}
 	}
 	return items, nil
+}
+
+func (s *LabService) KickMember(ctx context.Context, labID, requesterID, targetUserID uint) error {
+	if requesterID == targetUserID {
+		return app_error.ErrCannotKickSelf
+	}
+
+	requester, err := s.repo.FindMember(ctx, labID, requesterID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrNotMember
+		}
+		return err
+	}
+	if requester.Role != model.LabRoleOwner {
+		return app_error.ErrNotOwner
+	}
+
+	target, err := s.repo.FindMember(ctx, labID, targetUserID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrTargetNotMember
+		}
+		return err
+	}
+	if target.Role == model.LabRoleOwner {
+		return app_error.ErrCannotKickOwner
+	}
+
+	return s.repo.RemoveMember(ctx, labID, targetUserID)
+}
+
+func (s *LabService) TransferOwnership(ctx context.Context, labID, requesterID, targetUserID uint) error {
+	requester, err := s.repo.FindMember(ctx, labID, requesterID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrNotMember
+		}
+		return err
+	}
+	if requester.Role != model.LabRoleOwner {
+		return app_error.ErrNotOwner
+	}
+
+	_, err = s.repo.FindMember(ctx, labID, targetUserID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrTargetNotMember
+		}
+		return err
+	}
+
+	return s.repo.TransferOwnership(ctx, labID, requesterID, targetUserID)
+}
+
+func (s *LabService) RequestDeleteLab(ctx context.Context, labID, requesterID uint) error {
+	requester, err := s.repo.FindMember(ctx, labID, requesterID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrNotMember
+		}
+		return err
+	}
+	if requester.Role != model.LabRoleOwner {
+		return app_error.ErrNotOwner
+	}
+
+	lab, err := s.repo.FindByID(ctx, labID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrLabNotFound
+		}
+		return err
+	}
+
+	owner, err := s.userRepo.FindByID(ctx, requesterID)
+	if err != nil {
+		return fmt.Errorf("failed to find owner: %w", err)
+	}
+
+	max := big.NewInt(900000)
+	n, err := rand.Int(rand.Reader, max)
+	if err != nil {
+		return fmt.Errorf("failed to generate secure code: %w", err)
+	}
+	code := fmt.Sprintf("%06d", n.Int64()+100000)
+
+	cacheKey := fmt.Sprintf("lab_delete:%d:code", labID)
+	if err := s.cacheConn.Set(ctx, cacheKey, code, 5*time.Minute); err != nil {
+		return fmt.Errorf("failed to store verification code: %w", err)
+	}
+
+	s.mailer.SendMail(&mailer.MailRequest{
+		To:      []string{owner.Email},
+		Subject: fmt.Sprintf("Confirm deletion of lab \"%s\"", lab.Name),
+		Body: fmt.Sprintf(
+			"<p>You requested to delete the lab <strong>%s</strong>.</p>"+
+				"<p>Your confirmation code is: <strong>%s</strong></p>"+
+				"<p>This code will expire in 5 minutes. If you did not request this, please ignore this email.</p>",
+			lab.Name, code,
+		),
+	})
+
+	return nil
+}
+
+func (s *LabService) DeleteLab(ctx context.Context, labID, requesterID uint, confirmName, emailCode string) error {
+	requester, err := s.repo.FindMember(ctx, labID, requesterID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrNotMember
+		}
+		return err
+	}
+	if requester.Role != model.LabRoleOwner {
+		return app_error.ErrNotOwner
+	}
+
+	lab, err := s.repo.FindByID(ctx, labID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrLabNotFound
+		}
+		return err
+	}
+	if lab.Name != confirmName {
+		return app_error.ErrLabNameMismatch
+	}
+
+	cacheKey := fmt.Sprintf("lab_delete:%d:code", labID)
+	storedCode, err := s.cacheConn.Get(ctx, cacheKey)
+	if err != nil {
+		return app_error.ErrEmailCodeExpired
+	}
+	if storedCode != emailCode {
+		return app_error.ErrEmailCodeMismatch
+	}
+	defer s.cacheConn.Del(context.Background(), cacheKey)
+
+	return s.repo.DeleteLab(ctx, labID)
+}
+
+func (s *LabService) ResetInviteCode(ctx context.Context, labID, requesterID uint) (string, error) {
+	requester, err := s.repo.FindMember(ctx, labID, requesterID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", app_error.ErrNotMember
+		}
+		return "", err
+	}
+	if requester.Role != model.LabRoleOwner {
+		return "", app_error.ErrNotOwner
+	}
+
+	newCode, err := generateInviteCode()
+	if err != nil {
+		return "", err
+	}
+
+	if err := s.repo.UpdateInviteCode(ctx, labID, newCode); err != nil {
+		return "", err
+	}
+	return newCode, nil
 }
 
 // generateInviteCode returns an 8-character uppercase alphanumeric code.

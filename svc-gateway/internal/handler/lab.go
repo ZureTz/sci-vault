@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -21,6 +23,11 @@ type LabService interface {
 	GetLab(ctx context.Context, labID, userID uint) (*dto.LabDetailResponse, error)
 	GetMembers(ctx context.Context, labID, userID uint) ([]dto.LabMemberInfo, error)
 	LeaveLab(ctx context.Context, labID, userID uint) error
+	KickMember(ctx context.Context, labID, requesterID, targetUserID uint) error
+	TransferOwnership(ctx context.Context, labID, requesterID, targetUserID uint) error
+	RequestDeleteLab(ctx context.Context, labID, requesterID uint) error
+	DeleteLab(ctx context.Context, labID, requesterID uint, confirmName, emailCode string) error
+	ResetInviteCode(ctx context.Context, labID, requesterID uint) (string, error)
 }
 
 type LabHandler struct {
@@ -166,20 +173,157 @@ func (h *LabHandler) LeaveLab(c *gin.Context) {
 }
 
 func (h *LabHandler) KickMember(c *gin.Context) {
-	// TODO: Remove member (owner only)
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized")))
+		return
+	}
+	labID := c.GetUint("lab_id")
+
+	targetIDStr := c.Param("user_id")
+	targetID, err := strconv.ParseUint(targetIDStr, 10, 64)
+	if err != nil || targetID == 0 || targetID > math.MaxUint {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("invalid_user_id")))
+		return
+	}
+
+	if err := h.labService.KickMember(c.Request.Context(), labID, userID, uint(targetID)); err != nil {
+		if errors.Is(err, app_error.ErrNotOwner) {
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.kick_member.forbidden")))
+			return
+		}
+		if errors.Is(err, app_error.ErrCannotKickSelf) {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.kick_member.cannot_kick_self")))
+			return
+		}
+		if errors.Is(err, app_error.ErrCannotKickOwner) {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.kick_member.cannot_kick_owner")))
+			return
+		}
+		if errors.Is(err, app_error.ErrTargetNotMember) {
+			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.kick_member.target_not_member")))
+			return
+		}
+		slog.Error("KickMember service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.kick_member.failed")))
+		return
+	}
+	c.JSON(http.StatusOK, utils.MessageResponse("member removed successfully"))
 }
 
 func (h *LabHandler) TransferOwnership(c *gin.Context) {
-	// TODO: Transfer lab ownership to another member (owner only)
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized")))
+		return
+	}
+	labID := c.GetUint("lab_id")
+
+	var req dto.TransferOwnershipRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	if err := h.labService.TransferOwnership(c.Request.Context(), labID, userID, req.TargetUserID); err != nil {
+		if errors.Is(err, app_error.ErrNotOwner) {
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.transfer_ownership.forbidden")))
+			return
+		}
+		if errors.Is(err, app_error.ErrTargetNotMember) {
+			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.transfer_ownership.target_not_member")))
+			return
+		}
+		slog.Error("TransferOwnership service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.transfer_ownership.failed")))
+		return
+	}
+	c.JSON(http.StatusOK, utils.MessageResponse("ownership transferred successfully"))
 }
 
-// DANGEROUS: This will delete the lab and all associated data
-// Only lab owner can do this.
+func (h *LabHandler) RequestDeleteLab(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized")))
+		return
+	}
+	labID := c.GetUint("lab_id")
+
+	if err := h.labService.RequestDeleteLab(c.Request.Context(), labID, userID); err != nil {
+		if errors.Is(err, app_error.ErrNotOwner) {
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.request_delete_lab.forbidden")))
+			return
+		}
+		if errors.Is(err, app_error.ErrLabNotFound) {
+			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.request_delete_lab.not_found")))
+			return
+		}
+		slog.Error("RequestDeleteLab service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.request_delete_lab.failed")))
+		return
+	}
+	c.JSON(http.StatusOK, utils.MessageResponse("confirmation code sent to your email"))
+}
+
 func (h *LabHandler) DeleteLab(c *gin.Context) {
-	// TODO: Delete lab (admin/owner only)
-	// ADD CONFIRMATION STEP (e.g. type lab name to confirm), with email confirmation for extra safety
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized")))
+		return
+	}
+	labID := c.GetUint("lab_id")
+
+	var req dto.DeleteLabRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	if err := h.labService.DeleteLab(c.Request.Context(), labID, userID, req.ConfirmName, req.EmailCode); err != nil {
+		if errors.Is(err, app_error.ErrNotOwner) {
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.delete_lab.forbidden")))
+			return
+		}
+		if errors.Is(err, app_error.ErrLabNameMismatch) {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.delete_lab.name_mismatch")))
+			return
+		}
+		if errors.Is(err, app_error.ErrEmailCodeExpired) {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.delete_lab.code_expired")))
+			return
+		}
+		if errors.Is(err, app_error.ErrEmailCodeMismatch) {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.delete_lab.code_mismatch")))
+			return
+		}
+		if errors.Is(err, app_error.ErrLabNotFound) {
+			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.delete_lab.not_found")))
+			return
+		}
+		slog.Error("DeleteLab service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.delete_lab.failed")))
+		return
+	}
+	c.JSON(http.StatusOK, utils.MessageResponse("lab deleted successfully"))
 }
 
 func (h *LabHandler) ResetInviteCode(c *gin.Context) {
-	// TODO: Reset invite code (owner only)
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized")))
+		return
+	}
+	labID := c.GetUint("lab_id")
+
+	newCode, err := h.labService.ResetInviteCode(c.Request.Context(), labID, userID)
+	if err != nil {
+		if errors.Is(err, app_error.ErrNotOwner) {
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.reset_invite_code.forbidden")))
+			return
+		}
+		slog.Error("ResetInviteCode service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.reset_invite_code.failed")))
+		return
+	}
+	c.JSON(http.StatusOK, dto.ResetInviteCodeResponse{InviteCode: newCode})
 }

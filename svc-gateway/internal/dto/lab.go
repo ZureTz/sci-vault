@@ -43,3 +43,16 @@ type LabMemberInfo struct {
 	Role     string `json:"role"`
 	JoinedAt string `json:"joined_at"`
 }
+
+type TransferOwnershipRequest struct {
+	TargetUserID uint `json:"target_user_id" binding:"required"`
+}
+
+type DeleteLabRequest struct {
+	ConfirmName string `json:"confirm_name" binding:"required"`
+	EmailCode   string `json:"email_code" binding:"required,len=6,numeric"`
+}
+
+type ResetInviteCodeResponse struct {
+	InviteCode string `json:"invite_code"`
+}
