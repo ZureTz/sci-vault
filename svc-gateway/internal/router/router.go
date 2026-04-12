@@ -1,6 +1,8 @@
 package router
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
@@ -8,6 +10,7 @@ import (
 	"gateway/internal/config"
 	"gateway/internal/handler"
 	"gateway/internal/middleware"
+	"gateway/pkg/cache"
 	"gateway/pkg/logger"
 	customValidator "gateway/pkg/validator"
 )
@@ -20,6 +23,9 @@ type RouterDeps struct {
 	DocumentHandler  *handler.DocumentHandler
 	StatsHandler     *handler.StatsHandler
 	TranslateHandler *handler.TranslateHandler
+
+	// Cache connector
+	CacheConn *cache.CacheConnector
 
 	// Config
 	Config *config.Config
@@ -67,13 +73,19 @@ func (deps *RouterDeps) registerCustomValidators() {
 
 // User login and registration routes (/api/v1/user)
 func (deps *RouterDeps) registerUserRoutes(group *gin.RouterGroup) {
+	// Rate Limits mapping
+	// limit 1 req/min per email for sending codes
+	sendCodeRateLimit := middleware.StrictRateLimit(deps.CacheConn, "send_email_code", 1, time.Minute)
+	// limit 10 req/min for register/reset/login
+	loginRateLimit := middleware.StrictRateLimit(deps.CacheConn, "auth_attempt", 10, time.Minute)
+
 	// Send email verification code
-	group.POST("/send_email_code", deps.UserHandler.SendEmailCode)
+	group.POST("/send_email_code", sendCodeRateLimit, deps.UserHandler.SendEmailCode)
 
 	// For login and registration
-	group.POST("/login", deps.UserHandler.Login)
-	group.POST("/register", deps.UserHandler.Register)
-	group.POST("/reset_password", deps.UserHandler.ResetPassword)
+	group.POST("/login", loginRateLimit, deps.UserHandler.Login)
+	group.POST("/register", loginRateLimit, deps.UserHandler.Register)
+	group.POST("/reset_password", loginRateLimit, deps.UserHandler.ResetPassword)
 
 	// Protected user routes
 	protected := group.Group("")
