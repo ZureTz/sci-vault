@@ -20,6 +20,7 @@
 	let members = $state<LabMemberInfo[]>([]);
 	let isLoading = $state(true);
 	let kickingUserId = $state<number | null>(null);
+	let kickDialogOpen = $state(false);
 
 	$effect(() => {
 		const lab = getActiveLab();
@@ -44,6 +45,7 @@
 
 	async function handleKick(member: LabMemberInfo) {
 		if (!activeLab) return;
+		kickDialogOpen = false;
 		kickingUserId = member.user_id;
 		try {
 			await labApi.kickMember(activeLab.id, member.user_id);
@@ -156,7 +158,7 @@
 									{/if}
 
 									{#if activeLab.role === 'owner' && member.role !== 'owner' && member.user_id !== Number(currentUser.id)}
-										<AlertDialog.Root>
+										<AlertDialog.Root bind:open={kickDialogOpen}>
 											<AlertDialog.Trigger
 												class="inline-flex h-8 items-center gap-1 rounded-md px-3 text-sm text-destructive hover:bg-destructive/10 hover:text-destructive"
 											>
@@ -177,7 +179,10 @@
 													<AlertDialog.Action
 														variant="destructive"
 														disabled={kickingUserId === member.user_id}
-														onclick={() => handleKick(member)}
+														onclick={(e: MouseEvent) => {
+															e.preventDefault();
+															handleKick(member);
+														}}
 													>
 														<UserMinus class="size-3.5" />
 														{$_('lab.members.remove')}

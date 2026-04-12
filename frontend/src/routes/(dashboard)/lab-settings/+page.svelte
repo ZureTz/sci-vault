@@ -33,10 +33,12 @@
 	// Invite code
 	let inviteCodeCopied = $state(false);
 	let resettingCode = $state(false);
+	let resetDialogOpen = $state(false);
 
 	// Transfer ownership
 	let transferTargetId = $state<string>('');
 	let transferring = $state(false);
+	let transferDialogOpen = $state(false);
 
 	// Delete lab
 	let deleteStep = $state<1 | 2>(1);
@@ -86,6 +88,7 @@
 
 	async function handleResetInviteCode() {
 		if (!activeLab || !labDetail) return;
+		resetDialogOpen = false;
 		resettingCode = true;
 		try {
 			const res = await labApi.resetInviteCode(activeLab.id);
@@ -105,6 +108,7 @@
 		const targetId = Number(transferTargetId);
 		if (!targetId) return;
 
+		transferDialogOpen = false;
 		transferring = true;
 		try {
 			await labApi.transferOwnership(activeLab.id, { target_user_id: targetId });
@@ -237,7 +241,7 @@
 						<p class="mb-3 text-sm text-muted-foreground">
 							{$_('lab.settings.reset_invite_code_desc')}
 						</p>
-						<AlertDialog.Root>
+						<AlertDialog.Root bind:open={resetDialogOpen}>
 							<AlertDialog.Trigger
 								class="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground"
 								disabled={resettingCode}
@@ -254,7 +258,12 @@
 								</AlertDialog.Header>
 								<AlertDialog.Footer>
 									<AlertDialog.Cancel>{$_('profile.btn.cancel')}</AlertDialog.Cancel>
-									<AlertDialog.Action onclick={handleResetInviteCode}>
+									<AlertDialog.Action
+										onclick={(e: MouseEvent) => {
+											e.preventDefault();
+											handleResetInviteCode();
+										}}
+									>
 										<RefreshCw class="size-3.5" />
 										{$_('lab.settings.reset_invite_code')}
 									</AlertDialog.Action>
@@ -292,7 +301,7 @@
 									{/each}
 								</select>
 							</div>
-							<AlertDialog.Root>
+							<AlertDialog.Root bind:open={transferDialogOpen}>
 								<AlertDialog.Trigger
 									class="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
 									disabled={!transferTargetId || transferring}
@@ -311,7 +320,13 @@
 									</AlertDialog.Header>
 									<AlertDialog.Footer>
 										<AlertDialog.Cancel>{$_('profile.btn.cancel')}</AlertDialog.Cancel>
-										<AlertDialog.Action variant="destructive" onclick={handleTransfer}>
+										<AlertDialog.Action
+											variant="destructive"
+											onclick={(e: MouseEvent) => {
+												e.preventDefault();
+												handleTransfer();
+											}}
+										>
 											<ArrowRightLeft class="size-3.5" />
 											{$_('lab.settings.transfer_btn')}
 										</AlertDialog.Action>
