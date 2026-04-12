@@ -57,6 +57,34 @@ func NewUserService(
 	}
 }
 
+func (s *UserService) verifyEmailCode(ctx context.Context, email string, code string) error {
+	cacheKey := fmt.Sprintf("%s:code", email)
+	storedCode, err := s.cacheConn.Get(ctx, cacheKey)
+	if err != nil {
+		return app_error.ErrEmailCodeExpired
+	}
+
+	attemptKey := fmt.Sprintf("%s:code_attempts", email)
+
+	if storedCode != code {
+		attempts, err := s.cacheConn.Incr(ctx, attemptKey)
+		if err == nil {
+			if attempts == 1 {
+				s.cacheConn.Expire(ctx, attemptKey, 5*time.Minute)
+			}
+			if attempts >= 5 {
+				s.cacheConn.Del(context.Background(), cacheKey, attemptKey)
+				return fmt.Errorf("too many failed attempts, verification code expired")
+			}
+		}
+		return app_error.ErrEmailCodeMismatch
+	}
+
+	// Delete verification code and attempts after successful check
+	s.cacheConn.Del(context.Background(), cacheKey, attemptKey)
+	return nil
+}
+
 func (s *UserService) SendEmailCode(ctx context.Context, req dto.SendEmailCodeRequest) error {
 	// Generate a random 6-digit code using cryptographically secure random number generator
 	max := big.NewInt(900000)
@@ -72,6 +100,7 @@ func (s *UserService) SendEmailCode(ctx context.Context, req dto.SendEmailCodeRe
 	if err != nil {
 		return fmt.Errorf("failed to store verification code: %w", err)
 	}
+	s.cacheConn.Del(context.Background(), fmt.Sprintf("%s:code_attempts", req.Email))
 
 	// Send the code via email asynchronously
 	s.mailer.SendMail(&mailer.MailRequest{
@@ -115,17 +144,9 @@ func (s *UserService) Login(ctx context.Context, req dto.LoginRequest) (*dto.Log
 
 func (s *UserService) ResetPassword(ctx context.Context, req dto.ResetPasswordRequest) error {
 	// Verify email code from Redis
-	cacheKey := fmt.Sprintf("%s:code", req.Email)
-	storedCode, err := s.cacheConn.Get(ctx, cacheKey)
-	if err != nil {
-		return app_error.ErrEmailCodeExpired
+	if err := s.verifyEmailCode(ctx, req.Email, req.EmailCode); err != nil {
+		return err
 	}
-	if storedCode != req.EmailCode {
-		return app_error.ErrEmailCodeMismatch
-	}
-
-	// Delete verification code after successful check
-	defer s.cacheConn.Del(context.Background(), cacheKey)
 
 	// Hash new password and update in database
 	hashedPassword, err := password.Hash(req.Password)
@@ -142,17 +163,9 @@ func (s *UserService) ResetPassword(ctx context.Context, req dto.ResetPasswordRe
 
 func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) (*dto.RegisterResponse, error) {
 	// Verify email code from Redis
-	cacheKey := fmt.Sprintf("%s:code", req.Email)
-	storedCode, err := s.cacheConn.Get(ctx, cacheKey)
-	if err != nil {
-		return nil, app_error.ErrEmailCodeExpired
+	if err := s.verifyEmailCode(ctx, req.Email, req.EmailCode); err != nil {
+		return nil, err
 	}
-	if storedCode != req.EmailCode {
-		return nil, app_error.ErrEmailCodeMismatch
-	}
-
-	// Delete verification code after successful check
-	defer s.cacheConn.Del(context.Background(), cacheKey)
 
 	// Create new user in the database
 	hashedPassword, err := password.Hash(req.Password) // Implement password hashing

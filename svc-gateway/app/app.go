@@ -115,6 +115,8 @@ func New(configPath string) (*App, error) {
 		StatsHandler:     statsHandler,
 		TranslateHandler: translateHandler,
 
+		CacheConn: cacheConn,
+
 		Config: cfg,
 	})
 
