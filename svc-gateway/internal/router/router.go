@@ -137,7 +137,8 @@ func (deps *RouterDeps) registerLabRoutes(group *gin.RouterGroup) {
 		// Member accessible operations
 		labWithID.GET("", deps.LabHandler.GetLab)
 		labWithID.GET("/members", deps.LabHandler.GetMembers)
-		labWithID.DELETE("/members/me", deps.LabHandler.LeaveLab)
+		labWithID.POST("/leave-request", deps.LabHandler.RequestLeaveLab) // Step 1: send email confirmation code
+		labWithID.DELETE("/members/me", deps.LabHandler.LeaveLab)         // Step 2: confirm with email code
 
 		// Owner only operations
 		labWithID.DELETE("/members/:user_id", deps.LabHandler.KickMember)

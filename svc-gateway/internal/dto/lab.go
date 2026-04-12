@@ -44,6 +44,10 @@ type LabMemberInfo struct {
 	JoinedAt string `json:"joined_at"`
 }
 
+type LeaveLabRequest struct {
+	EmailCode string `json:"email_code" binding:"required,len=6,numeric"`
+}
+
 type TransferOwnershipRequest struct {
 	TargetUserID uint `json:"target_user_id" binding:"required"`
 }
