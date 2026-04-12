@@ -24,14 +24,6 @@ const (
 	enrichStatusTTL   = 24 * time.Hour
 )
 
-// DB enrich_status values (source of truth for persistent state).
-// Fine-grained transient states (pending, processing, failed) live in Redis only,
-// managed entirely by the Python microservice.
-const (
-	EnrichStatusNotStarted = "not_started"
-	EnrichStatusDone       = "done"
-)
-
 func enrichStatusKey(docID uint) string {
 	return fmt.Sprintf("doc:enrich:%d", docID)
 }
@@ -90,7 +82,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 	}
 
 	// Set the enrichment status in Redis with a TTL to not_started
-	if err := s.cacheConn.Set(ctx, enrichStatusKey(doc.ID), EnrichStatusNotStarted, enrichStatusTTL); err != nil {
+	if err := s.cacheConn.Set(ctx, enrichStatusKey(doc.ID), model.EnrichStatusNotStarted, enrichStatusTTL); err != nil {
 		slog.Warn("Failed to set enrich status in cache", "docID", doc.ID, "err", err)
 	}
 
@@ -153,7 +145,7 @@ func (s *DocumentService) RestartEnrichment(ctx context.Context, docID uint) err
 	}
 
 	// Set the enrichment status in Redis to not_started
-	if err := s.cacheConn.Set(ctx, enrichStatusKey(doc.ID), EnrichStatusNotStarted, enrichStatusTTL); err != nil {
+	if err := s.cacheConn.Set(ctx, enrichStatusKey(doc.ID), model.EnrichStatusNotStarted, enrichStatusTTL); err != nil {
 		slog.Warn("Failed to set enrich status in cache", "docID", doc.ID, "err", err)
 	}
 
@@ -199,7 +191,7 @@ func (s *DocumentService) ListMyDocuments(ctx context.Context, userID uint, page
 }
 
 func (s *DocumentService) ListPendingDocuments(ctx context.Context, userID uint) (*dto.ListDocumentsResponse, error) {
-	docs, total, err := s.repo.FindByUserIDAndStatus(ctx, userID, EnrichStatusNotStarted, 0, 50)
+	docs, total, err := s.repo.FindByUserIDAndStatus(ctx, userID, model.EnrichStatusNotStarted, 0, 50)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pending documents: %w", err)
 	}
