@@ -1,7 +1,6 @@
 <script lang="ts">
 	import {
 		Activity,
-		BookOpen,
 		Check,
 		ChevronRight,
 		ChevronsUpDown,
@@ -74,8 +73,6 @@
 			]
 		}
 	]);
-
-	let isOnDocDetail = $derived(page.route.id === '/(dashboard)/documents/[id]');
 
 	let isDocGroupActive = $derived(page.route.id?.startsWith('/(dashboard)/documents') ?? false);
 	let isAccountGroupActive = $derived(
@@ -308,7 +305,9 @@
 											{#each item.items as subItem (subItem.title)}
 												<Sidebar.MenuSubItem>
 													<Sidebar.MenuSubButton
-														isActive={page.url.pathname === resolve(subItem.url)}
+														isActive={page.url.pathname === resolve(subItem.url) ||
+															(subItem.url === '/documents/mine' &&
+																page.route.id === '/(dashboard)/documents/[id]')}
 													>
 														{#snippet child({ props })}
 															<a href={resolve(subItem.url)} {...props}>
@@ -319,18 +318,6 @@
 													</Sidebar.MenuSubButton>
 												</Sidebar.MenuSubItem>
 											{/each}
-											{#if isOnDocDetail}
-												<Sidebar.MenuSubItem>
-													<Sidebar.MenuSubButton isActive={true}>
-														{#snippet child({ props })}
-															<a href={resolve(`/documents/${page.params.id}`)} {...props}>
-																<BookOpen class="size-3.5" />
-																<span>{$_('sidebar.document_detail')}</span>
-															</a>
-														{/snippet}
-													</Sidebar.MenuSubButton>
-												</Sidebar.MenuSubItem>
-											{/if}
 										</Sidebar.MenuSub>
 									</Collapsible.Content>
 								</Sidebar.MenuItem>
