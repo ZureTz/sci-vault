@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { jwtDecode } from 'jwt-decode';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
 
@@ -15,17 +16,29 @@
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import * as Separator from '$lib/components/ui/separator';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
+	import * as Drawer from '$lib/components/ui/drawer';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { buttonVariants } from '$lib/components/ui/button';
 
 	let { children } = $props();
 
-	const crumbs = $derived.by((): { label: string; href?: string }[] => {
+	let collapseOpen = $state(false);
+	const isDesktop = new MediaQuery('(min-width: 768px)');
+	// Desktop: show full trail up to 3 items; collapse middle when deeper.
+	// Mobile: show only the current page; collapse ALL ancestors into the ellipsis.
+	const DESKTOP_MAX = 3;
+
+	type CrumbHref = '/' | '/mine/dashboard';
+	type Crumb = { label: string; href?: CrumbHref };
+
+	const crumbs = $derived.by((): Crumb[] => {
 		const routeId = page.route.id;
 
-		// Group roots — clickable links
-		const labBase = { label: $_('breadcrumb.lab_dashboard'), href: resolve('/') };
-		const personalBase = {
+		// Group roots — clickable links (href is the unresolved route id; resolved at the link site)
+		const labBase: Crumb = { label: $_('breadcrumb.lab_dashboard'), href: '/' };
+		const personalBase: Crumb = {
 			label: $_('breadcrumb.dashboard'),
-			href: resolve('/mine/dashboard')
+			href: '/mine/dashboard'
 		};
 		// Intermediate group labels — not real pages, so not clickable
 		const documentsCrumb = { label: $_('breadcrumb.documents') };
@@ -68,6 +81,32 @@
 		}
 	});
 
+	// Split crumbs into (head, middle, tail) so rendering is branchless in the template.
+	// - No collapse: head = all crumbs.
+	// - Desktop collapse (>DESKTOP_MAX): head = [first], middle = ...inner, tail = last 2.
+	// - Mobile collapse (>1): head = [], middle = all but last, tail = [last].
+	const crumbRender = $derived.by(() => {
+		const empty: Crumb[] = [];
+		if (isDesktop.current) {
+			if (crumbs.length <= DESKTOP_MAX) {
+				return { head: crumbs, middle: empty, tail: empty };
+			}
+			return {
+				head: crumbs.slice(0, 1),
+				middle: crumbs.slice(1, -2),
+				tail: crumbs.slice(-2)
+			};
+		}
+		if (crumbs.length <= 1) {
+			return { head: crumbs, middle: empty, tail: empty };
+		}
+		return {
+			head: empty,
+			middle: crumbs.slice(0, -1),
+			tail: crumbs.slice(-1)
+		};
+	});
+
 	onMount(() => {
 		const token = localStorage.getItem('token');
 		if (!token) {
@@ -104,28 +143,105 @@
 				<Separator.Root orientation="vertical" class="mr-2 h-4" />
 				<Breadcrumb.Root>
 					<Breadcrumb.List>
-						{#each crumbs as crumb, i (crumb.label)}
+						{@const { head, middle, tail } = crumbRender}
+
+						{#each head as crumb, i (crumb.label)}
 							{#if i > 0}
 								<Breadcrumb.Separator />
 							{/if}
+							{@render crumbItem(crumb)}
+						{/each}
+
+						{#if middle.length > 0}
+							{#if head.length > 0}
+								<Breadcrumb.Separator />
+							{/if}
 							<Breadcrumb.Item>
-								{#if crumb.href}
-									<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
+								{#if isDesktop.current}
+									<DropdownMenu.Root bind:open={collapseOpen}>
+										<DropdownMenu.Trigger
+											class="flex items-center gap-1"
+											aria-label={$_('breadcrumb.toggle_menu')}
+										>
+											<Breadcrumb.Ellipsis class="size-4" />
+										</DropdownMenu.Trigger>
+										<DropdownMenu.Content align="start">
+											{#each middle as crumb, i (i)}
+												<DropdownMenu.Item>
+													{#if crumb.href}
+														<a href={resolve(crumb.href)}>{crumb.label}</a>
+													{:else}
+														<span>{crumb.label}</span>
+													{/if}
+												</DropdownMenu.Item>
+											{/each}
+										</DropdownMenu.Content>
+									</DropdownMenu.Root>
 								{:else}
-									<Breadcrumb.Page>{crumb.label}</Breadcrumb.Page>
+									<Drawer.Root bind:open={collapseOpen}>
+										<Drawer.Trigger aria-label={$_('breadcrumb.toggle_menu')}>
+											<Breadcrumb.Ellipsis class="size-4" />
+										</Drawer.Trigger>
+										<Drawer.Content>
+											<Drawer.Header class="text-start">
+												<Drawer.Title>{$_('breadcrumb.navigate_to')}</Drawer.Title>
+												<Drawer.Description>
+													{$_('breadcrumb.navigate_to_desc')}
+												</Drawer.Description>
+											</Drawer.Header>
+											<div class="grid gap-1 px-4">
+												{#each middle as crumb, i (i)}
+													{#if crumb.href}
+														<a href={resolve(crumb.href)} class="py-2 text-sm">{crumb.label}</a>
+													{:else}
+														<span class="py-2 text-sm font-medium">{crumb.label}</span>
+													{/if}
+												{/each}
+											</div>
+											<Drawer.Footer class="pt-4">
+												<Drawer.Close class={buttonVariants({ variant: 'outline' })}>
+													{$_('common.close')}
+												</Drawer.Close>
+											</Drawer.Footer>
+										</Drawer.Content>
+									</Drawer.Root>
 								{/if}
 							</Breadcrumb.Item>
+						{/if}
+
+						{#each tail as crumb, i (crumb.label)}
+							{#if i > 0 || middle.length > 0 || head.length > 0}
+								<Breadcrumb.Separator />
+							{/if}
+							{@render crumbItem(crumb)}
 						{/each}
 					</Breadcrumb.List>
 				</Breadcrumb.Root>
+
+				{#snippet crumbItem(crumb: Crumb)}
+					<Breadcrumb.Item>
+						{#if crumb.href}
+							<Breadcrumb.Link
+								href={resolve(crumb.href)}
+								class="max-w-32 truncate md:max-w-none"
+							>
+								{crumb.label}
+							</Breadcrumb.Link>
+						{:else}
+							<Breadcrumb.Page class="max-w-32 truncate md:max-w-none">
+								{crumb.label}
+							</Breadcrumb.Page>
+						{/if}
+					</Breadcrumb.Item>
+				{/snippet}
 			</div>
 			<div class="flex items-center gap-2 px-4">
 				<ThemeToggle />
 				<LanguageToggle />
 			</div>
 		</header>
-		<div class="mt-4 flex flex-1 flex-col gap-4 p-4 pt-0">
+		<main class="container mx-auto mt-4 flex flex-1 flex-col gap-4 p-4 pt-0">
 			{@render children()}
-		</div>
+		</main>
 	</Sidebar.Inset>
 </Sidebar.Provider>

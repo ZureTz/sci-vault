@@ -49,7 +49,10 @@
 		"create_lab": "创建实验室",
 		"join_lab": "加入实验室",
 		"lab_members": "成员管理",
-		"lab_settings": "实验室设置"
+		"lab_settings": "实验室设置",
+		"toggle_menu": "切换菜单",
+		"navigate_to": "跳转到",
+		"navigate_to_desc": "选择要导航到的页面。"
 	},
 	"dashboard": {
 		"title": "仪表盘总览",
@@ -87,7 +90,8 @@
 		"title": "设置"
 	},
 	"common": {
-		"unauthorized": "登录已过期，请重新登录"
+		"unauthorized": "登录已过期，请重新登录",
+		"close": "关闭"
 	},
 	"document": {
 		"detail": {

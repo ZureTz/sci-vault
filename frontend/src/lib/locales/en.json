@@ -49,7 +49,10 @@
 		"create_lab": "Create Lab",
 		"join_lab": "Join Lab",
 		"lab_members": "Members",
-		"lab_settings": "Lab Settings"
+		"lab_settings": "Lab Settings",
+		"toggle_menu": "Toggle menu",
+		"navigate_to": "Navigate to",
+		"navigate_to_desc": "Select a page to navigate to."
 	},
 
 	"dashboard": {
@@ -88,7 +91,8 @@
 		"title": "Settings"
 	},
 	"common": {
-		"unauthorized": "Your session has expired, please log in again"
+		"unauthorized": "Your session has expired, please log in again",
+		"close": "Close"
 	},
 	"document": {
 		"detail": {
