@@ -6,10 +6,12 @@ import (
 )
 
 type UploadDocumentForm struct {
-	File  *multipart.FileHeader `form:"file" binding:"required"`
-	Title *string               `form:"title" binding:"omitempty,max=255"`
-	Year  *int                  `form:"year" binding:"omitempty,min=1000,max=9999"`
-	DOI   *string               `form:"doi" binding:"omitempty,max=255"`
+	File       *multipart.FileHeader `form:"file" binding:"required"`
+	Title      *string               `form:"title" binding:"omitempty,max=255"`
+	Year       *int                  `form:"year" binding:"omitempty,min=1000,max=9999"`
+	DOI        *string               `form:"doi" binding:"omitempty,max=255"`
+	Visibility *string               `form:"visibility" binding:"omitempty,oneof=private lab"`
+	LabID      *uint                 `form:"lab_id" binding:"omitempty"`
 }
 
 type DocumentIDUri struct {
@@ -21,6 +23,21 @@ type ListMyDocumentsQuery struct {
 	PageSize int `form:"page_size" binding:"omitempty,min=1,max=100"`
 }
 
+type UpdateVisibilityRequest struct {
+	Visibility string `json:"visibility" binding:"required,oneof=private lab"`
+	LabID      *uint  `json:"lab_id" binding:"omitempty"`
+}
+
+type BatchUpdateVisibilityRequest struct {
+	DocIDs     []uint `json:"doc_ids" binding:"required,min=1,max=100,dive,gt=0"`
+	Visibility string `json:"visibility" binding:"required,oneof=private lab"`
+	LabID      *uint  `json:"lab_id" binding:"omitempty"`
+}
+
+type BatchUpdateVisibilityResponse struct {
+	Updated int64 `json:"updated"`
+}
+
 // DocumentListItem is a lightweight summary used in list views.
 // It intentionally omits fields that require expensive operations (e.g. signed download URLs).
 type DocumentListItem struct {
@@ -29,6 +46,9 @@ type DocumentListItem struct {
 	OriginalFileName string    `json:"original_file_name"`
 	FileSize         int64     `json:"file_size"`
 	EnrichStatus     string    `json:"enrich_status"`
+	Visibility       string    `json:"visibility"`
+	LabID            *uint     `json:"lab_id"`
+	LabName          *string   `json:"lab_name"`
 	CreatedAt        time.Time `json:"created_at"`
 }
 
@@ -58,6 +78,9 @@ type DocumentResponse struct {
 	Year             *int      `json:"year"`
 	DOI              *string   `json:"doi"`
 	EnrichStatus     string    `json:"enrich_status"`
+	Visibility       string    `json:"visibility"`
+	LabID            *uint     `json:"lab_id"`
+	LabName          *string   `json:"lab_name"`
 	Authors          []string  `json:"authors"`
 	Summary          *string   `json:"summary"`
 	Tags             []string  `json:"tags"`

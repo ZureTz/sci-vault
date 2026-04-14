@@ -102,7 +102,7 @@ func New(configPath string) (*App, error) {
 
 	// 3. Initialize services layer (business logic)
 	userService := service.NewUserService(userRepo, userAvatarRepo, jwtGenerator, mailSrv, cacheConn, storageClient)
-	documentService := service.NewDocumentService(documentRepo, storageClient, recommenderClient, cacheConn)
+	documentService := service.NewDocumentService(documentRepo, labRepo, storageClient, recommenderClient, cacheConn)
 	statsService := service.NewStatsService(statsRepo, cacheConn)
 	healthService := service.NewHealthService(recommenderClient)
 	translateService := service.NewTranslateService(recommenderClient)

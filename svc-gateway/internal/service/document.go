@@ -3,11 +3,14 @@ package service
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 
 	"gateway/internal/dto"
 	"gateway/internal/model"
@@ -30,6 +33,7 @@ func enrichStatusKey(docID uint) string {
 
 type DocumentService struct {
 	repo              repo.DocumentRepository
+	labRepo           repo.LabRepository
 	storageClient     *storage.Client
 	recommenderClient *grpc_client.RecommenderClient
 	cacheConn         *cache.CacheConnector
@@ -37,15 +41,40 @@ type DocumentService struct {
 
 func NewDocumentService(
 	repo repo.DocumentRepository,
+	labRepo repo.LabRepository,
 	storageClient *storage.Client,
 	recommenderClient *grpc_client.RecommenderClient,
 	cacheConn *cache.CacheConnector,
 ) *DocumentService {
 	return &DocumentService{
 		repo:              repo,
+		labRepo:           labRepo,
 		storageClient:     storageClient,
 		recommenderClient: recommenderClient,
 		cacheConn:         cacheConn,
+	}
+}
+
+// resolveVisibility validates a visibility/labID pair and returns the canonical values to persist.
+// If visibility is "lab", labID must be provided AND the user must be a member of that lab.
+// If visibility is "private", labID is forced to nil.
+func (s *DocumentService) resolveVisibility(ctx context.Context, userID uint, visibility string, labID *uint) (string, *uint, error) {
+	switch visibility {
+	case model.DocVisibilityPrivate:
+		return model.DocVisibilityPrivate, nil, nil
+	case model.DocVisibilityLab:
+		if labID == nil || *labID == 0 {
+			return "", nil, app_error.ErrLabRequiredForLabVis
+		}
+		if _, err := s.labRepo.FindMember(ctx, *labID, userID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return "", nil, app_error.ErrNotMember
+			}
+			return "", nil, err
+		}
+		return model.DocVisibilityLab, labID, nil
+	default:
+		return "", nil, app_error.ErrInvalidVisibility
 	}
 }
 
@@ -57,6 +86,16 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 	contentType := strings.ToLower(form.File.Header.Get("Content-Type"))
 	if contentType != "application/pdf" {
 		return nil, app_error.ErrDocumentInvalidType
+	}
+
+	// Resolve visibility (default: private)
+	visibility := model.DocVisibilityPrivate
+	if form.Visibility != nil && *form.Visibility != "" {
+		visibility = *form.Visibility
+	}
+	resolvedVis, resolvedLabID, err := s.resolveVisibility(ctx, userID, visibility, form.LabID)
+	if err != nil {
+		return nil, err
 	}
 
 	ts := time.Now().UTC()
@@ -76,6 +115,8 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 		Year:             form.Year,
 		DOI:              form.DOI,
 		UploadedByUserID: userID,
+		Visibility:       resolvedVis,
+		LabID:            resolvedLabID,
 	}
 	if err := s.repo.Create(ctx, doc); err != nil {
 		return nil, fmt.Errorf("failed to save document: %w", err)
@@ -171,15 +212,8 @@ func (s *DocumentService) ListMyDocuments(ctx context.Context, userID uint, page
 	}
 
 	items := make([]dto.DocumentListItem, 0, len(docs))
-	for _, doc := range docs {
-		items = append(items, dto.DocumentListItem{
-			ID:               doc.ID,
-			Title:            doc.Title,
-			OriginalFileName: doc.OriginalFileName,
-			FileSize:         doc.FileSize,
-			EnrichStatus:     doc.EnrichStatus,
-			CreatedAt:        doc.CreatedAt,
-		})
+	for i := range docs {
+		items = append(items, toDocumentListItem(&docs[i]))
 	}
 
 	return &dto.ListDocumentsResponse{
@@ -197,15 +231,8 @@ func (s *DocumentService) ListPendingDocuments(ctx context.Context, userID uint)
 	}
 
 	items := make([]dto.DocumentListItem, 0, len(docs))
-	for _, doc := range docs {
-		items = append(items, dto.DocumentListItem{
-			ID:               doc.ID,
-			Title:            doc.Title,
-			OriginalFileName: doc.OriginalFileName,
-			FileSize:         doc.FileSize,
-			EnrichStatus:     doc.EnrichStatus,
-			CreatedAt:        doc.CreatedAt,
-		})
+	for i := range docs {
+		items = append(items, toDocumentListItem(&docs[i]))
 	}
 
 	return &dto.ListDocumentsResponse{
@@ -214,6 +241,37 @@ func (s *DocumentService) ListPendingDocuments(ctx context.Context, userID uint)
 		Page:      1,
 		PageSize:  50,
 	}, nil
+}
+
+func (s *DocumentService) UpdateVisibility(ctx context.Context, docID, userID uint, req dto.UpdateVisibilityRequest) error {
+	resolvedVis, resolvedLabID, err := s.resolveVisibility(ctx, userID, req.Visibility, req.LabID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.repo.UpdateVisibility(ctx, docID, userID, resolvedVis, resolvedLabID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrNotDocumentOwner
+		}
+		return err
+	}
+	return nil
+}
+
+func (s *DocumentService) BatchUpdateVisibility(ctx context.Context, userID uint, req dto.BatchUpdateVisibilityRequest) (int64, error) {
+	resolvedVis, resolvedLabID, err := s.resolveVisibility(ctx, userID, req.Visibility, req.LabID)
+	if err != nil {
+		return 0, err
+	}
+
+	updated, err := s.repo.BatchUpdateVisibility(ctx, req.DocIDs, userID, resolvedVis, resolvedLabID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to batch update visibility: %w", err)
+	}
+	if updated != int64(len(req.DocIDs)) {
+		return updated, app_error.ErrSomeDocsNotAccessible
+	}
+	return updated, nil
 }
 
 // downloadFilename ensures the filename ends with ".pdf".
@@ -233,6 +291,11 @@ func toDocumentResponse(doc *model.Document, downloadURL string) *dto.DocumentRe
 	if tags == nil {
 		tags = []string{}
 	}
+	var labName *string
+	if doc.Lab != nil {
+		name := doc.Lab.Name
+		labName = &name
+	}
 	return &dto.DocumentResponse{
 		ID:               doc.ID,
 		Title:            doc.Title,
@@ -242,6 +305,9 @@ func toDocumentResponse(doc *model.Document, downloadURL string) *dto.DocumentRe
 		Year:             doc.Year,
 		DOI:              doc.DOI,
 		EnrichStatus:     doc.EnrichStatus,
+		Visibility:       doc.Visibility,
+		LabID:            doc.LabID,
+		LabName:          labName,
 		Authors:          authors,
 		Summary:          doc.Summary,
 		Tags:             tags,
@@ -249,6 +315,25 @@ func toDocumentResponse(doc *model.Document, downloadURL string) *dto.DocumentRe
 		LikeCount:        doc.LikeCount,
 		UploadedByUserID: doc.UploadedByUserID,
 		DownloadURL:      downloadURL,
+		CreatedAt:        doc.CreatedAt,
+	}
+}
+
+func toDocumentListItem(doc *model.Document) dto.DocumentListItem {
+	var labName *string
+	if doc.Lab != nil {
+		name := doc.Lab.Name
+		labName = &name
+	}
+	return dto.DocumentListItem{
+		ID:               doc.ID,
+		Title:            doc.Title,
+		OriginalFileName: doc.OriginalFileName,
+		FileSize:         doc.FileSize,
+		EnrichStatus:     doc.EnrichStatus,
+		Visibility:       doc.Visibility,
+		LabID:            doc.LabID,
+		LabName:          labName,
 		CreatedAt:        doc.CreatedAt,
 	}
 }
