@@ -17,6 +17,8 @@ service RecommenderService {
   // TranslateText translates the given text into the target language using LLM,
   // streaming back translated chunks as they are generated.
   rpc TranslateText(TranslateTextRequest) returns (stream TranslateTextResponse);
+
+  // TODO: Add more RPCs for other recommendation features, e.g. SemanticSearch.
 }
 
 // HealthRequest is an empty message used for health check requests.
