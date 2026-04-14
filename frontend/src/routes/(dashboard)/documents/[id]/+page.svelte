@@ -13,17 +13,26 @@
 		Calendar,
 		BookOpen,
 		RefreshCw,
-		Languages
+		Languages,
+		Lock,
+		FlaskConical,
+		Pencil
 	} from 'lucide-svelte';
 
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import * as Card from '$lib/components/ui/card';
+	import * as Select from '$lib/components/ui/select';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import { Label } from '$lib/components/ui/label';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { toast } from 'svelte-sonner';
-	import documentApi, { type DocumentResponse } from '$lib/api/document';
+	import documentApi, { type DocumentResponse, type DocumentVisibility } from '$lib/api/document';
+	import labApi, { type LabListItem } from '$lib/api/lab';
+	import { getActiveLab } from '$lib/stores/lab.svelte';
+	import { getUser } from '$lib/stores/user.svelte';
 	import { translateSummary } from '$lib/api/translate';
 	import { showApiErrors } from '$lib/utils/api-error';
 
@@ -39,6 +48,58 @@
 	let showOriginal = $state(false);
 
 	let isEnglishLocale = $derived(($locale ?? 'en').startsWith('en'));
+	let currentUser = $derived(getUser());
+	let isOwner = $derived(document != null && document.uploaded_by === Number(currentUser.id));
+
+	// Visibility edit state
+	let visDialogOpen = $state(false);
+	let visEditValue = $state<DocumentVisibility>('private');
+	let visEditLabId = $state<string>('');
+	let visSubmitting = $state(false);
+	let myLabs = $state<LabListItem[]>([]);
+
+	async function loadLabs() {
+		try {
+			myLabs = await labApi.getMyLabs();
+		} catch {
+			// ignore
+		}
+	}
+
+	function openVisDialog() {
+		if (!document) return;
+		visEditValue = document.visibility;
+		// Prefer the document's current lab; fall back to the lab active in the sidebar.
+		if (document.lab_id) {
+			visEditLabId = String(document.lab_id);
+		} else {
+			const active = getActiveLab();
+			visEditLabId = active ? String(active.id) : '';
+		}
+		visDialogOpen = true;
+	}
+
+	async function handleVisSubmit() {
+		if (!document) return;
+		if (visEditValue === 'lab' && !visEditLabId) {
+			toast.error($_('document.detail.visibility.lab_required'));
+			return;
+		}
+		visSubmitting = true;
+		try {
+			await documentApi.updateVisibility(document.id, {
+				visibility: visEditValue,
+				lab_id: visEditValue === 'lab' ? Number(visEditLabId) : null
+			});
+			toast.success($_('document.detail.visibility.success'));
+			visDialogOpen = false;
+			await loadDocument(false);
+		} catch (error: unknown) {
+			showApiErrors(error, $_('document.detail.visibility.failed'));
+		} finally {
+			visSubmitting = false;
+		}
+	}
 
 	async function loadDocument(showSpinner = true) {
 		if (showSpinner) isLoading = true;
@@ -129,6 +190,7 @@
 
 	onMount(() => {
 		loadDocument();
+		loadLabs();
 		pollTimer = setInterval(pollEnrichStatus, 3000);
 	});
 
@@ -373,9 +435,41 @@
 								</dd>
 							</div>
 
-							<div class="grid grid-cols-3 gap-2">
+							<div class="grid grid-cols-3 gap-2 border-b pb-3">
 								<dt class="col-span-1 text-muted-foreground">{$_('document.detail.uploaded')}</dt>
 								<dd class="col-span-2 text-right font-medium">{formatDate(document.created_at)}</dd>
+							</div>
+
+							<div class="grid grid-cols-3 items-center gap-2">
+								<dt class="col-span-1 text-muted-foreground">
+									{$_('document.detail.visibility.label')}
+								</dt>
+								<dd class="col-span-2 flex items-center justify-end gap-1.5">
+									{#if document.visibility === 'lab' && document.lab_name}
+										<Badge
+											variant="outline"
+											class="max-w-40 gap-1 border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400"
+										>
+											<FlaskConical class="size-3 shrink-0" />
+											<span class="truncate" title={document.lab_name}>{document.lab_name}</span>
+										</Badge>
+									{:else}
+										<Badge variant="secondary" class="gap-1">
+											<Lock class="size-3" />
+											{$_('document.mine.visibility.private')}
+										</Badge>
+									{/if}
+									{#if isOwner}
+										<Button
+											variant="ghost"
+											size="icon"
+											class="size-7 text-muted-foreground hover:text-primary"
+											onclick={openVisDialog}
+										>
+											<Pencil class="size-3.5" />
+										</Button>
+									{/if}
+								</dd>
 							</div>
 						</dl>
 					</Card.Content>
@@ -384,3 +478,90 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Visibility edit dialog -->
+{#if document}
+	<AlertDialog.Root bind:open={visDialogOpen}>
+		<AlertDialog.Content>
+			<AlertDialog.Header>
+				<AlertDialog.Title>{$_('document.detail.visibility.dialog_title')}</AlertDialog.Title>
+				<AlertDialog.Description>
+					{$_('document.detail.visibility.dialog_desc')}
+				</AlertDialog.Description>
+			</AlertDialog.Header>
+
+			<div class="space-y-4 px-6">
+				<div class="grid grid-cols-2 gap-2">
+					<button
+						type="button"
+						class={`flex items-start gap-3 rounded-md border p-3 text-left transition-colors ${
+							visEditValue === 'private'
+								? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+								: 'border-input hover:bg-muted/50'
+						}`}
+						onclick={() => (visEditValue = 'private')}
+					>
+						<Lock class="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+						<div class="min-w-0 flex-1">
+							<div class="text-sm font-medium">{$_('document.upload.visibility_private')}</div>
+							<div class="text-xs text-muted-foreground">
+								{$_('document.upload.visibility_private_hint')}
+							</div>
+						</div>
+					</button>
+					<button
+						type="button"
+						class={`flex items-start gap-3 rounded-md border p-3 text-left transition-colors ${
+							visEditValue === 'lab'
+								? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+								: 'border-input hover:bg-muted/50'
+						}`}
+						disabled={myLabs.length === 0}
+						onclick={() => (visEditValue = 'lab')}
+					>
+						<FlaskConical class="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+						<div class="min-w-0 flex-1">
+							<div class="text-sm font-medium">{$_('document.upload.visibility_lab')}</div>
+							<div class="text-xs text-muted-foreground">
+								{myLabs.length === 0
+									? $_('document.upload.visibility_lab_no_labs')
+									: $_('document.upload.visibility_lab_hint')}
+							</div>
+						</div>
+					</button>
+				</div>
+
+				{#if visEditValue === 'lab' && myLabs.length > 0}
+					<div class="space-y-1.5">
+						<Label for="vis-lab-select">{$_('document.upload.select_lab')}</Label>
+						<Select.Root type="single" bind:value={visEditLabId}>
+							<Select.Trigger id="vis-lab-select" class="w-full">
+								{myLabs.find((l) => String(l.id) === visEditLabId)?.name ??
+									$_('document.upload.select_lab')}
+							</Select.Trigger>
+							<Select.Content>
+								{#each myLabs as lab (lab.id)}
+									<Select.Item value={String(lab.id)} label={lab.name}>{lab.name}</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
+					</div>
+				{/if}
+			</div>
+
+			<AlertDialog.Footer>
+				<AlertDialog.Cancel>{$_('profile.btn.cancel')}</AlertDialog.Cancel>
+				<AlertDialog.Action
+					disabled={visSubmitting || (visEditValue === 'lab' && !visEditLabId)}
+					onclick={(e: MouseEvent) => {
+						e.preventDefault();
+						handleVisSubmit();
+					}}
+				>
+					<Pencil class="size-3.5" />
+					{$_('document.detail.visibility.apply')}
+				</AlertDialog.Action>
+			</AlertDialog.Footer>
+		</AlertDialog.Content>
+	</AlertDialog.Root>
+{/if}

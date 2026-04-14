@@ -112,7 +112,16 @@
 			"translated": "翻译结果",
 			"translate_error": "翻译摘要失败",
 			"show_original": "显示原文",
-			"show_translation": "显示译文"
+			"show_translation": "显示译文",
+			"visibility": {
+				"label": "可见范围",
+				"dialog_title": "修改可见范围",
+				"dialog_desc": "选择哪些人可以访问此文档。",
+				"apply": "保存",
+				"lab_required": "请选择一个实验室",
+				"success": "可见范围已更新",
+				"failed": "更新可见范围失败"
+			}
 		},
 		"mine": {
 			"title": "我的文献",
@@ -125,8 +134,24 @@
 				"file_name": "文件名",
 				"file_size": "大小",
 				"status": "状态",
+				"visibility": "可见范围",
 				"created_at": "上传时间",
 				"actions": "操作"
+			},
+			"visibility": {
+				"private": "私有",
+				"lab": "实验室"
+			},
+			"batch": {
+				"selected": "已选择 {count} 项",
+				"select_all": "选择本页全部",
+				"edit_visibility": "修改可见范围",
+				"dialog_title": "修改可见范围",
+				"dialog_desc": "更新 {count} 篇文献的可见范围。",
+				"apply": "应用",
+				"lab_required": "请选择一个实验室",
+				"success": "已更新 {count} 篇文献",
+				"failed": "更新可见范围失败"
 			},
 			"status": {
 				"not_started": "待处理",
@@ -155,6 +180,13 @@
 			"year_placeholder": "例如 2024（可选）",
 			"doi_label": "DOI",
 			"doi_placeholder": "例如 10.1234/example（可选）",
+			"visibility_label": "可见范围",
+			"visibility_private": "私有",
+			"visibility_private_hint": "仅您本人可以查看",
+			"visibility_lab": "分享至实验室",
+			"visibility_lab_hint": "所选实验室的所有成员都可查看",
+			"visibility_lab_no_labs": "请先加入或创建一个实验室",
+			"select_lab": "选择实验室",
 			"metadata_hint": "标题、发表年份和 DOI 均为可选项——上传后，AI 将自动补全文献元数据。",
 			"submit": "上传",
 			"submitting": "上传中...",
@@ -163,6 +195,7 @@
 			"error": {
 				"file_required": "请选择要上传的文件",
 				"invalid_type": "仅支持 PDF 文件",
+				"lab_required": "请选择一个实验室",
 				"failed": "文献上传失败，请稍后重试"
 			}
 		}
@@ -211,7 +244,19 @@
 			"read_failed": "读取文件失败，请重试",
 			"too_large": "文献超过最大文件大小限制",
 			"unsupported_type": "不支持的文件类型，请上传 PDF 或受支持的文档格式",
+			"lab_required": "分享至实验室时必须选择实验室",
+			"invalid_visibility": "无效的可见范围",
+			"not_lab_member": "您不是所选实验室的成员",
 			"failed": "文献上传失败，请稍后重试"
+		},
+		"update_visibility": {
+			"forbidden": "您只能修改自己上传的文档的可见范围",
+			"lab_required": "分享至实验室时必须选择实验室",
+			"invalid_visibility": "无效的可见范围",
+			"not_lab_member": "您不是所选实验室的成员",
+			"partial_forbidden": "部分文档无法修改，因为它们不属于您",
+			"failed": "更新可见范围失败，请稍后重试",
+			"success": "可见范围已更新"
 		},
 		"get_dashboard_stats": {
 			"failed": "加载仪表盘统计数据失败"

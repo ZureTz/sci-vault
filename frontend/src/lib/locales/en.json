@@ -113,7 +113,16 @@
 			"translated": "Translated",
 			"translate_error": "Failed to translate summary",
 			"show_original": "Show original",
-			"show_translation": "Show translation"
+			"show_translation": "Show translation",
+			"visibility": {
+				"label": "Visibility",
+				"dialog_title": "Change Visibility",
+				"dialog_desc": "Choose who can access this document.",
+				"apply": "Save",
+				"lab_required": "Please select a lab",
+				"success": "Visibility updated",
+				"failed": "Failed to update visibility"
+			}
 		},
 		"mine": {
 			"title": "My Documents",
@@ -126,8 +135,24 @@
 				"file_name": "File Name",
 				"file_size": "Size",
 				"status": "Status",
+				"visibility": "Visibility",
 				"created_at": "Uploaded",
 				"actions": "Actions"
+			},
+			"visibility": {
+				"private": "Private",
+				"lab": "Lab"
+			},
+			"batch": {
+				"selected": "{count} selected",
+				"select_all": "Select all on this page",
+				"edit_visibility": "Change Visibility",
+				"dialog_title": "Change Visibility",
+				"dialog_desc": "Update visibility for {count} document(s).",
+				"apply": "Apply",
+				"lab_required": "Please select a lab",
+				"success": "{count} document(s) updated",
+				"failed": "Failed to update visibility"
 			},
 			"status": {
 				"not_started": "Pending",
@@ -156,6 +181,13 @@
 			"year_placeholder": "e.g. 2024 (optional)",
 			"doi_label": "DOI",
 			"doi_placeholder": "e.g. 10.1234/example (optional)",
+			"visibility_label": "Visibility",
+			"visibility_private": "Private",
+			"visibility_private_hint": "Only you can see this document",
+			"visibility_lab": "Share with Lab",
+			"visibility_lab_hint": "All members of the selected lab can see it",
+			"visibility_lab_no_labs": "Join or create a lab first",
+			"select_lab": "Select a lab",
 			"metadata_hint": "Title, year, and DOI are all optional — our AI will automatically enrich the metadata after upload.",
 			"submit": "Upload",
 			"submitting": "Uploading...",
@@ -164,6 +196,7 @@
 			"error": {
 				"file_required": "Please select a file to upload",
 				"invalid_type": "Only PDF files are supported",
+				"lab_required": "Please select a lab",
 				"failed": "Failed to upload document, please try again"
 			}
 		}
@@ -212,7 +245,19 @@
 			"read_failed": "Failed to read file, please try again",
 			"too_large": "Document exceeds the maximum size limit",
 			"unsupported_type": "Unsupported file type, please upload a PDF or supported document",
+			"lab_required": "A lab must be selected when sharing with a lab",
+			"invalid_visibility": "Invalid visibility option",
+			"not_lab_member": "You are not a member of the selected lab",
 			"failed": "Failed to upload document, please try again"
+		},
+		"update_visibility": {
+			"forbidden": "You can only change the visibility of your own documents",
+			"lab_required": "A lab must be selected when sharing with a lab",
+			"invalid_visibility": "Invalid visibility option",
+			"not_lab_member": "You are not a member of the selected lab",
+			"partial_forbidden": "Some documents cannot be modified because you do not own them",
+			"failed": "Failed to update visibility, please try again",
+			"success": "Visibility updated successfully"
 		},
 		"get_dashboard_stats": {
 			"failed": "Failed to load dashboard statistics"

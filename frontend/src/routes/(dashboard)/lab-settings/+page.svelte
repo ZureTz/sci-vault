@@ -16,6 +16,7 @@
 	import { resolve } from '$app/paths';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import * as Card from '$lib/components/ui/card';
+	import * as Select from '$lib/components/ui/select';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -290,16 +291,19 @@
 						<div class="flex items-end gap-3">
 							<div class="flex-1 space-y-2">
 								<Label for="transfer-target">{$_('lab.settings.select_member')}</Label>
-								<select
-									id="transfer-target"
-									bind:value={transferTargetId}
-									class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-								>
-									<option value="">{$_('lab.settings.select_member')}</option>
-									{#each members as member (member.user_id)}
-										<option value={String(member.user_id)}>{member.username}</option>
-									{/each}
-								</select>
+								<Select.Root type="single" bind:value={transferTargetId}>
+									<Select.Trigger id="transfer-target" class="w-full">
+										{members.find((m) => String(m.user_id) === transferTargetId)?.username ??
+											$_('lab.settings.select_member')}
+									</Select.Trigger>
+									<Select.Content>
+										{#each members as member (member.user_id)}
+											<Select.Item value={String(member.user_id)} label={member.username}>
+												{member.username}
+											</Select.Item>
+										{/each}
+									</Select.Content>
+								</Select.Root>
 							</div>
 							<AlertDialog.Root bind:open={transferDialogOpen}>
 								<AlertDialog.Trigger

@@ -2,14 +2,25 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
-	import { FileUp, LoaderCircle, CircleCheck, Clock, CircleAlert } from 'lucide-svelte';
+	import {
+		FileUp,
+		LoaderCircle,
+		CircleCheck,
+		Clock,
+		CircleAlert,
+		Lock,
+		FlaskConical
+	} from 'lucide-svelte';
 
 	import { resolve } from '$app/paths';
 	import * as Card from '$lib/components/ui/card';
+	import * as Select from '$lib/components/ui/select';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import documentApi, { type DocumentListItem } from '$lib/api/document';
+	import documentApi, { type DocumentListItem, type DocumentVisibility } from '$lib/api/document';
+	import labApi, { type LabListItem } from '$lib/api/lab';
+	import { getActiveLab } from '$lib/stores/lab.svelte';
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	let fileInput = $state<HTMLInputElement | undefined>(undefined);
@@ -17,6 +28,9 @@
 	let title = $state('');
 	let year = $state('');
 	let doi = $state('');
+	let visibility = $state<DocumentVisibility>('private');
+	let selectedLabId = $state<string>('');
+	let myLabs = $state<LabListItem[]>([]);
 	let isSubmitting = $state(false);
 	let uploadPercent = $state(0);
 	let isDragging = $state(false);
@@ -56,8 +70,31 @@
 		}
 	}
 
+	// Load user's labs on mount (only once — labs rarely change during a session)
+	async function loadLabs() {
+		try {
+			myLabs = await labApi.getMyLabs();
+		} catch {
+			// ignore — user can still upload as private
+		}
+	}
+
+	// Reactively follow the active lab from the store: switching the lab in the sidebar
+	// auto-selects that lab as the upload target. Selecting "no lab" reverts to private.
+	$effect(() => {
+		const active = getActiveLab();
+		if (active) {
+			selectedLabId = String(active.id);
+			visibility = 'lab';
+		} else {
+			selectedLabId = '';
+			visibility = 'private';
+		}
+	});
+
 	onMount(() => {
 		fetchPendingDocuments();
+		loadLabs();
 		pollTimer = setInterval(pollEnrichStatus, 3000);
 	});
 
@@ -105,13 +142,24 @@
 			toast.error($_('document.upload.error.file_required'));
 			return;
 		}
+		if (visibility === 'lab' && !selectedLabId) {
+			toast.error($_('document.upload.error.lab_required'));
+			return;
+		}
 
 		isSubmitting = true;
 		uploadPercent = 0;
 		try {
 			const yearNum = year ? parseInt(year, 10) : null;
 			await documentApi.uploadDocument(
-				{ file: selectedFile, title: title || null, year: yearNum, doi: doi || null },
+				{
+					file: selectedFile,
+					title: title || null,
+					year: yearNum,
+					doi: doi || null,
+					visibility,
+					lab_id: visibility === 'lab' ? Number(selectedLabId) : null
+				},
 				(pct) => (uploadPercent = pct)
 			);
 			toast.success($_('document.upload.success'));
@@ -119,7 +167,7 @@
 			// Refresh the enrichment queue immediately
 			fetchPendingDocuments();
 
-			// Reset form
+			// Reset form (preserve visibility/lab choice for next upload)
 			selectedFile = null;
 			title = '';
 			year = '';
@@ -218,6 +266,63 @@
 							maxlength={255}
 						/>
 					</div>
+				</div>
+
+				<!-- Visibility selector -->
+				<div class="space-y-2">
+					<Label>{$_('document.upload.visibility_label')}</Label>
+					<div class="grid grid-cols-2 gap-2">
+						<button
+							type="button"
+							class={`flex items-start gap-3 rounded-md border p-3 text-left transition-colors ${
+								visibility === 'private'
+									? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+									: 'border-input hover:bg-muted/50'
+							}`}
+							onclick={() => (visibility = 'private')}
+						>
+							<Lock class="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+							<div class="min-w-0 flex-1">
+								<div class="text-sm font-medium">{$_('document.upload.visibility_private')}</div>
+								<div class="text-xs text-muted-foreground">
+									{$_('document.upload.visibility_private_hint')}
+								</div>
+							</div>
+						</button>
+						<button
+							type="button"
+							class={`flex items-start gap-3 rounded-md border p-3 text-left transition-colors ${
+								visibility === 'lab'
+									? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+									: 'border-input hover:bg-muted/50'
+							}`}
+							disabled={myLabs.length === 0}
+							onclick={() => (visibility = 'lab')}
+						>
+							<FlaskConical class="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+							<div class="min-w-0 flex-1">
+								<div class="text-sm font-medium">{$_('document.upload.visibility_lab')}</div>
+								<div class="text-xs text-muted-foreground">
+									{myLabs.length === 0
+										? $_('document.upload.visibility_lab_no_labs')
+										: $_('document.upload.visibility_lab_hint')}
+								</div>
+							</div>
+						</button>
+					</div>
+					{#if visibility === 'lab' && myLabs.length > 0}
+						<Select.Root type="single" bind:value={selectedLabId}>
+							<Select.Trigger class="w-full">
+								{myLabs.find((l) => String(l.id) === selectedLabId)?.name ??
+									$_('document.upload.select_lab')}
+							</Select.Trigger>
+							<Select.Content>
+								{#each myLabs as lab (lab.id)}
+									<Select.Item value={String(lab.id)} label={lab.name}>{lab.name}</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
+					{/if}
 				</div>
 
 				<!-- AI metadata enrichment hint -->
