@@ -221,10 +221,7 @@
 				{#snippet crumbItem(crumb: Crumb)}
 					<Breadcrumb.Item>
 						{#if crumb.href}
-							<Breadcrumb.Link
-								href={resolve(crumb.href)}
-								class="max-w-32 truncate md:max-w-none"
-							>
+							<Breadcrumb.Link href={resolve(crumb.href)} class="max-w-32 truncate md:max-w-none">
 								{crumb.label}
 							</Breadcrumb.Link>
 						{:else}
