@@ -12,23 +12,47 @@
 	},
 	"sidebar": {
 		"navigation": "导航",
-		"dashboard": "仪表盘",
+		"workspace": "工作区",
+		"personal": "个人",
+		"lab_dashboard": "实验室仪表盘",
+		"dashboard": "我的仪表盘",
 		"documents": "文献库",
 		"upload": "上传文献",
 		"my_documents": "我的文献",
 		"document_detail": "文献详情",
+		"labs": "实验室",
+		"create_lab": "创建实验室",
+		"join_lab": "加入实验室",
+		"select_lab": "选择实验室",
+		"your_labs": "我的实验室",
+		"no_labs": "暂无实验室",
+		"no_labs_hint": "加入或创建实验室",
+		"no_labs_desc": "使用邀请码加入现有实验室，或创建您自己的实验室。",
+		"members": "名成员",
+		"lab_members": "成员管理",
+		"lab_settings": "实验室设置",
+		"account": "账户",
 		"settings": "设置",
 		"profile": "个人资料",
 		"logout": "退出登录"
 	},
 	"breadcrumb": {
-		"dashboard": "仪表盘",
+		"lab_dashboard": "实验室仪表盘",
+		"dashboard": "我的仪表盘",
 		"settings": "设置",
 		"profile": "个人资料",
 		"documents": "文献库",
 		"upload": "上传文献",
 		"my_documents": "我的文献",
-		"document_detail": "文献详情"
+		"document_detail": "文献详情",
+		"labs": "实验室",
+		"create_lab": "创建实验室",
+		"join_lab": "加入实验室",
+		"lab_members": "成员管理",
+		"lab_settings": "实验室设置",
+		"toggle_menu": "切换菜单",
+		"navigate_to": "跳转到",
+		"navigate_to_desc": "选择要导航到的页面。"
 	},
 	"dashboard": {
 		"title": "仪表盘总览",
@@ -66,7 +90,8 @@
 		"title": "设置"
 	},
 	"common": {
-		"unauthorized": "登录已过期，请重新登录"
+		"unauthorized": "登录已过期，请重新登录",
+		"close": "关闭"
 	},
 	"document": {
 		"detail": {
@@ -198,6 +223,68 @@
 			"not_found": "未找到该文档",
 			"failed": "重新处理失败，请稍后重试",
 			"success": "已成功重新开始处理"
+		},
+		"create_lab": {
+			"failed": "创建实验室失败，请稍后重试"
+		},
+		"join_lab": {
+			"invalid_code": "邀请码无效",
+			"already_member": "您已是该实验室的成员",
+			"failed": "加入实验室失败，请稍后重试"
+		},
+		"get_lab": {
+			"not_found": "未找到实验室",
+			"failed": "加载实验室详情失败"
+		},
+		"get_members": {
+			"forbidden": "您不是该实验室的成员",
+			"failed": "加载成员列表失败"
+		},
+		"kick_member": {
+			"forbidden": "只有实验室创建者才能移除成员",
+			"cannot_kick_self": "无法移除自己，请使用退出功能",
+			"cannot_kick_owner": "无法移除实验室创建者",
+			"target_not_member": "该用户不是实验室成员",
+			"failed": "移除成员失败",
+			"success": "成员已移除"
+		},
+		"transfer_ownership": {
+			"forbidden": "只有实验室创建者才能转让所有权",
+			"target_not_member": "目标用户不是实验室成员",
+			"failed": "转让所有权失败",
+			"success": "所有权已转让"
+		},
+		"request_delete_lab": {
+			"forbidden": "只有实验室创建者才能删除实验室",
+			"not_found": "未找到实验室",
+			"failed": "发送确认码失败",
+			"success": "确认码已发送到您的邮箱"
+		},
+		"delete_lab": {
+			"forbidden": "只有实验室创建者才能删除实验室",
+			"name_mismatch": "实验室名称不匹配",
+			"code_expired": "验证码已过期",
+			"code_mismatch": "验证码不正确",
+			"not_found": "未找到实验室",
+			"failed": "删除实验室失败",
+			"success": "实验室已删除"
+		},
+		"reset_invite_code": {
+			"forbidden": "只有实验室创建者才能重置邀请码",
+			"failed": "重置邀请码失败",
+			"success": "邀请码已重置"
+		},
+		"request_leave_lab": {
+			"failed": "发送确认码失败",
+			"success": "确认码已发送到您的邮箱"
+		},
+		"leave_lab": {
+			"not_member": "您不是该实验室的成员",
+			"owner_cannot_leave": "创建者无法退出实验室，请先转让所有权",
+			"code_expired": "验证码已过期",
+			"code_mismatch": "验证码不正确",
+			"failed": "退出实验室失败",
+			"success": "您已退出实验室"
 		}
 	},
 	"validation": {
@@ -246,6 +333,99 @@
 		},
 		"user_id": {
 			"required": "用户 ID 不能为空"
+		},
+		"invite_code": {
+			"required": "邀请码不能为空"
+		}
+	},
+	"lab_dashboard": {
+		"title": "实验室仪表盘",
+		"coming_soon": "实验室级别的仪表盘功能即将推出。您可以先访问「我的仪表盘」查看个人概览。",
+		"no_lab_selected": "未选择实验室",
+		"no_lab_selected_desc": "请在侧边栏中选择一个实验室，或创建/加入一个实验室。",
+		"invite_code": "邀请码",
+		"copied": "已复制到剪贴板",
+		"copy_code": "复制邀请码",
+		"member_count": "{count} 名成员",
+		"your_role": "您的角色",
+		"description": "简介",
+		"no_description": "暂无简介。",
+		"quick_actions": "快捷操作",
+		"view_members": "查看成员",
+		"lab_settings": "实验室设置",
+		"lab_settings_hint": "邀请码、转让等管理",
+		"leave_lab": "退出实验室",
+		"leave_lab_hint": "将自己从此实验室中移除",
+		"leave_confirm": "退出「{name}」？",
+		"leave_step1_desc": "一个确认码将发送到您的邮箱。",
+		"leave_send_code": "发送验证码",
+		"leave_step2": "请输入发送到您邮箱的验证码",
+		"leave_code_label": "验证码",
+		"owner_badge": "创建者"
+	},
+	"lab": {
+		"create": {
+			"title": "创建实验室",
+			"description": "新建一个实验室，并通过邀请码邀请您的团队。",
+			"name_label": "实验室名称",
+			"name_placeholder": "例如 量子生物实验室",
+			"desc_label": "简介",
+			"desc_placeholder": "这个实验室研究什么方向？",
+			"optional": "选填",
+			"submit": "创建实验室",
+			"creating": "创建中...",
+			"success": "实验室「{name}」创建成功"
+		},
+		"members": {
+			"title": "实验室成员",
+			"description": "查看和管理实验室成员。",
+			"empty": "暂无成员。",
+			"role": "角色",
+			"joined": "加入时间",
+			"remove": "移除",
+			"remove_confirm": "确定要将 {name} 移出实验室吗？",
+			"owner": "创建者",
+			"member": "成员",
+			"you": "（你）"
+		},
+		"settings": {
+			"title": "实验室设置",
+			"description": "管理实验室配置。仅实验室创建者可执行以下操作。",
+			"invite_code_section": "邀请码",
+			"invite_code_desc": "将此邀请码分享给他人以加入您的实验室。",
+			"reset_invite_code": "重置邀请码",
+			"reset_invite_code_desc": "这将使当前邀请码失效并生成新的邀请码。",
+			"reset_confirm": "确定要重置吗？旧邀请码将立即失效。",
+			"transfer_section": "转让所有权",
+			"transfer_desc": "将实验室所有权转让给其他成员。您将变为普通成员。",
+			"transfer_btn": "转让所有权",
+			"transfer_confirm": "将此实验室的所有权转让给 {name}？此操作不可撤销。",
+			"select_member": "选择一位成员",
+			"danger_zone": "危险操作",
+			"delete_section": "删除实验室",
+			"delete_desc": "永久删除此实验室并移除所有成员。此操作不可撤销。",
+			"delete_btn": "删除实验室",
+			"delete_step1": "请求删除",
+			"delete_step1_desc": "一个确认码将发送到您的邮箱。",
+			"delete_step2": "确认删除",
+			"delete_name_label": "输入实验室名称以确认",
+			"delete_name_placeholder": "实验室名称",
+			"delete_code_label": "邮箱验证码",
+			"delete_code_placeholder": "6位验证码",
+			"delete_confirm_btn": "永久删除",
+			"deleting": "删除中...",
+			"not_owner": "仅实验室创建者可访问这些设置。"
+		},
+		"join": {
+			"title": "加入实验室",
+			"description": "输入邀请码以加入已有实验室。",
+			"code_label": "邀请码",
+			"code_placeholder": "例如 ABCD1234",
+			"submit": "加入实验室",
+			"joining": "加入中...",
+			"success": "已成功加入「{name}」",
+			"welcome": "您已加入「{name}」！",
+			"member_count": "该实验室共有 {count} 名成员"
 		}
 	},
 	"login": {
@@ -361,6 +541,15 @@
 			"location": "位置",
 			"website": "网站",
 			"bio": "个人简介"
+		},
+		"labs": {
+			"title": "实验室",
+			"description": "您当前所在的实验室。",
+			"empty": "您还未加入任何实验室。",
+			"role": {
+				"owner": "创建者",
+				"member": "成员"
+			}
 		},
 		"btn": {
 			"save": "保存",

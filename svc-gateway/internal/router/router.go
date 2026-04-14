@@ -23,6 +23,7 @@ type RouterDeps struct {
 	DocumentHandler  *handler.DocumentHandler
 	StatsHandler     *handler.StatsHandler
 	TranslateHandler *handler.TranslateHandler
+	LabHandler       *handler.LabHandler
 
 	// Cache connector
 	CacheConn *cache.CacheConnector
@@ -57,6 +58,7 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 		deps.registerDocumentRoutes(protected.Group("/docs"))
 		deps.registerStatsRoutes(protected.Group("/stats"))
 		deps.registerTranslateRoutes(protected.Group("/translate"))
+		deps.registerLabRoutes(protected.Group("/labs"))
 	}
 
 	// Assign the configured engine to the router struct
@@ -115,10 +117,36 @@ func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 
 // Stats routes (/api/v1/stats/...)
 func (deps *RouterDeps) registerStatsRoutes(group *gin.RouterGroup) {
-	group.GET("/dashboard", deps.StatsHandler.GetDashboardStats)
+	group.GET("/mine/dashboard", deps.StatsHandler.GetMyDashboardStats)
 }
 
 // Translate routes (/api/v1/translate/...)
 func (deps *RouterDeps) registerTranslateRoutes(group *gin.RouterGroup) {
 	group.POST("/summary", deps.TranslateHandler.TranslateSummary)
+}
+
+// Lab routes (/api/v1/labs/...)
+func (deps *RouterDeps) registerLabRoutes(group *gin.RouterGroup) {
+	group.GET("", deps.LabHandler.GetMyLabs)
+	group.POST("", deps.LabHandler.CreateLab)
+	group.POST("/join", deps.LabHandler.JoinLabByCode)
+
+	// ExtractLabID only applies to routes that have :id param, it doesn't query the database
+	labWithID := group.Group("/:lab_id").Use(middleware.ExtractLabID())
+	{
+		// Member accessible operations
+		labWithID.GET("", deps.LabHandler.GetLab)
+		labWithID.GET("/members", deps.LabHandler.GetMembers)
+		labWithID.POST("/leave-request", deps.LabHandler.RequestLeaveLab) // Step 1: send email confirmation code
+		labWithID.DELETE("/members/me", deps.LabHandler.LeaveLab)         // Step 2: confirm with email code
+
+		// Owner only operations
+		labWithID.DELETE("/members/:user_id", deps.LabHandler.KickMember)
+		labWithID.POST("/transfer", deps.LabHandler.TransferOwnership)
+		labWithID.POST("/delete-request", deps.LabHandler.RequestDeleteLab) // Step 1: send email confirmation code
+		labWithID.DELETE("", deps.LabHandler.DeleteLab)                     // Step 2: confirm with lab name + email code
+
+		// Invitation code management (owner only)
+		labWithID.POST("/invite-code/reset", deps.LabHandler.ResetInviteCode)
+	}
 }

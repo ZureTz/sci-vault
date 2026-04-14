@@ -12,24 +12,49 @@
 	},
 	"sidebar": {
 		"navigation": "Navigation",
-		"dashboard": "Dashboard",
+		"workspace": "Workspace",
+		"personal": "Personal",
+		"lab_dashboard": "Lab Dashboard",
+		"dashboard": "My Dashboard",
 		"documents": "Documents",
 		"upload": "Upload",
 		"my_documents": "My Documents",
 		"document_detail": "Document Detail",
+		"labs": "Labs",
+		"create_lab": "Create Lab",
+		"join_lab": "Join Lab",
+		"select_lab": "Select a lab",
+		"your_labs": "Your Labs",
+		"no_labs": "No labs yet",
+		"no_labs_hint": "Join or create a lab",
+		"no_labs_desc": "Join an existing lab with an invite code, or create your own.",
+		"members": "members",
+		"lab_members": "Members",
+		"lab_settings": "Lab Settings",
+		"account": "Account",
 		"settings": "Settings",
 		"profile": "Profile",
 		"logout": "Log out"
 	},
 	"breadcrumb": {
-		"dashboard": "Dashboard",
+		"lab_dashboard": "Lab Dashboard",
+		"dashboard": "My Dashboard",
 		"settings": "Settings",
 		"profile": "Profile",
 		"documents": "Documents",
 		"upload": "Upload",
 		"my_documents": "My Documents",
-		"document_detail": "Document Detail"
+		"document_detail": "Document Detail",
+		"labs": "Labs",
+		"create_lab": "Create Lab",
+		"join_lab": "Join Lab",
+		"lab_members": "Members",
+		"lab_settings": "Lab Settings",
+		"toggle_menu": "Toggle menu",
+		"navigate_to": "Navigate to",
+		"navigate_to_desc": "Select a page to navigate to."
 	},
+
 	"dashboard": {
 		"title": "Dashboard Overview",
 		"description": "Your research data at a glance.",
@@ -66,7 +91,8 @@
 		"title": "Settings"
 	},
 	"common": {
-		"unauthorized": "Your session has expired, please log in again"
+		"unauthorized": "Your session has expired, please log in again",
+		"close": "Close"
 	},
 	"document": {
 		"detail": {
@@ -198,6 +224,68 @@
 			"not_found": "Document not found",
 			"failed": "Failed to restart enrichment, please try again",
 			"success": "Enrichment task restarted successfully"
+		},
+		"create_lab": {
+			"failed": "Failed to create lab, please try again"
+		},
+		"join_lab": {
+			"invalid_code": "Invalid invite code",
+			"already_member": "You are already a member of this lab",
+			"failed": "Failed to join lab, please try again"
+		},
+		"get_lab": {
+			"not_found": "Lab not found",
+			"failed": "Failed to load lab details"
+		},
+		"get_members": {
+			"forbidden": "You are not a member of this lab",
+			"failed": "Failed to load members"
+		},
+		"kick_member": {
+			"forbidden": "Only the lab owner can remove members",
+			"cannot_kick_self": "You cannot remove yourself; use leave instead",
+			"cannot_kick_owner": "Cannot remove the lab owner",
+			"target_not_member": "User is not a member of this lab",
+			"failed": "Failed to remove member",
+			"success": "Member removed successfully"
+		},
+		"transfer_ownership": {
+			"forbidden": "Only the lab owner can transfer ownership",
+			"target_not_member": "Target user is not a member of this lab",
+			"failed": "Failed to transfer ownership",
+			"success": "Ownership transferred successfully"
+		},
+		"request_delete_lab": {
+			"forbidden": "Only the lab owner can delete the lab",
+			"not_found": "Lab not found",
+			"failed": "Failed to send confirmation code",
+			"success": "Confirmation code sent to your email"
+		},
+		"delete_lab": {
+			"forbidden": "Only the lab owner can delete the lab",
+			"name_mismatch": "Lab name does not match",
+			"code_expired": "Verification code has expired",
+			"code_mismatch": "Incorrect verification code",
+			"not_found": "Lab not found",
+			"failed": "Failed to delete lab",
+			"success": "Lab deleted successfully"
+		},
+		"reset_invite_code": {
+			"forbidden": "Only the lab owner can reset the invite code",
+			"failed": "Failed to reset invite code",
+			"success": "Invite code has been reset"
+		},
+		"request_leave_lab": {
+			"failed": "Failed to send confirmation code",
+			"success": "Confirmation code sent to your email"
+		},
+		"leave_lab": {
+			"not_member": "You are not a member of this lab",
+			"owner_cannot_leave": "Owner cannot leave the lab; transfer ownership first",
+			"code_expired": "Verification code has expired",
+			"code_mismatch": "Incorrect verification code",
+			"failed": "Failed to leave lab",
+			"success": "You have left the lab"
 		}
 	},
 	"validation": {
@@ -246,6 +334,99 @@
 		},
 		"user_id": {
 			"required": "User ID is required"
+		},
+		"invite_code": {
+			"required": "Invite code is required"
+		}
+	},
+	"lab_dashboard": {
+		"title": "Lab Dashboard",
+		"coming_soon": "Lab-level dashboard is coming soon. For now, head to \"My Dashboard\" for your personal overview.",
+		"no_lab_selected": "No lab selected",
+		"no_lab_selected_desc": "Select a lab from the sidebar or create/join one to get started.",
+		"invite_code": "Invite Code",
+		"copied": "Copied to clipboard",
+		"copy_code": "Copy invite code",
+		"member_count": "{count} members",
+		"your_role": "Your role",
+		"description": "Description",
+		"no_description": "No description provided.",
+		"quick_actions": "Quick Actions",
+		"view_members": "View Members",
+		"lab_settings": "Lab Settings",
+		"lab_settings_hint": "Invite code, transfer & more",
+		"leave_lab": "Leave Lab",
+		"leave_lab_hint": "Remove yourself from this lab",
+		"leave_confirm": "Leave \"{name}\"?",
+		"leave_step1_desc": "A confirmation code will be sent to your email.",
+		"leave_send_code": "Send Code",
+		"leave_step2": "Enter the verification code sent to your email",
+		"leave_code_label": "Verification code",
+		"owner_badge": "Owner"
+	},
+	"lab": {
+		"create": {
+			"title": "Create a Lab",
+			"description": "Start a new lab and invite your team with a code.",
+			"name_label": "Lab Name",
+			"name_placeholder": "e.g. Quantum Biology Lab",
+			"desc_label": "Description",
+			"desc_placeholder": "What does this lab work on?",
+			"optional": "optional",
+			"submit": "Create Lab",
+			"creating": "Creating...",
+			"success": "Lab \"{name}\" created successfully"
+		},
+		"members": {
+			"title": "Lab Members",
+			"description": "View and manage members of this lab.",
+			"empty": "No members found.",
+			"role": "Role",
+			"joined": "Joined",
+			"remove": "Remove",
+			"remove_confirm": "Are you sure you want to remove {name} from this lab?",
+			"owner": "Owner",
+			"member": "Member",
+			"you": "(you)"
+		},
+		"settings": {
+			"title": "Lab Settings",
+			"description": "Manage lab configuration. Only the lab owner can perform these actions.",
+			"invite_code_section": "Invite Code",
+			"invite_code_desc": "Share this code with others so they can join your lab.",
+			"reset_invite_code": "Reset Invite Code",
+			"reset_invite_code_desc": "This will invalidate the current invite code and generate a new one.",
+			"reset_confirm": "Are you sure? The old code will stop working immediately.",
+			"transfer_section": "Transfer Ownership",
+			"transfer_desc": "Transfer lab ownership to another member. You will become a regular member.",
+			"transfer_btn": "Transfer Ownership",
+			"transfer_confirm": "Transfer ownership of this lab to {name}? This action cannot be undone.",
+			"select_member": "Select a member",
+			"danger_zone": "Danger Zone",
+			"delete_section": "Delete Lab",
+			"delete_desc": "Permanently delete this lab and remove all members. This action cannot be undone.",
+			"delete_btn": "Delete Lab",
+			"delete_step1": "Request Deletion",
+			"delete_step1_desc": "A confirmation code will be sent to your email.",
+			"delete_step2": "Confirm Deletion",
+			"delete_name_label": "Type the lab name to confirm",
+			"delete_name_placeholder": "Lab name",
+			"delete_code_label": "Email verification code",
+			"delete_code_placeholder": "6-digit code",
+			"delete_confirm_btn": "Permanently Delete",
+			"deleting": "Deleting...",
+			"not_owner": "Only the lab owner can access these settings."
+		},
+		"join": {
+			"title": "Join a Lab",
+			"description": "Enter an invite code to join an existing lab.",
+			"code_label": "Invite Code",
+			"code_placeholder": "e.g. ABCD1234",
+			"submit": "Join Lab",
+			"joining": "Joining...",
+			"success": "Successfully joined \"{name}\"",
+			"welcome": "You joined \"{name}\"!",
+			"member_count": "{count} members in this lab"
 		}
 	},
 	"login": {
@@ -361,6 +542,15 @@
 			"location": "Location",
 			"website": "Website",
 			"bio": "Bio"
+		},
+		"labs": {
+			"title": "Labs",
+			"description": "Labs you are currently working in.",
+			"empty": "You haven't joined any labs yet.",
+			"role": {
+				"owner": "Owner",
+				"member": "Member"
+			}
 		},
 		"btn": {
 			"save": "Save",

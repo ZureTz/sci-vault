@@ -2,10 +2,8 @@ package service
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"io"
-	"math/big"
 	"path/filepath"
 	"strings"
 	"time"
@@ -15,6 +13,7 @@ import (
 	"gateway/internal/repo"
 	"gateway/pkg/app_error"
 	"gateway/pkg/cache"
+	"gateway/pkg/codegen"
 	"gateway/pkg/jwt"
 	"gateway/pkg/mailer"
 	"gateway/pkg/password"
@@ -86,13 +85,10 @@ func (s *UserService) verifyEmailCode(ctx context.Context, email string, code st
 }
 
 func (s *UserService) SendEmailCode(ctx context.Context, req dto.SendEmailCodeRequest) error {
-	// Generate a random 6-digit code using cryptographically secure random number generator
-	max := big.NewInt(900000)
-	n, err := rand.Int(rand.Reader, max)
+	code, err := codegen.VerificationCode()
 	if err != nil {
-		return fmt.Errorf("failed to generate secure code: %w", err)
+		return err
 	}
-	code := fmt.Sprintf("%06d", n.Int64()+100000)
 
 	// Store the code in Redis with a short expiration (e.g. 5 minutes)
 	cacheKey := fmt.Sprintf("%s:code", req.Email)

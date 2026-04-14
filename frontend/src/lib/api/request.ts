@@ -1,6 +1,7 @@
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
+import { clearUser } from '$lib/stores/user.svelte';
 
 // Configure the base URL, which can be read from environment variables
 const baseURL = '/api/v1'; // Default base URL for API requests
@@ -39,7 +40,7 @@ request.interceptors.response.use(
 		if (error.response?.status === 401) {
 			// Unified error handling, e.g., redirect to login page for 401 Unauthorized
 			localStorage.removeItem('token');
-			localStorage.removeItem('user');
+			clearUser();
 			goto(resolve('/login'));
 		}
 		return Promise.reject(error);

@@ -19,7 +19,7 @@ type RecentDocument struct {
 	CreatedAt        time.Time `json:"created_at"`
 }
 
-type DashboardStatsResponse struct {
+type MyDashboardStatsResponse struct {
 	TotalDocuments  int64            `json:"total_documents"`
 	TotalStorage    int64            `json:"total_storage"`
 	TotalViews      int64            `json:"total_views"`

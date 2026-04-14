@@ -141,16 +141,16 @@
 	<title>{document?.title || $_('document.detail.title')} | Sci-Vault</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-4xl px-4 py-8">
+<div class="mx-auto w-full max-w-6xl space-y-6">
 	<!-- Actions Bar -->
-	<div class="mb-6 flex items-center justify-between">
+	<div class="flex items-center justify-between">
 		<Button variant="ghost" size="sm" onclick={() => goto(resolve('/documents/mine'))}>
 			<ArrowLeft class="mr-2 h-4 w-4" />
 			{$_('document.detail.back')}
 		</Button>
 
 		{#if document && document.download_url}
-			<Button href={document.download_url} target="_blank" rel="noreferrer">
+			<Button variant="outline" href={document.download_url} target="_blank" rel="noreferrer">
 				<BookOpen class="mr-2 h-4 w-4" />
 				{$_('document.detail.download')}
 			</Button>

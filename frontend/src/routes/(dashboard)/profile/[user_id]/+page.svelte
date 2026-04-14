@@ -2,7 +2,17 @@
 	import { _ } from 'svelte-i18n';
 	import { onMount, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { MapPin, Globe, ExternalLink, UserRound, Upload, SquarePen } from 'lucide-svelte';
+	import {
+		MapPin,
+		Globe,
+		ExternalLink,
+		UserRound,
+		Upload,
+		SquarePen,
+		FlaskConical,
+		Crown,
+		Users
+	} from 'lucide-svelte';
 	import { jwtDecode } from 'jwt-decode';
 
 	import { page } from '$app/state';
@@ -16,6 +26,8 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import userApi, { type ProfileResponse, type UpdateProfileRequest } from '$lib/api/user';
+	import { setAvatarUrl } from '$lib/stores/user.svelte';
+	import labApi, { type LabListItem } from '$lib/api/lab';
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	let { data }: { data: PageData } = $props();
@@ -30,6 +42,8 @@
 		location: null
 	});
 	let fileInput = $state<HTMLInputElement | undefined>(undefined);
+	let myLabs = $state<LabListItem[]>([]);
+	let labsLoading = $state(false);
 
 	// Re-sync when SvelteKit updates data.profile on param change (e.g. /profile/9 → /profile/11)
 	$effect(() => {
@@ -39,7 +53,7 @@
 		});
 	});
 
-	onMount(() => {
+	onMount(async () => {
 		const token = localStorage.getItem('token');
 		if (token) {
 			try {
@@ -47,6 +61,17 @@
 				currentUserId = Number(decoded.user_id);
 			} catch {
 				// ignore invalid token
+			}
+		}
+
+		if (currentUserId !== null && currentUserId === Number(page.params.user_id)) {
+			labsLoading = true;
+			try {
+				myLabs = await labApi.getMyLabs();
+			} catch {
+				// silently ignore — labs section simply won't render
+			} finally {
+				labsLoading = false;
 			}
 		}
 	});
@@ -86,6 +111,9 @@
 		try {
 			await userApi.uploadAvatar(file);
 			profilePromise = userApi.getProfile(userId);
+			// Reflect the new avatar immediately in the sidebar
+			const avatar = await userApi.getAvatar(String(userId)).catch(() => null);
+			if (avatar) setAvatarUrl(avatar.avatar_url);
 			toast.success($_('profile.success.avatar_updated'));
 		} catch (error: unknown) {
 			showApiErrors(error, $_('profile.error.upload_failed'));
@@ -97,7 +125,7 @@
 	<title>{$_('profile.title')} | Sci-Vault</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-3xl px-4 py-8">
+<div class="mx-auto w-full max-w-3xl space-y-6">
 	<Card.Root class="overflow-hidden shadow-sm">
 		<!-- Cover banner -->
 		<div class="h-36 bg-linear-to-br from-primary/30 via-primary/10 to-muted"></div>
@@ -340,4 +368,72 @@
 			{/if}
 		{/await}
 	</Card.Root>
+
+	<!-- Labs section — only shown for the current user's own profile -->
+	{#if currentUserId !== null && currentUserId === Number(page.params.user_id)}
+		<Card.Root class="shadow-sm">
+			<Card.Header class="pb-3">
+				<div class="flex items-center gap-2">
+					<FlaskConical class="h-4 w-4 text-muted-foreground" />
+					<Card.Title class="text-base">{$_('profile.labs.title')}</Card.Title>
+				</div>
+				<Card.Description>{$_('profile.labs.description')}</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				{#if labsLoading}
+					<div class="space-y-3">
+						{#each [1, 2] as i (i)}
+							<div class="flex items-center gap-3 rounded-lg border p-3">
+								<Skeleton class="h-9 w-9 rounded-lg" />
+								<div class="flex-1 space-y-1.5">
+									<Skeleton class="h-4 w-40" />
+									<Skeleton class="h-3 w-24" />
+								</div>
+							</div>
+						{/each}
+					</div>
+				{:else if myLabs.length === 0}
+					<p class="py-4 text-center text-sm text-muted-foreground">{$_('profile.labs.empty')}</p>
+				{:else}
+					<ul class="space-y-2">
+						{#each myLabs as lab (lab.id)}
+							<li
+								class="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
+							>
+								<div
+									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+								>
+									<FlaskConical class="h-4 w-4" />
+								</div>
+								<div class="min-w-0 flex-1">
+									<p class="truncate text-sm font-medium">{lab.name}</p>
+									{#if lab.description}
+										<p class="truncate text-xs text-muted-foreground">{lab.description}</p>
+									{/if}
+								</div>
+								<div class="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+									<span class="flex items-center gap-1">
+										<Users class="h-3 w-3" />
+										{lab.member_count}
+									</span>
+									{#if lab.role === 'owner'}
+										<span
+											class="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+										>
+											<Crown class="h-3 w-3" />
+											{$_('profile.labs.role.owner')}
+										</span>
+									{:else}
+										<span class="rounded-full bg-muted px-2 py-0.5">
+											{$_('profile.labs.role.member')}
+										</span>
+									{/if}
+								</div>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</Card.Content>
+		</Card.Root>
+	{/if}
 </div>

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -12,6 +13,7 @@ import (
 
 	"gateway/internal/config"
 	"gateway/pkg/jwt"
+	"gateway/pkg/utils"
 )
 
 var (
@@ -76,7 +78,7 @@ func CheckJWT(cfg *config.JWTConfig) gin.HandlerFunc {
 		if encounteredError {
 			ctx.AbortWithStatusJSON(
 				http.StatusUnauthorized,
-				map[string]string{"message": "JWT is invalid."},
+				utils.ErrorResponse(fmt.Errorf("Invalid or missing JWT token")),
 			)
 		}
 	}
