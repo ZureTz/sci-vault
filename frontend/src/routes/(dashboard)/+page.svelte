@@ -114,32 +114,40 @@
 	<title>{$_('lab_dashboard.title')} | Sci-Vault</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-4xl px-4 py-8">
+<div class="space-y-6">
 	{#if !activeLab}
 		<!-- No lab selected state -->
-		<Card.Root class="shadow-sm">
-			<Card.Content class="flex flex-col items-center gap-4 py-16 text-center">
-				<div
-					class="flex size-14 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-border/50"
+		<div class="flex h-[80vh] flex-col items-center justify-center space-y-6">
+			<Card.Root class="w-full max-w-lg shadow-sm">
+				<Card.Content
+					class="flex flex-col items-center justify-center p-12 text-center text-muted-foreground"
 				>
-					<FlaskConical class="size-7 text-primary" />
-				</div>
-				<div>
-					<p class="text-lg font-semibold">{$_('lab_dashboard.no_lab_selected')}</p>
-					<p class="mt-1 text-sm text-muted-foreground">
+					<div
+						class="mb-6 flex size-14 items-center justify-center rounded-full bg-primary/10 ring-1 ring-border/50"
+					>
+						<FlaskConical class="size-7 text-primary" />
+					</div>
+					<h3 class="mb-2 text-2xl font-bold tracking-tight text-foreground">
+						{$_('lab_dashboard.no_lab_selected')}
+					</h3>
+					<p class="mb-8">
 						{$_('lab_dashboard.no_lab_selected_desc')}
 					</p>
-				</div>
-				<div class="mt-2 flex gap-3">
-					<Button variant="outline" onclick={() => goto(resolve('/labs/join'))}>
-						{$_('sidebar.join_lab')}
-					</Button>
-					<Button onclick={() => goto(resolve('/labs/create'))}>
-						{$_('sidebar.create_lab')}
-					</Button>
-				</div>
-			</Card.Content>
-		</Card.Root>
+					<div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
+						<Button
+							variant="outline"
+							onclick={() => goto(resolve('/labs/join'))}
+							class="w-full sm:w-auto"
+						>
+							{$_('sidebar.join_lab')}
+						</Button>
+						<Button onclick={() => goto(resolve('/labs/create'))} class="w-full sm:w-auto">
+							{$_('sidebar.create_lab')}
+						</Button>
+					</div>
+				</Card.Content>
+			</Card.Root>
+		</div>
 	{:else if isLoading}
 		<!-- Loading state -->
 		<div class="space-y-6">
@@ -165,16 +173,16 @@
 		<!-- Lab Overview -->
 		<div class="space-y-6">
 			<!-- Header -->
-			<div class="flex items-start justify-between">
+			<div class="flex flex-col justify-between space-y-4 sm:flex-row sm:items-center sm:space-y-0">
 				<div class="flex items-center gap-4">
 					<div
 						class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-border/50"
 					>
 						<FlaskConical class="size-6 text-primary" />
 					</div>
-					<div>
+					<div class="space-y-1">
 						<div class="flex items-center gap-2">
-							<h1 class="text-2xl font-bold tracking-tight">{labDetail.name}</h1>
+							<h2 class="text-3xl font-bold tracking-tight">{labDetail.name}</h2>
 							{#if labDetail.my_role === 'owner'}
 								<Badge
 									variant="outline"
@@ -185,7 +193,7 @@
 								</Badge>
 							{/if}
 						</div>
-						<p class="mt-0.5 text-sm text-muted-foreground capitalize">
+						<p class="text-sm text-muted-foreground capitalize">
 							{$_('lab_dashboard.your_role')}: {$_(`profile.labs.role.${labDetail.my_role}`)}
 						</p>
 					</div>

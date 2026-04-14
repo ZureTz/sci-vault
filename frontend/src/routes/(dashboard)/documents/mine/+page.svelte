@@ -112,22 +112,24 @@
 	<title>{$_('document.mine.title')} | Sci-Vault</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+<div class="flex-1 space-y-6">
 	<!-- Header -->
-	<div class="mb-6 flex items-center justify-between">
+	<div class="flex flex-col justify-between space-y-4 sm:flex-row sm:items-center sm:space-y-0">
 		<div class="flex items-center gap-3">
 			<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
 				<FileText class="h-5 w-5" />
 			</div>
-			<div>
-				<h1 class="text-xl font-semibold">{$_('document.mine.title')}</h1>
+			<div class="space-y-1">
+				<h2 class="text-3xl font-bold tracking-tight">{$_('document.mine.title')}</h2>
 				<p class="text-sm text-muted-foreground">{$_('document.mine.description')}</p>
 			</div>
 		</div>
-		<Button variant="outline" onclick={() => goto(resolve('/documents/upload'))}>
-			<Upload class="h-4 w-4" />
-			{$_('document.mine.go_upload')}
-		</Button>
+		<div class="flex items-center space-x-2">
+			<Button variant="outline" onclick={() => goto(resolve('/documents/upload'))}>
+				<Upload class="mr-2 h-4 w-4" />
+				{$_('document.mine.go_upload')}
+			</Button>
+		</div>
 	</div>
 
 	<Card.Root class="shadow-sm">

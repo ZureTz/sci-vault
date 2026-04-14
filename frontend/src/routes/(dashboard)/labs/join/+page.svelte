@@ -40,7 +40,7 @@
 	}
 </script>
 
-<div class="mx-auto max-w-md py-8">
+<div class="mx-auto w-full max-w-md space-y-6 pt-8">
 	<Card.Root>
 		<Card.Header>
 			<div class="flex items-center gap-3">

@@ -125,7 +125,7 @@
 	<title>{$_('profile.title')} | Sci-Vault</title>
 </svelte:head>
 
-<div class="container mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
+<div class="mx-auto w-full max-w-3xl space-y-6">
 	<Card.Root class="overflow-hidden shadow-sm">
 		<!-- Cover banner -->
 		<div class="h-36 bg-linear-to-br from-primary/30 via-primary/10 to-muted"></div>
