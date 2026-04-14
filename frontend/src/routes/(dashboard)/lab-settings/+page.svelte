@@ -161,7 +161,7 @@
 	<title>{$_('lab.settings.title')} | Sci-Vault</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-3xl px-4 py-8">
+<div class="mx-auto w-full max-w-3xl space-y-6">
 	{#if !activeLab}
 		<Card.Root class="shadow-sm">
 			<Card.Content class="flex flex-col items-center gap-4 py-16 text-center">
@@ -207,9 +207,9 @@
 		</div>
 	{:else if labDetail}
 		<div class="space-y-6">
-			<div>
-				<h1 class="text-2xl font-bold tracking-tight">{$_('lab.settings.title')}</h1>
-				<p class="mt-1 text-sm text-muted-foreground">{$_('lab.settings.description')}</p>
+			<div class="space-y-1">
+				<h2 class="text-3xl font-bold tracking-tight">{$_('lab.settings.title')}</h2>
+				<p class="text-muted-foreground">{$_('lab.settings.description')}</p>
 			</div>
 
 			<!-- Invite Code Section -->

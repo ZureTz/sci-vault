@@ -60,22 +60,24 @@
 	<title>{$_('dashboard.title')} | Sci-Vault</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-5xl px-4 py-8">
+<div class="space-y-6">
 	<!-- Header -->
-	<div class="mb-8 flex items-center justify-between">
-		<div>
-			<h1 class="text-2xl font-bold tracking-tight">{$_('dashboard.title')}</h1>
-			<p class="mt-1 text-sm text-muted-foreground">{$_('dashboard.description')}</p>
+	<div class="flex flex-col justify-between space-y-4 sm:flex-row sm:items-center sm:space-y-0">
+		<div class="space-y-1">
+			<h2 class="text-3xl font-bold tracking-tight">{$_('dashboard.title')}</h2>
+			<p class="text-muted-foreground">{$_('dashboard.description')}</p>
 		</div>
-		<Button onclick={() => goto(resolve('/documents/upload'))}>
-			<Upload class="h-4 w-4" />
-			{$_('dashboard.quick_upload')}
-		</Button>
+		<div class="flex items-center space-x-2">
+			<Button onclick={() => goto(resolve('/documents/upload'))}>
+				<Upload class="mr-2 h-4 w-4" />
+				{$_('dashboard.quick_upload')}
+			</Button>
+		</div>
 	</div>
 
 	<!-- Stat Cards -->
 	{#if isLoading}
-		<div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 			{#each Array.from({ length: 4 }, (_, i) => i) as i (i)}
 				<Card.Root>
 					<Card.Content class="p-4">

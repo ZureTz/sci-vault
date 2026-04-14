@@ -137,24 +137,16 @@
 	<title>{$_('document.upload.title')} | Sci-Vault</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-2xl px-4 py-8">
-	<Card.Root class="shadow-sm">
-		<Card.Header>
-			<div class="flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"
-				>
-					<FileUp class="h-5 w-5" />
-				</div>
-				<div>
-					<Card.Title class="text-xl">{$_('document.upload.title')}</Card.Title>
-					<Card.Description>{$_('document.upload.description')}</Card.Description>
-				</div>
-			</div>
-		</Card.Header>
+<div class="mx-auto w-full max-w-2xl space-y-6">
+	<!-- Header -->
+	<div class="flex flex-col space-y-2">
+		<h2 class="text-3xl font-bold tracking-tight">{$_('document.upload.title')}</h2>
+		<p class="text-muted-foreground">{$_('document.upload.description')}</p>
+	</div>
 
-		<Card.Content>
-			<form onsubmit={handleSubmit} class="space-y-5">
+	<Card.Root class="shadow-sm">
+		<Card.Content class="pt-6">
+			<form onsubmit={handleSubmit} class="space-y-6">
 				<!-- File picker -->
 				<div class="space-y-1.5">
 					<Label for="file">{$_('document.upload.file_label')}</Label>
