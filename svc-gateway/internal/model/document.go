@@ -17,6 +17,12 @@ const (
 	EnrichStatusDone       = "done"
 )
 
+// Document visibility values.
+const (
+	DocVisibilityPrivate = "private"
+	DocVisibilityLab     = "lab"
+)
+
 type Document struct {
 	gorm.Model
 

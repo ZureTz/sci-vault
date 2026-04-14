@@ -22,6 +22,8 @@ type DocumentService interface {
 	ListMyDocuments(ctx context.Context, userID uint, page, pageSize int) (*dto.ListDocumentsResponse, error)
 	ListPendingDocuments(ctx context.Context, userID uint) (*dto.ListDocumentsResponse, error)
 	RestartEnrichment(ctx context.Context, docID uint) error
+	UpdateVisibility(ctx context.Context, docID, userID uint, req dto.UpdateVisibilityRequest) error
+	BatchUpdateVisibility(ctx context.Context, userID uint, req dto.BatchUpdateVisibilityRequest) (int64, error)
 }
 
 type DocumentHandler struct {
@@ -61,6 +63,12 @@ func (h *DocumentHandler) UploadDocument(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.upload_document.too_large")))
 		case errors.Is(err, app_error.ErrDocumentInvalidType):
 			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.upload_document.unsupported_type")))
+		case errors.Is(err, app_error.ErrLabRequiredForLabVis):
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.upload_document.lab_required")))
+		case errors.Is(err, app_error.ErrInvalidVisibility):
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.upload_document.invalid_visibility")))
+		case errors.Is(err, app_error.ErrNotMember):
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.upload_document.not_lab_member")))
 		default:
 			slog.Error("UploadDocument service error", "err", err)
 			c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.upload_document.failed")))
@@ -68,6 +76,77 @@ func (h *DocumentHandler) UploadDocument(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, resp)
+}
+
+func (h *DocumentHandler) UpdateVisibility(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
+		return
+	}
+
+	var uri dto.DocumentIDUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	var req dto.UpdateVisibilityRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	if err := h.documentService.UpdateVisibility(c.Request.Context(), uri.DocID, userID, req); err != nil {
+		switch {
+		case errors.Is(err, app_error.ErrLabRequiredForLabVis):
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.update_visibility.lab_required")))
+		case errors.Is(err, app_error.ErrInvalidVisibility):
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.update_visibility.invalid_visibility")))
+		case errors.Is(err, app_error.ErrNotMember):
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.update_visibility.not_lab_member")))
+		case errors.Is(err, app_error.ErrNotDocumentOwner):
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.update_visibility.forbidden")))
+		default:
+			slog.Error("UpdateVisibility service error", "err", err)
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.update_visibility.failed")))
+		}
+		return
+	}
+	c.JSON(http.StatusOK, utils.MessageResponse("service.update_visibility.success"))
+}
+
+func (h *DocumentHandler) BatchUpdateVisibility(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
+		return
+	}
+
+	var req dto.BatchUpdateVisibilityRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	updated, err := h.documentService.BatchUpdateVisibility(c.Request.Context(), userID, req)
+	if err != nil {
+		switch {
+		case errors.Is(err, app_error.ErrLabRequiredForLabVis):
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.update_visibility.lab_required")))
+		case errors.Is(err, app_error.ErrInvalidVisibility):
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.update_visibility.invalid_visibility")))
+		case errors.Is(err, app_error.ErrNotMember):
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.update_visibility.not_lab_member")))
+		case errors.Is(err, app_error.ErrSomeDocsNotAccessible):
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.update_visibility.partial_forbidden")))
+		default:
+			slog.Error("BatchUpdateVisibility service error", "err", err)
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.update_visibility.failed")))
+		}
+		return
+	}
+	c.JSON(http.StatusOK, dto.BatchUpdateVisibilityResponse{Updated: updated})
 }
 
 func (h *DocumentHandler) GetEnrichStatus(c *gin.Context) {

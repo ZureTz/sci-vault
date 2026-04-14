@@ -10,9 +10,13 @@ var (
 	ErrAvatarTooLarge    = errors.New("avatar file too large")
 	ErrAvatarInvalidType = errors.New("unsupported avatar image type")
 
-	ErrDocumentTooLarge    = errors.New("document file too large")
-	ErrDocumentInvalidType = errors.New("unsupported document type; only PDF is accepted")
-	ErrDocumentNotFound    = errors.New("document not found")
+	ErrDocumentTooLarge      = errors.New("document file too large")
+	ErrDocumentInvalidType   = errors.New("unsupported document type; only PDF is accepted")
+	ErrDocumentNotFound      = errors.New("document not found")
+	ErrNotDocumentOwner      = errors.New("only the document uploader can perform this action")
+	ErrInvalidVisibility     = errors.New("invalid visibility value; must be 'private' or 'lab'")
+	ErrLabRequiredForLabVis  = errors.New("lab_id is required when visibility is 'lab'")
+	ErrSomeDocsNotAccessible = errors.New("one or more documents are not accessible")
 
 	ErrLabNotFound       = errors.New("lab not found")
 	ErrInvalidInviteCode = errors.New("invalid invite code")
