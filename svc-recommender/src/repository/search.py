@@ -7,6 +7,12 @@ import numpy as np
 from psycopg import sql
 from psycopg_pool import ConnectionPool
 
+from repository import (
+    DOC_VISIBILITY_LAB,
+    DOC_VISIBILITY_PRIVATE,
+    ENRICH_STATUS_DONE,
+)
+
 log = logging.getLogger(__name__)
 
 _DEFAULT_LIMIT = 10
@@ -15,17 +21,21 @@ _MIN_SIMILARITY = 0.6
 
 # ── Shared fragments ──────────────────────────────────────────────────────────
 
-_BASE_WHERE = sql.SQL("d.deleted_at IS NULL AND d.enrich_status = 'done'")
+_BASE_WHERE = sql.SQL("d.deleted_at IS NULL AND d.enrich_status = {}").format(
+    sql.Literal(ENRICH_STATUS_DONE)
+)
 
 _ACCESS_PRIVATE_ONLY = sql.SQL(
-    "AND d.uploaded_by_user_id = %(user_id)s AND d.visibility = 'private'"
-)
+    "AND d.uploaded_by_user_id = %(user_id)s AND d.visibility = {}"
+).format(sql.Literal(DOC_VISIBILITY_PRIVATE))
 
 _ACCESS_PRIVATE_OR_LAB = sql.SQL(
     "AND ("
-    "  (d.uploaded_by_user_id = %(user_id)s AND d.visibility = 'private')"
-    "  OR (d.lab_id = %(lab_id)s AND d.visibility = 'lab')"
+    "  (d.uploaded_by_user_id = %(user_id)s AND d.visibility = {private})"
+    "  OR (d.lab_id = %(lab_id)s AND d.visibility = {lab})"
     ")"
+).format(
+    private=sql.Literal(DOC_VISIBILITY_PRIVATE), lab=sql.Literal(DOC_VISIBILITY_LAB)
 )
 
 _TEXT_VECTOR = sql.SQL(
@@ -58,7 +68,7 @@ class SearchRepository:
         self._pool = pool
 
     @staticmethod
-    def _access(lab_id: int) -> sql.SQL:
+    def _access(lab_id: int) -> sql.Composable:
         return _ACCESS_PRIVATE_OR_LAB if lab_id > 0 else _ACCESS_PRIVATE_ONLY
 
     @staticmethod
