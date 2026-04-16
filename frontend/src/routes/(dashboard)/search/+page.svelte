@@ -57,6 +57,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>{$_('search.title')} | Sci-Vault</title>
+</svelte:head>
+
 <div class="flex flex-col gap-6">
 	<div>
 		<h1 class="text-2xl font-bold tracking-tight">{$_('search.title')}</h1>
