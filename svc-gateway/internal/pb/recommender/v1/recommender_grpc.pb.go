@@ -42,6 +42,7 @@ type RecommenderServiceClient interface {
 	TranslateText(ctx context.Context, in *TranslateTextRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TranslateTextResponse], error)
 	// SemanticSearch embeds the query text (RETRIEVAL_QUERY task type) and
 	// searches for similar documents in the vector space (cosine similarity).
+	// If vector similarity is sparse, fallback to keyword search based on remaining count of results to return.
 	// Access control is enforced: only private docs owned by the user and
 	// lab-visible docs in the given lab are considered.
 	SemanticSearch(ctx context.Context, in *SemanticSearchRequest, opts ...grpc.CallOption) (*SemanticSearchResponse, error)
@@ -121,6 +122,7 @@ type RecommenderServiceServer interface {
 	TranslateText(*TranslateTextRequest, grpc.ServerStreamingServer[TranslateTextResponse]) error
 	// SemanticSearch embeds the query text (RETRIEVAL_QUERY task type) and
 	// searches for similar documents in the vector space (cosine similarity).
+	// If vector similarity is sparse, fallback to keyword search based on remaining count of results to return.
 	// Access control is enforced: only private docs owned by the user and
 	// lab-visible docs in the given lab are considered.
 	SemanticSearch(context.Context, *SemanticSearchRequest) (*SemanticSearchResponse, error)

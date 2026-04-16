@@ -24,6 +24,7 @@ type DocumentService interface {
 	RestartEnrichment(ctx context.Context, docID uint) error
 	UpdateVisibility(ctx context.Context, docID, userID uint, req dto.UpdateVisibilityRequest) error
 	BatchUpdateVisibility(ctx context.Context, userID uint, req dto.BatchUpdateVisibilityRequest) (int64, error)
+	SearchDocuments(ctx context.Context, userID uint, q dto.SearchDocumentsQuery) (*dto.SearchDocumentsResponse, error)
 }
 
 type DocumentHandler struct {
@@ -248,4 +249,26 @@ func (h *DocumentHandler) RestartEnrichment(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, utils.MessageResponse("service.restart_enrichment.success"))
+}
+
+func (h *DocumentHandler) SearchDocuments(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
+		return
+	}
+
+	var q dto.SearchDocumentsQuery
+	if err := c.ShouldBindQuery(&q); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	resp, err := h.documentService.SearchDocuments(c.Request.Context(), userID, q)
+	if err != nil {
+		slog.Error("SearchDocuments service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.search_documents.failed")))
+		return
+	}
+	c.JSON(http.StatusOK, resp)
 }

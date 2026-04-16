@@ -69,6 +69,26 @@ type TranslateSummaryRequest struct {
 	TargetLanguage string `json:"target_language" binding:"required"`
 }
 
+type SearchDocumentsQuery struct {
+	Query string `form:"query" binding:"required,min=1,max=500"`
+	LabID uint   `form:"lab_id"`
+	Limit int    `form:"limit" binding:"omitempty,min=1,max=50"`
+}
+
+type SearchResultItem struct {
+	DocID            uint     `json:"doc_id"`
+	Title            string   `json:"title"`
+	OriginalFileName string   `json:"original_file_name"`
+	Summary          string   `json:"summary"`
+	Authors          []string `json:"authors"`
+	Tags             []string `json:"tags"`
+	Similarity       float64  `json:"similarity"`
+}
+
+type SearchDocumentsResponse struct {
+	Results []SearchResultItem `json:"results"`
+}
+
 type DocumentResponse struct {
 	ID               uint      `json:"id"`
 	Title            *string   `json:"title"`
