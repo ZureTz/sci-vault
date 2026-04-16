@@ -19,8 +19,6 @@
 		Pencil
 	} from 'lucide-svelte';
 
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import * as Card from '$lib/components/ui/card';
 	import * as Select from '$lib/components/ui/select';
@@ -206,7 +204,7 @@
 <div class="mx-auto w-full max-w-6xl space-y-6">
 	<!-- Actions Bar -->
 	<div class="flex items-center justify-between">
-		<Button variant="ghost" size="sm" onclick={() => goto(resolve('/documents/mine'))}>
+		<Button variant="ghost" size="sm" onclick={() => history.back()}>
 			<ArrowLeft class="mr-2 h-4 w-4" />
 			{$_('document.detail.back')}
 		</Button>

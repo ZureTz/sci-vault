@@ -9,6 +9,7 @@
 		FlaskConical,
 		LogOut,
 		Plus,
+		Search,
 		Settings,
 		Upload,
 		User,
@@ -254,6 +255,26 @@
 	</Sidebar.Header>
 
 	<Sidebar.Content>
+		<!-- Search — standalone, spans all scopes -->
+		<Sidebar.Group>
+			<Sidebar.GroupContent>
+				<Sidebar.Menu>
+					<Sidebar.MenuItem>
+						<Sidebar.MenuButton isActive={page.url.pathname === resolve('/search')}>
+							{#snippet child({ props })}
+								<a href={resolve('/search')} {...props}>
+									<Search />
+									<span>{$_('sidebar.search')}</span>
+								</a>
+							{/snippet}
+						</Sidebar.MenuButton>
+					</Sidebar.MenuItem>
+				</Sidebar.Menu>
+			</Sidebar.GroupContent>
+		</Sidebar.Group>
+
+		<Sidebar.Separator />
+
 		<!-- Lab / workspace-level navigation -->
 		<Sidebar.Group>
 			<Sidebar.GroupLabel>{$_('sidebar.workspace')}</Sidebar.GroupLabel>

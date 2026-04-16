@@ -29,6 +29,7 @@
 		"no_labs_hint": "Join or create a lab",
 		"no_labs_desc": "Join an existing lab with an invite code, or create your own.",
 		"members": "members",
+		"search": "Search",
 		"lab_members": "Members",
 		"lab_settings": "Lab Settings",
 		"account": "Account",
@@ -48,6 +49,7 @@
 		"labs": "Labs",
 		"create_lab": "Create Lab",
 		"join_lab": "Join Lab",
+		"search": "Search",
 		"lab_members": "Members",
 		"lab_settings": "Lab Settings",
 		"toggle_menu": "Toggle menu",
@@ -200,6 +202,20 @@
 				"failed": "Failed to upload document, please try again"
 			}
 		}
+	},
+	"search": {
+		"title": "Semantic Search",
+		"description": "Search across your documents using natural language.",
+		"placeholder": "Describe what you're looking for...",
+		"submit": "Search",
+		"searching": "Searching...",
+		"no_results": "No results found",
+		"no_results_hint": "Try different keywords or check that your documents have been enriched.",
+		"result_count": "{count} result(s) found",
+		"similarity": "Relevance",
+		"no_lab_hint": "Select a lab from the sidebar to include lab documents in search results.",
+		"lab_scope": "Including documents from: {lab}",
+		"view": "View"
 	},
 	"service": {
 		"internal": {

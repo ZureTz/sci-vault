@@ -29,6 +29,7 @@
 		"no_labs_hint": "加入或创建实验室",
 		"no_labs_desc": "使用邀请码加入现有实验室，或创建您自己的实验室。",
 		"members": "名成员",
+		"search": "语义搜索",
 		"lab_members": "成员管理",
 		"lab_settings": "实验室设置",
 		"account": "账户",
@@ -48,6 +49,7 @@
 		"labs": "实验室",
 		"create_lab": "创建实验室",
 		"join_lab": "加入实验室",
+		"search": "语义搜索",
 		"lab_members": "成员管理",
 		"lab_settings": "实验室设置",
 		"toggle_menu": "切换菜单",
@@ -199,6 +201,20 @@
 				"failed": "文献上传失败，请稍后重试"
 			}
 		}
+	},
+	"search": {
+		"title": "语义搜索",
+		"description": "使用自然语言搜索您的文献。",
+		"placeholder": "描述您想要查找的内容...",
+		"submit": "搜索",
+		"searching": "搜索中...",
+		"no_results": "未找到结果",
+		"no_results_hint": "请尝试不同的关键词，或确认您的文献已完成数据丰富处理。",
+		"result_count": "找到 {count} 条结果",
+		"similarity": "相关度",
+		"no_lab_hint": "在侧边栏选择一个实验室，可将实验室文献纳入搜索范围。",
+		"lab_scope": "搜索范围包含：{lab}",
+		"view": "查看"
 	},
 	"service": {
 		"internal": {

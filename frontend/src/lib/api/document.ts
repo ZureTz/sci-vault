@@ -72,6 +72,20 @@ export interface BatchUpdateVisibilityResponse {
 	updated: number;
 }
 
+export interface SearchResultItem {
+	doc_id: number;
+	title: string;
+	original_file_name: string;
+	summary: string;
+	authors: string[];
+	tags: string[];
+	similarity: number;
+}
+
+export interface SearchDocumentsResponse {
+	results: SearchResultItem[];
+}
+
 const documentApi = {
 	listMyDocuments(page = 1, pageSize = 20): Promise<ListDocumentsResponse> {
 		return request.get<ListDocumentsResponse>('/docs/mine', {
@@ -137,6 +151,13 @@ const documentApi = {
 			'/docs/visibility/batch',
 			data
 		) as unknown as Promise<BatchUpdateVisibilityResponse>;
+	},
+
+	searchDocuments(query: string, labId?: number, limit?: number): Promise<SearchDocumentsResponse> {
+		return request.get<SearchDocumentsResponse>('/docs/search', {
+			params: { query, lab_id: labId || undefined, limit: limit || undefined },
+			timeout: 30000
+		}) as unknown as Promise<SearchDocumentsResponse>;
 	}
 };
 
