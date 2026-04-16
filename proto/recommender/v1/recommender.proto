@@ -18,7 +18,11 @@ service RecommenderService {
   // streaming back translated chunks as they are generated.
   rpc TranslateText(TranslateTextRequest) returns (stream TranslateTextResponse);
 
-  // TODO: Add more RPCs for other recommendation features, e.g. SemanticSearch.
+  // SemanticSearch embeds the query text (RETRIEVAL_QUERY task type) and
+  // searches for similar documents in the vector space (cosine similarity).
+  // Access control is enforced: only private docs owned by the user and
+  // lab-visible docs in the given lab are considered.
+  rpc SemanticSearch(SemanticSearchRequest) returns (SemanticSearchResponse);
 }
 
 // HealthRequest is an empty message used for health check requests.
@@ -58,4 +62,33 @@ message TranslateTextRequest {
 message TranslateTextResponse {
   // chunk is a piece of the translated text.
   string chunk = 1;
+}
+
+// SemanticSearchRequest carries the query and scope for vector similarity search.
+message SemanticSearchRequest {
+  // query is the natural-language search text to embed with RETRIEVAL_QUERY.
+  string query = 1;
+  // user_id of the requesting user (for access control on private docs).
+  uint64 user_id = 2;
+  // lab_id to include lab-visible documents. 0 means private-only search.
+  uint64 lab_id = 3;
+  // limit is the maximum number of results to return (default: 10, max: 50).
+  uint32 limit = 4;
+}
+
+// SearchResult is a single document returned by semantic search.
+message SearchResult {
+  uint64 doc_id = 1;
+  string title = 2;
+  string original_file_name = 3;
+  string summary = 4;
+  repeated string authors = 5;
+  repeated string tags = 6;
+  // similarity is 1 - cosine_distance, i.e. higher = more similar.
+  double similarity = 7;
+}
+
+// SemanticSearchResponse wraps the list of search results.
+message SemanticSearchResponse {
+  repeated SearchResult results = 1;
 }
