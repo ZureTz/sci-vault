@@ -10,6 +10,9 @@
     "pgvector",
     "psycopg",
     "pyyaml",
+    "tsquery",
+    "tsvec",
+    "tsvector",
     "vertexai"
   ]
 }

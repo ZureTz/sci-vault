@@ -214,7 +214,9 @@
 		"similarity": "相关度",
 		"no_lab_hint": "在侧边栏选择一个实验室，可将实验室文献纳入搜索范围。",
 		"lab_scope": "搜索范围包含：{lab}",
-		"view": "查看"
+		"view": "查看",
+		"match_semantic": "语义匹配",
+		"match_keyword": "关键词匹配"
 	},
 	"service": {
 		"internal": {

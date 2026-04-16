@@ -72,6 +72,15 @@ export interface BatchUpdateVisibilityResponse {
 	updated: number;
 }
 
+// MatchType mirrors the proto MatchType enum.
+export const MatchType = {
+	UNSPECIFIED: 0,
+	SEMANTIC: 1,
+	KEYWORD: 2
+} as const;
+
+export type MatchTypeValue = (typeof MatchType)[keyof typeof MatchType];
+
 export interface SearchResultItem {
 	doc_id: number;
 	title: string;
@@ -80,6 +89,7 @@ export interface SearchResultItem {
 	authors: string[];
 	tags: string[];
 	similarity: number;
+	match_type: MatchTypeValue;
 }
 
 export interface SearchDocumentsResponse {

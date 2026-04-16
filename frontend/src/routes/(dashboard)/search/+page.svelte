@@ -8,7 +8,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import documentApi from '$lib/api/document';
+	import documentApi, { MatchType } from '$lib/api/document';
 	import { getActiveLab } from '$lib/stores/lab.svelte';
 	import { getSearchState, setSearchState, setSearchQuery } from '$lib/stores/search.svelte';
 	import { showApiErrors } from '$lib/utils/api-error';
@@ -119,10 +119,29 @@
 									{result.title || result.original_file_name}
 								</Card.Title>
 							</div>
-							<Badge variant="secondary" class="shrink-0">
-								{$_('search.similarity')}
-								{formatSimilarity(result.similarity)}
-							</Badge>
+							<div class="flex shrink-0 items-center gap-1.5">
+								{#if result.match_type === MatchType.KEYWORD}
+									<Badge
+										variant="outline"
+										class="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+									>
+										{$_('search.match_keyword')}
+									</Badge>
+								{:else}
+									<Badge
+										variant="outline"
+										class="border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400"
+									>
+										{$_('search.match_semantic')}
+									</Badge>
+								{/if}
+								{#if result.match_type !== MatchType.KEYWORD}
+									<Badge variant="secondary">
+										{$_('search.similarity')}
+										{formatSimilarity(result.similarity)}
+									</Badge>
+								{/if}
+							</div>
 						</div>
 						{#if result.title}
 							<p class="truncate text-xs text-muted-foreground">{result.original_file_name}</p>

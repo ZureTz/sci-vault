@@ -215,7 +215,9 @@
 		"similarity": "Relevance",
 		"no_lab_hint": "Select a lab from the sidebar to include lab documents in search results.",
 		"lab_scope": "Including documents from: {lab}",
-		"view": "View"
+		"view": "View",
+		"match_semantic": "Semantic",
+		"match_keyword": "Keyword"
 	},
 	"service": {
 		"internal": {
