@@ -295,6 +295,7 @@ func (s *DocumentService) SearchDocuments(ctx context.Context, userID uint, q dt
 			Authors:          r.Authors,
 			Tags:             r.Tags,
 			Similarity:       r.Similarity,
+			MatchType:        int32(r.GetMatchType()),
 		}
 	}
 

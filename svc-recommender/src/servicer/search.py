@@ -75,10 +75,10 @@ class SearchServicer:
                 len(keyword_hits),
             )
 
-        all_hits = vector_hits + keyword_hits
-
-        results = [
-            recommender_pb2.SearchResult(
+        def _to_result(
+            h: SearchHit, match_type: recommender_pb2.MatchType,
+        ) -> recommender_pb2.SearchResult:
+            return recommender_pb2.SearchResult(
                 doc_id=h.doc_id,
                 title=h.title,
                 original_file_name=h.original_file_name,
@@ -86,8 +86,13 @@ class SearchServicer:
                 authors=h.authors,
                 tags=h.tags,
                 similarity=h.similarity,
+                match_type=match_type,
             )
-            for h in all_hits
+
+        results = [
+            _to_result(h, recommender_pb2.MATCH_TYPE_SEMANTIC) for h in vector_hits
+        ] + [
+            _to_result(h, recommender_pb2.MATCH_TYPE_KEYWORD) for h in keyword_hits
         ]
 
         log.info("SemanticSearch: returning %d total results", len(results))

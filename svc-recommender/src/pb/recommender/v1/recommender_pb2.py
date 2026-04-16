@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n recommender/v1/recommender.proto\x12\x0erecommender.v1\"\x0f\n\rHealthRequest\"B\n\x0eHealthResponse\x12\x16\n\x06status\x18\x01 \x01(\tR\x06status\x12\x18\n\x07service\x18\x02 \x01(\tR\x07service\"I\n\x15\x45nrichDocumentRequest\x12\x15\n\x06\x64oc_id\x18\x01 \x01(\x04R\x05\x64ocId\x12\x19\n\x08\x66ile_key\x18\x02 \x01(\tR\x07\x66ileKey\"4\n\x16\x45nrichDocumentResponse\x12\x1a\n\x08\x61\x63\x63\x65pted\x18\x01 \x01(\x08R\x08\x61\x63\x63\x65pted\"S\n\x14TranslateTextRequest\x12\x12\n\x04text\x18\x01 \x01(\tR\x04text\x12\'\n\x0ftarget_language\x18\x02 \x01(\tR\x0etargetLanguage\"-\n\x15TranslateTextResponse\x12\x14\n\x05\x63hunk\x18\x01 \x01(\tR\x05\x63hunk\"s\n\x15SemanticSearchRequest\x12\x14\n\x05query\x18\x01 \x01(\tR\x05query\x12\x17\n\x07user_id\x18\x02 \x01(\x04R\x06userId\x12\x15\n\x06lab_id\x18\x03 \x01(\x04R\x05labId\x12\x14\n\x05limit\x18\x04 \x01(\rR\x05limit\"\xd1\x01\n\x0cSearchResult\x12\x15\n\x06\x64oc_id\x18\x01 \x01(\x04R\x05\x64ocId\x12\x14\n\x05title\x18\x02 \x01(\tR\x05title\x12,\n\x12original_file_name\x18\x03 \x01(\tR\x10originalFileName\x12\x18\n\x07summary\x18\x04 \x01(\tR\x07summary\x12\x18\n\x07\x61uthors\x18\x05 \x03(\tR\x07\x61uthors\x12\x12\n\x04tags\x18\x06 \x03(\tR\x04tags\x12\x1e\n\nsimilarity\x18\x07 \x01(\x01R\nsimilarity\"P\n\x16SemanticSearchResponse\x12\x36\n\x07results\x18\x01 \x03(\x0b\x32\x1c.recommender.v1.SearchResultR\x07results2\xff\x02\n\x12RecommenderService\x12G\n\x06Health\x12\x1d.recommender.v1.HealthRequest\x1a\x1e.recommender.v1.HealthResponse\x12_\n\x0e\x45nrichDocument\x12%.recommender.v1.EnrichDocumentRequest\x1a&.recommender.v1.EnrichDocumentResponse\x12^\n\rTranslateText\x12$.recommender.v1.TranslateTextRequest\x1a%.recommender.v1.TranslateTextResponse0\x01\x12_\n\x0eSemanticSearch\x12%.recommender.v1.SemanticSearchRequest\x1a&.recommender.v1.SemanticSearchResponseB!Z\x1fgateway/internal/pb/recommenderb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n recommender/v1/recommender.proto\x12\x0erecommender.v1\"\x0f\n\rHealthRequest\"B\n\x0eHealthResponse\x12\x16\n\x06status\x18\x01 \x01(\tR\x06status\x12\x18\n\x07service\x18\x02 \x01(\tR\x07service\"I\n\x15\x45nrichDocumentRequest\x12\x15\n\x06\x64oc_id\x18\x01 \x01(\x04R\x05\x64ocId\x12\x19\n\x08\x66ile_key\x18\x02 \x01(\tR\x07\x66ileKey\"4\n\x16\x45nrichDocumentResponse\x12\x1a\n\x08\x61\x63\x63\x65pted\x18\x01 \x01(\x08R\x08\x61\x63\x63\x65pted\"S\n\x14TranslateTextRequest\x12\x12\n\x04text\x18\x01 \x01(\tR\x04text\x12\'\n\x0ftarget_language\x18\x02 \x01(\tR\x0etargetLanguage\"-\n\x15TranslateTextResponse\x12\x14\n\x05\x63hunk\x18\x01 \x01(\tR\x05\x63hunk\"s\n\x15SemanticSearchRequest\x12\x14\n\x05query\x18\x01 \x01(\tR\x05query\x12\x17\n\x07user_id\x18\x02 \x01(\x04R\x06userId\x12\x15\n\x06lab_id\x18\x03 \x01(\x04R\x05labId\x12\x14\n\x05limit\x18\x04 \x01(\rR\x05limit\"\x8b\x02\n\x0cSearchResult\x12\x15\n\x06\x64oc_id\x18\x01 \x01(\x04R\x05\x64ocId\x12\x14\n\x05title\x18\x02 \x01(\tR\x05title\x12,\n\x12original_file_name\x18\x03 \x01(\tR\x10originalFileName\x12\x18\n\x07summary\x18\x04 \x01(\tR\x07summary\x12\x18\n\x07\x61uthors\x18\x05 \x03(\tR\x07\x61uthors\x12\x12\n\x04tags\x18\x06 \x03(\tR\x04tags\x12\x1e\n\nsimilarity\x18\x07 \x01(\x01R\nsimilarity\x12\x38\n\nmatch_type\x18\x08 \x01(\x0e\x32\x19.recommender.v1.MatchTypeR\tmatchType\"P\n\x16SemanticSearchResponse\x12\x36\n\x07results\x18\x01 \x03(\x0b\x32\x1c.recommender.v1.SearchResultR\x07results*X\n\tMatchType\x12\x1a\n\x16MATCH_TYPE_UNSPECIFIED\x10\x00\x12\x17\n\x13MATCH_TYPE_SEMANTIC\x10\x01\x12\x16\n\x12MATCH_TYPE_KEYWORD\x10\x02\x32\xff\x02\n\x12RecommenderService\x12G\n\x06Health\x12\x1d.recommender.v1.HealthRequest\x1a\x1e.recommender.v1.HealthResponse\x12_\n\x0e\x45nrichDocument\x12%.recommender.v1.EnrichDocumentRequest\x1a&.recommender.v1.EnrichDocumentResponse\x12^\n\rTranslateText\x12$.recommender.v1.TranslateTextRequest\x1a%.recommender.v1.TranslateTextResponse0\x01\x12_\n\x0eSemanticSearch\x12%.recommender.v1.SemanticSearchRequest\x1a&.recommender.v1.SemanticSearchResponseB!Z\x1fgateway/internal/pb/recommenderb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,6 +32,8 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'recommender.v1.recommender_
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z\037gateway/internal/pb/recommender'
+  _globals['_MATCHTYPE']._serialized_start=867
+  _globals['_MATCHTYPE']._serialized_end=955
   _globals['_HEALTHREQUEST']._serialized_start=52
   _globals['_HEALTHREQUEST']._serialized_end=67
   _globals['_HEALTHRESPONSE']._serialized_start=69
@@ -47,9 +49,9 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SEMANTICSEARCHREQUEST']._serialized_start=398
   _globals['_SEMANTICSEARCHREQUEST']._serialized_end=513
   _globals['_SEARCHRESULT']._serialized_start=516
-  _globals['_SEARCHRESULT']._serialized_end=725
-  _globals['_SEMANTICSEARCHRESPONSE']._serialized_start=727
-  _globals['_SEMANTICSEARCHRESPONSE']._serialized_end=807
-  _globals['_RECOMMENDERSERVICE']._serialized_start=810
-  _globals['_RECOMMENDERSERVICE']._serialized_end=1193
+  _globals['_SEARCHRESULT']._serialized_end=783
+  _globals['_SEMANTICSEARCHRESPONSE']._serialized_start=785
+  _globals['_SEMANTICSEARCHRESPONSE']._serialized_end=865
+  _globals['_RECOMMENDERSERVICE']._serialized_start=958
+  _globals['_RECOMMENDERSERVICE']._serialized_end=1341
 # @@protoc_insertion_point(module_scope)

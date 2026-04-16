@@ -83,6 +83,7 @@ type SearchResultItem struct {
 	Authors          []string `json:"authors"`
 	Tags             []string `json:"tags"`
 	Similarity       float64  `json:"similarity"`
+	MatchType        int32    `json:"match_type"`
 }
 
 type SearchDocumentsResponse struct {

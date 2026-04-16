@@ -21,6 +21,58 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// MatchType indicates how a search result was found.
+type MatchType int32
+
+const (
+	MatchType_MATCH_TYPE_UNSPECIFIED MatchType = 0
+	// MATCH_TYPE_SEMANTIC — matched via vector cosine similarity.
+	MatchType_MATCH_TYPE_SEMANTIC MatchType = 1
+	// MATCH_TYPE_KEYWORD — matched via full-text keyword search.
+	MatchType_MATCH_TYPE_KEYWORD MatchType = 2
+)
+
+// Enum value maps for MatchType.
+var (
+	MatchType_name = map[int32]string{
+		0: "MATCH_TYPE_UNSPECIFIED",
+		1: "MATCH_TYPE_SEMANTIC",
+		2: "MATCH_TYPE_KEYWORD",
+	}
+	MatchType_value = map[string]int32{
+		"MATCH_TYPE_UNSPECIFIED": 0,
+		"MATCH_TYPE_SEMANTIC":    1,
+		"MATCH_TYPE_KEYWORD":     2,
+	}
+)
+
+func (x MatchType) Enum() *MatchType {
+	p := new(MatchType)
+	*p = x
+	return p
+}
+
+func (x MatchType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MatchType) Descriptor() protoreflect.EnumDescriptor {
+	return file_recommender_v1_recommender_proto_enumTypes[0].Descriptor()
+}
+
+func (MatchType) Type() protoreflect.EnumType {
+	return &file_recommender_v1_recommender_proto_enumTypes[0]
+}
+
+func (x MatchType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MatchType.Descriptor instead.
+func (MatchType) EnumDescriptor() ([]byte, []int) {
+	return file_recommender_v1_recommender_proto_rawDescGZIP(), []int{0}
+}
+
 // HealthRequest is an empty message used for health check requests.
 type HealthRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -398,7 +450,9 @@ type SearchResult struct {
 	Authors          []string               `protobuf:"bytes,5,rep,name=authors,proto3" json:"authors,omitempty"`
 	Tags             []string               `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty"`
 	// similarity is 1 - cosine_distance, i.e. higher = more similar.
-	Similarity    float64 `protobuf:"fixed64,7,opt,name=similarity,proto3" json:"similarity,omitempty"`
+	Similarity float64 `protobuf:"fixed64,7,opt,name=similarity,proto3" json:"similarity,omitempty"`
+	// match_type indicates whether this result came from vector or keyword search.
+	MatchType     MatchType `protobuf:"varint,8,opt,name=match_type,json=matchType,proto3,enum=recommender.v1.MatchType" json:"match_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -482,6 +536,13 @@ func (x *SearchResult) GetSimilarity() float64 {
 	return 0
 }
 
+func (x *SearchResult) GetMatchType() MatchType {
+	if x != nil {
+		return x.MatchType
+	}
+	return MatchType_MATCH_TYPE_UNSPECIFIED
+}
+
 // SemanticSearchResponse wraps the list of search results.
 type SemanticSearchResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -550,7 +611,7 @@ const file_recommender_v1_recommender_proto_rawDesc = "" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x04R\x06userId\x12\x15\n" +
 	"\x06lab_id\x18\x03 \x01(\x04R\x05labId\x12\x14\n" +
-	"\x05limit\x18\x04 \x01(\rR\x05limit\"\xd1\x01\n" +
+	"\x05limit\x18\x04 \x01(\rR\x05limit\"\x8b\x02\n" +
 	"\fSearchResult\x12\x15\n" +
 	"\x06doc_id\x18\x01 \x01(\x04R\x05docId\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12,\n" +
@@ -560,9 +621,15 @@ const file_recommender_v1_recommender_proto_rawDesc = "" +
 	"\x04tags\x18\x06 \x03(\tR\x04tags\x12\x1e\n" +
 	"\n" +
 	"similarity\x18\a \x01(\x01R\n" +
-	"similarity\"P\n" +
+	"similarity\x128\n" +
+	"\n" +
+	"match_type\x18\b \x01(\x0e2\x19.recommender.v1.MatchTypeR\tmatchType\"P\n" +
 	"\x16SemanticSearchResponse\x126\n" +
-	"\aresults\x18\x01 \x03(\v2\x1c.recommender.v1.SearchResultR\aresults2\xff\x02\n" +
+	"\aresults\x18\x01 \x03(\v2\x1c.recommender.v1.SearchResultR\aresults*X\n" +
+	"\tMatchType\x12\x1a\n" +
+	"\x16MATCH_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
+	"\x13MATCH_TYPE_SEMANTIC\x10\x01\x12\x16\n" +
+	"\x12MATCH_TYPE_KEYWORD\x10\x022\xff\x02\n" +
 	"\x12RecommenderService\x12G\n" +
 	"\x06Health\x12\x1d.recommender.v1.HealthRequest\x1a\x1e.recommender.v1.HealthResponse\x12_\n" +
 	"\x0eEnrichDocument\x12%.recommender.v1.EnrichDocumentRequest\x1a&.recommender.v1.EnrichDocumentResponse\x12^\n" +
@@ -581,33 +648,36 @@ func file_recommender_v1_recommender_proto_rawDescGZIP() []byte {
 	return file_recommender_v1_recommender_proto_rawDescData
 }
 
+var file_recommender_v1_recommender_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_recommender_v1_recommender_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_recommender_v1_recommender_proto_goTypes = []any{
-	(*HealthRequest)(nil),          // 0: recommender.v1.HealthRequest
-	(*HealthResponse)(nil),         // 1: recommender.v1.HealthResponse
-	(*EnrichDocumentRequest)(nil),  // 2: recommender.v1.EnrichDocumentRequest
-	(*EnrichDocumentResponse)(nil), // 3: recommender.v1.EnrichDocumentResponse
-	(*TranslateTextRequest)(nil),   // 4: recommender.v1.TranslateTextRequest
-	(*TranslateTextResponse)(nil),  // 5: recommender.v1.TranslateTextResponse
-	(*SemanticSearchRequest)(nil),  // 6: recommender.v1.SemanticSearchRequest
-	(*SearchResult)(nil),           // 7: recommender.v1.SearchResult
-	(*SemanticSearchResponse)(nil), // 8: recommender.v1.SemanticSearchResponse
+	(MatchType)(0),                 // 0: recommender.v1.MatchType
+	(*HealthRequest)(nil),          // 1: recommender.v1.HealthRequest
+	(*HealthResponse)(nil),         // 2: recommender.v1.HealthResponse
+	(*EnrichDocumentRequest)(nil),  // 3: recommender.v1.EnrichDocumentRequest
+	(*EnrichDocumentResponse)(nil), // 4: recommender.v1.EnrichDocumentResponse
+	(*TranslateTextRequest)(nil),   // 5: recommender.v1.TranslateTextRequest
+	(*TranslateTextResponse)(nil),  // 6: recommender.v1.TranslateTextResponse
+	(*SemanticSearchRequest)(nil),  // 7: recommender.v1.SemanticSearchRequest
+	(*SearchResult)(nil),           // 8: recommender.v1.SearchResult
+	(*SemanticSearchResponse)(nil), // 9: recommender.v1.SemanticSearchResponse
 }
 var file_recommender_v1_recommender_proto_depIdxs = []int32{
-	7, // 0: recommender.v1.SemanticSearchResponse.results:type_name -> recommender.v1.SearchResult
-	0, // 1: recommender.v1.RecommenderService.Health:input_type -> recommender.v1.HealthRequest
-	2, // 2: recommender.v1.RecommenderService.EnrichDocument:input_type -> recommender.v1.EnrichDocumentRequest
-	4, // 3: recommender.v1.RecommenderService.TranslateText:input_type -> recommender.v1.TranslateTextRequest
-	6, // 4: recommender.v1.RecommenderService.SemanticSearch:input_type -> recommender.v1.SemanticSearchRequest
-	1, // 5: recommender.v1.RecommenderService.Health:output_type -> recommender.v1.HealthResponse
-	3, // 6: recommender.v1.RecommenderService.EnrichDocument:output_type -> recommender.v1.EnrichDocumentResponse
-	5, // 7: recommender.v1.RecommenderService.TranslateText:output_type -> recommender.v1.TranslateTextResponse
-	8, // 8: recommender.v1.RecommenderService.SemanticSearch:output_type -> recommender.v1.SemanticSearchResponse
-	5, // [5:9] is the sub-list for method output_type
-	1, // [1:5] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // 0: recommender.v1.SearchResult.match_type:type_name -> recommender.v1.MatchType
+	8, // 1: recommender.v1.SemanticSearchResponse.results:type_name -> recommender.v1.SearchResult
+	1, // 2: recommender.v1.RecommenderService.Health:input_type -> recommender.v1.HealthRequest
+	3, // 3: recommender.v1.RecommenderService.EnrichDocument:input_type -> recommender.v1.EnrichDocumentRequest
+	5, // 4: recommender.v1.RecommenderService.TranslateText:input_type -> recommender.v1.TranslateTextRequest
+	7, // 5: recommender.v1.RecommenderService.SemanticSearch:input_type -> recommender.v1.SemanticSearchRequest
+	2, // 6: recommender.v1.RecommenderService.Health:output_type -> recommender.v1.HealthResponse
+	4, // 7: recommender.v1.RecommenderService.EnrichDocument:output_type -> recommender.v1.EnrichDocumentResponse
+	6, // 8: recommender.v1.RecommenderService.TranslateText:output_type -> recommender.v1.TranslateTextResponse
+	9, // 9: recommender.v1.RecommenderService.SemanticSearch:output_type -> recommender.v1.SemanticSearchResponse
+	6, // [6:10] is the sub-list for method output_type
+	2, // [2:6] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_recommender_v1_recommender_proto_init() }
@@ -620,13 +690,14 @@ func file_recommender_v1_recommender_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_recommender_v1_recommender_proto_rawDesc), len(file_recommender_v1_recommender_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_recommender_v1_recommender_proto_goTypes,
 		DependencyIndexes: file_recommender_v1_recommender_proto_depIdxs,
+		EnumInfos:         file_recommender_v1_recommender_proto_enumTypes,
 		MessageInfos:      file_recommender_v1_recommender_proto_msgTypes,
 	}.Build()
 	File_recommender_v1_recommender_proto = out.File

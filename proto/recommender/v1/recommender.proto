@@ -77,6 +77,15 @@ message SemanticSearchRequest {
   uint32 limit = 4;
 }
 
+// MatchType indicates how a search result was found.
+enum MatchType {
+  MATCH_TYPE_UNSPECIFIED = 0;
+  // MATCH_TYPE_SEMANTIC — matched via vector cosine similarity.
+  MATCH_TYPE_SEMANTIC = 1;
+  // MATCH_TYPE_KEYWORD — matched via full-text keyword search.
+  MATCH_TYPE_KEYWORD = 2;
+}
+
 // SearchResult is a single document returned by semantic search.
 message SearchResult {
   uint64 doc_id = 1;
@@ -87,6 +96,8 @@ message SearchResult {
   repeated string tags = 6;
   // similarity is 1 - cosine_distance, i.e. higher = more similar.
   double similarity = 7;
+  // match_type indicates whether this result came from vector or keyword search.
+  MatchType match_type = 8;
 }
 
 // SemanticSearchResponse wraps the list of search results.

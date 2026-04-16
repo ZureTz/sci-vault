@@ -1,10 +1,20 @@
 from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from collections.abc import Iterable as _Iterable, Mapping as _Mapping
 from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
+
+class MatchType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    MATCH_TYPE_UNSPECIFIED: _ClassVar[MatchType]
+    MATCH_TYPE_SEMANTIC: _ClassVar[MatchType]
+    MATCH_TYPE_KEYWORD: _ClassVar[MatchType]
+MATCH_TYPE_UNSPECIFIED: MatchType
+MATCH_TYPE_SEMANTIC: MatchType
+MATCH_TYPE_KEYWORD: MatchType
 
 class HealthRequest(_message.Message):
     __slots__ = ()
@@ -59,7 +69,7 @@ class SemanticSearchRequest(_message.Message):
     def __init__(self, query: _Optional[str] = ..., user_id: _Optional[int] = ..., lab_id: _Optional[int] = ..., limit: _Optional[int] = ...) -> None: ...
 
 class SearchResult(_message.Message):
-    __slots__ = ("doc_id", "title", "original_file_name", "summary", "authors", "tags", "similarity")
+    __slots__ = ("doc_id", "title", "original_file_name", "summary", "authors", "tags", "similarity", "match_type")
     DOC_ID_FIELD_NUMBER: _ClassVar[int]
     TITLE_FIELD_NUMBER: _ClassVar[int]
     ORIGINAL_FILE_NAME_FIELD_NUMBER: _ClassVar[int]
@@ -67,6 +77,7 @@ class SearchResult(_message.Message):
     AUTHORS_FIELD_NUMBER: _ClassVar[int]
     TAGS_FIELD_NUMBER: _ClassVar[int]
     SIMILARITY_FIELD_NUMBER: _ClassVar[int]
+    MATCH_TYPE_FIELD_NUMBER: _ClassVar[int]
     doc_id: int
     title: str
     original_file_name: str
@@ -74,7 +85,8 @@ class SearchResult(_message.Message):
     authors: _containers.RepeatedScalarFieldContainer[str]
     tags: _containers.RepeatedScalarFieldContainer[str]
     similarity: float
-    def __init__(self, doc_id: _Optional[int] = ..., title: _Optional[str] = ..., original_file_name: _Optional[str] = ..., summary: _Optional[str] = ..., authors: _Optional[_Iterable[str]] = ..., tags: _Optional[_Iterable[str]] = ..., similarity: _Optional[float] = ...) -> None: ...
+    match_type: MatchType
+    def __init__(self, doc_id: _Optional[int] = ..., title: _Optional[str] = ..., original_file_name: _Optional[str] = ..., summary: _Optional[str] = ..., authors: _Optional[_Iterable[str]] = ..., tags: _Optional[_Iterable[str]] = ..., similarity: _Optional[float] = ..., match_type: _Optional[_Union[MatchType, str]] = ...) -> None: ...
 
 class SemanticSearchResponse(_message.Message):
     __slots__ = ("results",)
