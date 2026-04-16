@@ -216,7 +216,9 @@
 		"lab_scope": "搜索范围包含：{lab}",
 		"view": "查看",
 		"match_semantic": "语义匹配",
-		"match_keyword": "关键词匹配"
+		"match_keyword": "关键词匹配",
+		"more": "更多",
+		"show_less": "收起"
 	},
 	"service": {
 		"internal": {

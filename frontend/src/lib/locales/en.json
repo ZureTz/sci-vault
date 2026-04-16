@@ -217,7 +217,9 @@
 		"lab_scope": "Including documents from: {lab}",
 		"view": "View",
 		"match_semantic": "Semantic",
-		"match_keyword": "Keyword"
+		"match_keyword": "Keyword",
+		"more": "more",
+		"show_less": "Show less"
 	},
 	"service": {
 		"internal": {

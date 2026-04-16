@@ -8,13 +8,16 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import documentApi, { MatchType } from '$lib/api/document';
 	import { getActiveLab } from '$lib/stores/lab.svelte';
 	import { getSearchState, setSearchState, setSearchQuery } from '$lib/stores/search.svelte';
 	import { showApiErrors } from '$lib/utils/api-error';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	let searchState = getSearchState();
 	let isSearching = $state(false);
+	let expandedTags = new SvelteSet<number>();
 
 	let activeLab = $derived(getActiveLab());
 
@@ -37,6 +40,15 @@
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter') {
 			handleSearch();
+		}
+	}
+
+	function toggleTags(docId: number, e: MouseEvent) {
+		e.stopPropagation();
+		if (expandedTags.has(docId)) {
+			expandedTags.delete(docId);
+		} else {
+			expandedTags.add(docId);
 		}
 	}
 
@@ -91,9 +103,45 @@
 
 	<!-- Results -->
 	{#if isSearching}
-		<div class="flex flex-col items-center justify-center gap-3 py-16">
-			<LoaderCircle class="size-8 animate-spin text-muted-foreground" />
-			<p class="text-sm text-muted-foreground">{$_('search.searching')}</p>
+		<div class="relative flex flex-col gap-3">
+			<div
+				class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/40 backdrop-blur-[2px]"
+			>
+				<div class="flex items-center gap-3 rounded-lg border bg-background px-5 py-3 shadow-lg">
+					<LoaderCircle class="size-5 animate-spin text-primary" />
+					<p class="text-sm font-medium">{$_('search.searching')}</p>
+				</div>
+			</div>
+			{#each Array(3).keys() as index (index)}
+				<Card.Root>
+					<Card.Header class="pb-2">
+						<div
+							class="flex min-w-0 flex-col gap-2 overflow-hidden sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+						>
+							<div class="flex min-w-0 items-center gap-2 overflow-hidden">
+								<Skeleton class="size-5 shrink-0 rounded-full" />
+								<Skeleton class="h-6 w-3/4 max-w-100" />
+							</div>
+							<div class="flex shrink-0 items-center gap-1.5">
+								<Skeleton class="h-5 w-24" />
+								<Skeleton class="h-5 w-16" />
+							</div>
+						</div>
+						<Skeleton class="mt-2 h-4 w-1/4 max-w-50" />
+					</Card.Header>
+					<Card.Content class="pb-3">
+						<div class="flex flex-col gap-2">
+							<Skeleton class="h-4 w-full" />
+							<Skeleton class="h-4 w-5/6" />
+						</div>
+						<div class="mt-4 flex flex-wrap items-center gap-2">
+							<Skeleton class="h-5 w-24" />
+							<Skeleton class="h-5 w-16" />
+							<Skeleton class="h-5 w-16" />
+						</div>
+					</Card.Content>
+				</Card.Root>
+			{/each}
 		</div>
 	{:else if searchState.hasSearched && searchState.results.length === 0}
 		<div class="flex flex-col items-center justify-center gap-2 py-16 text-center">
@@ -112,14 +160,19 @@
 					onclick={() => goto(resolve(`/documents/${result.doc_id}`))}
 				>
 					<Card.Header class="pb-2">
-						<div class="flex items-start justify-between gap-4">
-							<div class="flex min-w-0 items-center gap-2">
+						<div
+							class="flex min-w-0 flex-col gap-2 overflow-hidden sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+						>
+							<div class="flex min-w-0 items-center gap-2 overflow-hidden">
 								<FileText class="size-5 shrink-0 text-primary" />
-								<Card.Title class="truncate text-base">
+								<Card.Title
+									class="truncate text-base"
+									title={result.title || result.original_file_name}
+								>
 									{result.title || result.original_file_name}
 								</Card.Title>
 							</div>
-							<div class="flex shrink-0 items-center gap-1.5">
+							<div class="flex shrink-0 flex-wrap items-center gap-1.5">
 								{#if result.match_type === MatchType.KEYWORD}
 									<Badge
 										variant="outline"
@@ -144,7 +197,9 @@
 							</div>
 						</div>
 						{#if result.title}
-							<p class="truncate text-xs text-muted-foreground">{result.original_file_name}</p>
+							<p class="min-w-0 truncate text-xs text-muted-foreground">
+								{result.original_file_name}
+							</p>
 						{/if}
 					</Card.Header>
 					<Card.Content class="pb-3">
@@ -159,15 +214,31 @@
 								</div>
 							{/if}
 							{#if result.tags && result.tags.length > 0}
-								<div class="flex items-center gap-1">
-									<Tag class="size-3 text-muted-foreground" />
-									{#each result.tags.slice(0, 5) as tag (tag)}
-										<Badge variant="outline" class="text-xs">{tag}</Badge>
-									{/each}
-									{#if result.tags.length > 5}
-										<span class="text-xs text-muted-foreground">
-											+{result.tags.length - 5}
-										</span>
+								<div class="mt-1 flex flex-wrap items-center gap-1.5 sm:mt-0">
+									<Tag class="mr-1 size-3 text-muted-foreground" />
+									{#if expandedTags.has(result.doc_id)}
+										{#each result.tags as tag (tag)}
+											<Badge variant="outline" class="text-xs">{tag}</Badge>
+										{/each}
+										<button
+											class="ml-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+											onclick={(e) => toggleTags(result.doc_id, e)}
+										>
+											{$_('search.show_less', { default: 'Show less' })}
+										</button>
+									{:else}
+										{#each result.tags.slice(0, 5) as tag (tag)}
+											<Badge variant="outline" class="text-xs">{tag}</Badge>
+										{/each}
+										{#if result.tags.length > 5}
+											<button
+												class="ml-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+												onclick={(e) => toggleTags(result.doc_id, e)}
+											>
+												+{result.tags.length - 5}
+												{$_('search.more', { default: 'more' })}
+											</button>
+										{/if}
 									{/if}
 								</div>
 							{/if}
