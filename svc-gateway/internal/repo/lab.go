@@ -133,8 +133,14 @@ func (r *labRepo) TransferOwnership(ctx context.Context, labID, oldOwnerID, newO
 }
 
 // DeleteLab soft-deletes the lab and all its memberships atomically.
+// Associated documents are disassociated (lab_id set to NULL, visibility reset to private).
 func (r *labRepo) DeleteLab(ctx context.Context, labID uint) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.Document{}).
+			Where("lab_id = ?", labID).
+			Updates(map[string]any{"lab_id": nil, "visibility": model.DocVisibilityPrivate}).Error; err != nil {
+			return err
+		}
 		if err := tx.Where("lab_id = ?", labID).Delete(&model.LabMember{}).Error; err != nil {
 			return err
 		}
