@@ -1,6 +1,8 @@
+from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Optional as _Optional
+from collections.abc import Iterable as _Iterable, Mapping as _Mapping
+from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -43,3 +45,39 @@ class TranslateTextResponse(_message.Message):
     CHUNK_FIELD_NUMBER: _ClassVar[int]
     chunk: str
     def __init__(self, chunk: _Optional[str] = ...) -> None: ...
+
+class SemanticSearchRequest(_message.Message):
+    __slots__ = ("query", "user_id", "lab_id", "limit")
+    QUERY_FIELD_NUMBER: _ClassVar[int]
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    LAB_ID_FIELD_NUMBER: _ClassVar[int]
+    LIMIT_FIELD_NUMBER: _ClassVar[int]
+    query: str
+    user_id: int
+    lab_id: int
+    limit: int
+    def __init__(self, query: _Optional[str] = ..., user_id: _Optional[int] = ..., lab_id: _Optional[int] = ..., limit: _Optional[int] = ...) -> None: ...
+
+class SearchResult(_message.Message):
+    __slots__ = ("doc_id", "title", "original_file_name", "summary", "authors", "tags", "similarity")
+    DOC_ID_FIELD_NUMBER: _ClassVar[int]
+    TITLE_FIELD_NUMBER: _ClassVar[int]
+    ORIGINAL_FILE_NAME_FIELD_NUMBER: _ClassVar[int]
+    SUMMARY_FIELD_NUMBER: _ClassVar[int]
+    AUTHORS_FIELD_NUMBER: _ClassVar[int]
+    TAGS_FIELD_NUMBER: _ClassVar[int]
+    SIMILARITY_FIELD_NUMBER: _ClassVar[int]
+    doc_id: int
+    title: str
+    original_file_name: str
+    summary: str
+    authors: _containers.RepeatedScalarFieldContainer[str]
+    tags: _containers.RepeatedScalarFieldContainer[str]
+    similarity: float
+    def __init__(self, doc_id: _Optional[int] = ..., title: _Optional[str] = ..., original_file_name: _Optional[str] = ..., summary: _Optional[str] = ..., authors: _Optional[_Iterable[str]] = ..., tags: _Optional[_Iterable[str]] = ..., similarity: _Optional[float] = ...) -> None: ...
+
+class SemanticSearchResponse(_message.Message):
+    __slots__ = ("results",)
+    RESULTS_FIELD_NUMBER: _ClassVar[int]
+    results: _containers.RepeatedCompositeFieldContainer[SearchResult]
+    def __init__(self, results: _Optional[_Iterable[_Union[SearchResult, _Mapping]]] = ...) -> None: ...
