@@ -1,48 +1,71 @@
 # sci-vault
 
-`sci-vault` is an AI-powered collaborative platform for intelligent management and discovery of laboratory research data. The system leverages modern microservices architecture with gRPC communication, embedding-based recommendations, and vector search capabilities to provide researchers with powerful tools for data exploration and insight extraction.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Go Version](https://img.shields.io/badge/Go-1.26-blue?logo=go)](https://go.dev/)
+[![Python Version](https://img.shields.io/badge/Python-3.14-blue?logo=python)](https://www.python.org/)
+[![Svelte Version](https://img.shields.io/badge/Svelte-5-FF3E00?logo=svelte)](https://svelte.dev/)
+[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://docs.docker.com/compose/)
 
-## Overview
+AI-powered collaborative platform for research data management and discovery. Built on modern microservices architecture with gRPC communication, vector embeddings, and semantic search capabilities.
 
-This monorepo contains a complete microservices-based application for research data management:
+## Features
 
-- **svc-gateway**: REST API gateway built with Go and Gin. Handles user authentication (registration, login, email verification, password reset), profile management, avatar uploads, JWT middleware, and routes recommendation requests to `svc-recommender` via gRPC.
-- **svc-recommender**: gRPC-based recommendation engine built with Python, utilizing embedding models and pgvector for intelligent content discovery.
-- **frontend**: Modern SvelteKit (Svelte 5) web application with dark/light theme, i18n support (en / zh-CN), and full integration with the gateway API.
+- **User Management** — Registration, authentication, email verification, password reset with rate limiting
+- **Smart Recommendation Engine** — AI-powered document enrichment via Gemini API and vector embeddings
+- **Vector Search** — pgvector-based semantic search across research documents
+- **Modern UI** — SvelteKit 5 with Tailwind CSS v4, dark/light theme, multi-language support (EN/ZH-CN)
+- **Microservices Architecture** — Scalable service design with gRPC inter-service communication
+- **Cloud Storage** — S3-compatible object storage via RustFS
+- **Caching & Rate Limiting** — Redis-backed rate limits and session management
 
-## Technology Stack
+## Architecture
 
-| Layer             | Technologies                                                                  |
-| ----------------- | ----------------------------------------------------------------------------- |
-| **Gateway**       | Go 1.26, Gin, GORM, Viper, JWT, Redis, AWS SDK v2 (S3-compatible RustFS), gomail |
-| **Recommender**   | Python 3.14, gRPC (`grpcio`), Google GenAI (Gemini 3 Flash Preview + `gemini-embedding-001`), psycopg, pgvector, Redis |
-| **Frontend**      | SvelteKit 2 (Svelte 5), Vite 8, Tailwind CSS v4, TypeScript, Axios, Bits UI   |
-| **Database**      | PostgreSQL 18 (with pgvector extension)                                        |
-| **Cache**         | Redis 8.6                                                                       |
-| **Storage**       | RustFS 1.0.0-alpha.89 (S3-compatible object storage)                           |
-| **Communication** | gRPC (gateway ↔ recommender), REST/HTTP (frontend ↔ gateway)                  |
-| **Code Gen**      | Buf (Protocol Buffers)                                                          |
+```
+┌─────────────┐
+│   Browser   │
+└──────┬──────┘
+       │ REST/HTTP
+       ▼
+┌──────────────────┐           ┌──────────────────┐
+│  svc-gateway     │──gRPC────▶│ svc-recommender  │
+│   (Go/Gin)       │           │   (Python)       │
+└──────────────────┘           └──────────────────┘
+       │                            │
+       ├─ PostgreSQL 18 ◀────┬─────┤
+       ├─ Redis 8.6 ◀────┬────┤
+       └─ RustFS S3 ◀──┬─┴─┬──┘
+```
 
-## Prerequisites
+## Tech Stack
 
-**For Docker Deployment (Recommended):**
-- [Docker](https://docs.docker.com/get-docker/) with Docker Compose
+| Component   | Technology |
+|-------------|------------|
+| **API Gateway** | [Go 1.26](https://go.dev/) · [Gin](https://gin-gonic.com/) · [GORM](https://gorm.io/) |
+| **Recommender** | [Python 3.14](https://www.python.org/) · [gRPC](https://grpc.io/) · [Google Gemini API](https://ai.google.dev/) |
+| **Frontend** | [SvelteKit 2](https://kit.svelte.dev/) (Svelte 5) · [Tailwind CSS 4](https://tailwindcss.com/) · [Bits UI](https://bits-ui.com/) |
+| **Database** | [PostgreSQL 18](https://www.postgresql.org/) + [pgvector](https://github.com/pgvector/pgvector) |
+| **Cache** | [Redis 8.6](https://redis.io/) |
+| **Storage** | [RustFS](https://www.rustfs.io/) (S3-compatible) |
+| **Code Generation** | [Buf](https://buf.build/) (Protocol Buffers)
 
-**For Manual Local Development:**
-- [Buf](https://buf.build/docs/cli/installation/) — Only needed when `.proto` files are changed
-- [Go](https://go.dev/doc/install) 1.26+ — For the gateway service
-- [Python](https://www.python.org/downloads/) 3.14+ with [uv](https://docs.astral.sh/uv/getting-started/installation/) — For the recommender service
-- [Bun](https://bun.sh/) 1.0+ — For the frontend application
+## Getting Started
 
-## Quick Start Using Docker Compose
+### Prerequisites
 
-> **⚠️ WARNING for Production environments**: The provided `docker-compose.yaml` and default configurations are intended for **local development and testing only**. When deploying to a production environment, you MUST use your own secure parameters, strong passwords, and proper secrets management. It is highly recommended to create and use a dedicated `docker-compose-production.yaml` with hardened configurations.
+**Option 1: Docker (Recommended)** — Simplest, all-in-one setup
+- [Docker](https://docs.docker.com/get-docker/) with [Docker Compose](https://docs.docker.com/compose/install/)
 
-A `docker-compose.yaml` is provided at the root to spin up the entire application (Frontend, Gateway, Recommender) along with all required infrastructure services (PostgreSQL, Redis, RustFS) in one command.
+**Option 2: Local Development** — Run services directly on your machine
+- [Buf CLI](https://buf.build/docs/cli/installation/) — Required only when modifying `.proto` files
+- [Go 1.26+](https://go.dev/doc/install)
+- [Python 3.14+](https://www.python.org/downloads/) with [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- [Bun 1.0+](https://bun.sh/)
 
-*Note: Generated gRPC stubs are committed in this repository. Docker builds no longer generate stubs during image build. Run `buf generate` only when you modify `.proto` files.*
+### Quick Start (Docker)
 
-### 1. Prepare the configuration files for each service:
+> **⚠️ Development Only:** The provided compose file and default configs are **for local development only**. For production, use hardened credentials and secrets management.
+
+**1. Prepare configuration files:**
 
 ```bash
 cp svc-gateway/config.docker.example.yaml svc-gateway/config.docker.yaml
@@ -50,164 +73,158 @@ cp svc-recommender/config.docker.example.yaml svc-recommender/config.docker.yaml
 cp frontend/nginx.example.conf frontend/nginx.conf
 ```
 
-### 2. Open `svc-gateway/config.docker.yaml` and fill in your secrets:
+**2. Update secrets in `svc-gateway/config.docker.yaml`:**
 
-| Field                                       | What to set                                                                                                            |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `database.password`                         | Must match `POSTGRES_PASSWORD` in `docker-compose.yaml`                                                                |
-| `storage.access_key` / `storage.secret_key` | Must match `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` in `docker-compose.yaml` (default: `rustfsadmin` / `rustfsadmin`) |
-| `mailer.username` / `mailer.password`       | Your SMTP credentials                                                                                                  |
-| `jwt.secret`                                | Any strong random string                                                                                               |
+| Field | Source |
+|-------|--------|
+| `database.password` | Must match `POSTGRES_PASSWORD` in `docker-compose.yaml` |
+| `storage.access_key` / `storage.secret_key` | Must match `RUSTFS_*` vars (default: `rustfsadmin` / `rustfsadmin`) |
+| `mailer.username` / `mailer.password` | Your SMTP credentials |
+| `jwt.secret` | Any strong random string |
 
-> **RustFS S3 credentials**: RustFS uses the same `RUSTFS_ACCESS_KEY`/`RUSTFS_SECRET_KEY` values from `docker-compose.yaml` directly as its S3 API credentials — no need to log into the web console to generate separate keys. For local development the defaults (`rustfsadmin` / `rustfsadmin`) work out of the box.
-
-### 3. Run the cluster:
+**3. Launch the stack:**
 
 ```bash
-# For Local Development
 docker compose up -d --build
-
-# For Production (using production-specific config)
-cp docker-compose.yaml docker-compose-production.yaml # If you haven't created one yet
-# Edit docker-compose-production.yaml and svc-gateway/config.docker.yaml with production-grade secrets
-docker compose -f docker-compose-production.yaml up -d --build
 ```
 
-This starts the following containers:
+**4. Access the application:**
 
-| Container               | Service                        | Ports                          |
-| ----------------------- | ------------------------------ | ------------------------------ |
-| `sci-vault-postgres`    | PostgreSQL 18                  | `5432`                         |
-| `sci-vault-redis`       | Redis 8                        | `6379`                         |
-| `sci-vault-rustfs`      | RustFS (S3-compatible storage) | `9000` (API), `9001` (Console) |
-| `sci-vault-recommender` | Recommender (gRPC)             | `50051`                        |
-| `sci-vault-gateway`     | API Gateway (REST)             | `8080`                         |
-| `sci-vault-frontend`    | Frontend Web Client            | `80`                           |
+| Service | Port |
+|---------|-----|
+| Frontend | 80/443 |
+| Gateway API | 8080 |
+| RustFS Console | 9001 |
+| PostgreSQL | `5432` |
+| Redis | `6379` |
 
-> **Updating configuration**: `config.docker.yaml` is mounted into each service container at runtime (not baked into the image). After editing, only a restart is needed — no rebuild:
-> ```bash
-> docker compose restart gateway recommender
-> # or for production:
-> docker compose -f docker-compose-production.yaml restart gateway recommender
-> ```
-
-> **Frontend nginx config**: `frontend/nginx.conf` (copied from `nginx.example.conf`) is mounted at runtime. You can edit it (e.g. tune proxy settings, add security headers) and restart without rebuilding:
-> ```bash
-> docker compose restart frontend
-> ```
-
-> **HTTPS / TLS**: To enable HTTPS for the frontend:
-> 1. Place your certificate and private key at `frontend/ssl/cert.pem` and `frontend/ssl/key.pem`
-> 2. Uncomment the `listen 443 ssl` block and certificate directives in `frontend/nginx.conf`
-> 3. Update the `server_name` in `frontend/nginx.conf` to your actual domain
-> 4. Restart the frontend container: `docker compose restart frontend`
->
-> The `frontend/ssl/` directory is mounted read-only into the container at `/etc/nginx/ssl/`. The directory is git-ignored — never commit your private key.
-
-To stop the infrastructure:
-
+**To stop:**
 ```bash
-# For Local Development
 docker compose down
-
-# For Production
-docker compose -f docker-compose-production.yaml down
 ```
 
-## Manual Local Development
+See [docker-compose.yaml](docker-compose.yaml) for detailed service configuration.
 
-If you prefer to run the services directly on your host machine instead of using Docker, follow these steps.
+### Local Development
 
-### 1. Start Infrastructure Dependencies
-If you prefer to develop services locally while running only the back-end infrastructure (DB, Redis, S3) in Docker:
+For developing individual services while keeping infrastructure in Docker:
 
+**1. Start infrastructure only:**
 ```bash
-docker compose up -d postgres redis rustfs # Add rustfs-volume-helper if first time
+docker compose up -d postgres redis rustfs rustfs-volume-helper
 ```
 
-### 2. Generate gRPC Code (Only If You Changed `.proto`)
-This step is optional unless you changed files in `proto/`. Make sure [Buf](https://buf.build/docs/cli/installation/) is installed.
-
+**2. Generate gRPC stubs (if you modified `.proto`):**
 ```bash
 buf generate
 ```
-**Important:** Re-run this command whenever you modify any `.proto` files in the `proto/` directory.
 
-### 3. Set Up Individual Services
+**3. Run services individually** — see service-specific READMEs:
 
-Each service has its own setup and runtime requirements. Navigate to the respective directories and follow their specific README:
-
-#### svc-gateway (API Gateway)
-
-```bash
-cd svc-gateway
-cp config.example.yaml config.yaml  # then fill in your values
-go mod tidy
-go run .
-```
-
-See [svc-gateway/README.md](./svc-gateway/README.md) for the full configuration reference and API endpoint documentation.
-
-#### svc-recommender (Recommender Engine)
-
-```bash
-cd svc-recommender
-uv sync
-uv run --env-file .env main.py
-```
-
-See [svc-recommender/README.md](./svc-recommender/README.md) for detailed instructions.
-
-#### frontend (Web Client)
-
-```bash
-cd frontend
-bun install
-bun run dev
-```
-
-See [frontend/README.md](./frontend/README.md) for detailed instructions.
+- **[svc-gateway](svc-gateway/README.md)** — REST API, authentication, document management
+- **[svc-recommender](svc-recommender/README.md)** — Embedding generation, vector search, Gemini integration
+- **[frontend](frontend/README.md)** — Web UI development guide
 
 ## Project Structure
 
-```text
+```
 sci-vault/
-├── proto/                  # Protocol buffer definitions for gRPC
-│   └── recommender/        # Recommender service proto
-├── svc-gateway/            # Go-based API gateway
-├── svc-recommender/        # Python-based recommendation engine
-├── frontend/               # SvelteKit web application
-├── docker-compose.yaml     # Infrastructure services (PostgreSQL, Redis, RustFS)
-├── buf.yaml                # Buf configuration for code generation
-├── buf.gen.yaml            # Buf generation settings
-└── README.md               # This file
+├── svc-gateway/              # Go API Gateway service
+│   ├── internal/             # Business logic (handlers, services, repositories)
+│   ├── pkg/                  # Shared packages (auth, storage, cache)
+│   └── config.*.yaml         # Configuration templates
+├── svc-recommender/          # Python gRPC recommender service
+│   ├── src/
+│   │   ├── servicer/         # gRPC service implementation
+│   │   ├── genai/            # Gemini API integration
+│   │   └── repository/       # Database access
+│   └── pyproject.toml        # Python dependencies (uv)
+├── frontend/                 # SvelteKit web application
+│   ├── src/
+│   │   ├── routes/           # Page routes
+│   │   ├── lib/components/   # UI components (shadcn-svelte)
+│   │   └── lib/api/          # API client
+│   └── nginx.conf            # Production web server config
+├── proto/                    # Protocol Buffer definitions
+│   └── recommender/          # Recommender service specs
+├── docker-compose.yaml       # Infrastructure services
+├── buf.yaml & buf.gen.yaml   # Code generation config
+└── README.md
 ```
 
-## Development Workflow
+## Development
 
-1. **Start infrastructure**: `docker compose up -d`
-2. **Update Proto Definitions (optional)**: Only if you modify files in `proto/`, run `buf generate`
-3. **Develop Services**: Make changes to individual service code
-4. **Run Services**: Start `svc-recommender`, `svc-gateway`, and `frontend` independently
+### Common Commands
 
-## Service Communication
-
-```
-Browser
-  │  REST/HTTP
-  ▼
-svc-gateway ──gRPC──► svc-recommender
-  │
-  ├── PostgreSQL  (user data, profiles)
-  ├── Redis       (email verification codes, cache)
-  └── RustFS      (avatar & asset storage)
+**Protocol Buffers** — Only run when modifying `.proto` files:
+```bash
+buf generate
 ```
 
-## Roadmap
+**Gateway** — See [svc-gateway/README.md](svc-gateway/README.md):
+```bash
+cd svc-gateway
+go run .             # Run
+go test ./...        # Test
+go vet ./...         # Lint
+docker build .       # Build image
+```
 
-- Additional recommendation algorithms and personalization features
-- Enhanced CI/CD pipeline with automated testing and building
+**Recommender** — See [svc-recommender/README.md](svc-recommender/README.md):
+```bash
+cd svc-recommender
+uv sync              # Install deps
+uv run main.py       # Run
+uvx ruff check .     # Lint
+docker build .       # Build image
+```
+
+**Frontend** — See [frontend/README.md](frontend/README.md):
+```bash
+cd frontend
+bun install          # Install deps
+bun run dev          # Dev server (localhost:5173)
+bun run build        # Production build
+bun run check        # Type & Svelte validation
+bun run lint         # Format check
+```
+
+### Workflow Tips
+
+1. **Configuration is runtime-mounted** — Edit `config.docker.yaml` and restart without rebuilding:
+   ```bash
+   docker compose restart gateway recommender
+   ```
+
+2. **Frontend nginx config** — Also mounted at runtime:
+   ```bash
+   # Edit frontend/nginx.conf, then:
+   docker compose restart frontend
+   ```
+
+3. **HTTPS/TLS** — Place certs at `frontend/ssl/cert.pem` and `frontend/ssl/key.pem`, uncomment in `nginx.conf`, then restart.
+
+4. **Production deployment** — Copy configs to hardened versions:
+   ```bash
+   cp docker-compose.yaml docker-compose-prod.yaml
+   # Update all secrets in config files
+   docker compose -f docker-compose-prod.yaml up -d --build
+   ```
+
+## Documentation
+
+- **[Gateway API](svc-gateway/README.md)** — Endpoints, authentication, configuration
+- **[Recommender Engine](svc-recommender/README.md)** — Gemini integration, embeddings, gRPC specs
+- **[Frontend](frontend/README.md)** — UI components, SvelteKit setup, i18n
 
 ## License
 
-This project is licensed under the [LICENSE](LICENSE) file in the root directory.
+This project is licensed under the [MIT License](LICENSE).
+
+## Contributors
+
+Thanks to all our contributors! View the [full contributor list](https://github.com/ZureTz/sci-vault/graphs/contributors).
+
+<a href="https://github.com/ZureTz/sci-vault/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=ZureTz/sci-vault" alt="Contributors" />
+</a>
