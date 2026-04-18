@@ -95,4 +95,4 @@ The frontend uses **shadcn-svelte** — a collection of copy-paste, accessible S
 - **Frontend routing**: SvelteKit filesystem routes; `(dashboard)` group layout wraps authenticated pages
 - **Svelte 5 runes**: Use the latest Svelte 5 runes API, not legacy reactive declarations
 - **Validation**: go-playground/validator v10 with custom validators for username/password rules
-- **Vector embeddings**: 1536-dimensional via `gemini-embedding-001`, stored with pgvector HNSW cosine index
+- **Vector embeddings**: 768-dimensional via `gemini-embedding-001`, stored with pgvector HNSW cosine index

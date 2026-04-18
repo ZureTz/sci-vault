@@ -12,7 +12,7 @@ class SearchGenAI:
         self._embedding_client = embedding_client
 
     def embed_query(self, query_text: str) -> np.ndarray:
-        """Compute a 1536-dim query embedding using RETRIEVAL_QUERY task type.
+        """Compute a 768-dim query embedding using RETRIEVAL_QUERY task type.
 
         Per Gemini embedding docs, RETRIEVAL_DOCUMENT is used when storing
         documents and RETRIEVAL_QUERY when searching — this asymmetry
@@ -23,7 +23,7 @@ class SearchGenAI:
             contents=query_text,
             config=types.EmbedContentConfig(
                 task_type="RETRIEVAL_QUERY",
-                output_dimensionality=1536,
+                output_dimensionality=768,
             ),
         )
         if not response.embeddings:
