@@ -29,6 +29,7 @@
 		"no_labs_hint": "Join or create a lab",
 		"no_labs_desc": "Join an existing lab with an invite code, or create your own.",
 		"members": "members",
+		"ai_discovery": "AI Discovery",
 		"search": "Search",
 		"lab_members": "Members",
 		"lab_settings": "Lab Settings",

@@ -257,6 +257,7 @@
 	<Sidebar.Content>
 		<!-- Search — standalone, spans all scopes -->
 		<Sidebar.Group>
+			<Sidebar.GroupLabel>{$_('sidebar.ai_discovery')}</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					<Sidebar.MenuItem>
