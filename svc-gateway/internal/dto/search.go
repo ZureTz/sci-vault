@@ -32,7 +32,7 @@ type SearchHistoryItem struct {
 	Query       string    `json:"query"`
 	LabID       *uint     `json:"lab_id,omitempty"`
 	ResultCount int       `json:"result_count"`
-	CreatedAt   time.Time `json:"created_at"`
+	LastUsedAt  time.Time `json:"last_used_at"`
 }
 
 type ListSearchHistoryResponse struct {
