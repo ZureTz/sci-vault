@@ -163,6 +163,7 @@
 			},
 			"download": "Download",
 			"view": "View",
+			"refresh": "Refresh",
 			"loading": "Loading documents...",
 			"error": "Failed to load documents",
 			"pagination": {

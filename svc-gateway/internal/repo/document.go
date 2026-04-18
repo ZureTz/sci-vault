@@ -50,7 +50,7 @@ func (r *documentRepo) FindByUserID(ctx context.Context, userID uint, offset, li
 	if err := tx.Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
-	err := tx.Preload("Lab").Order("created_at DESC").Offset(offset).Limit(limit).Find(&docs).Error
+	err := tx.Preload("Lab").Order("created_at DESC, id DESC").Offset(offset).Limit(limit).Find(&docs).Error
 	if err != nil {
 		return nil, 0, err
 	}
@@ -111,7 +111,7 @@ func (r *documentRepo) FindByUserIDAndStatus(ctx context.Context, userID uint, s
 	if err := tx.Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
-	err := tx.Preload("Lab").Order("created_at DESC").Offset(offset).Limit(limit).Find(&docs).Error
+	err := tx.Preload("Lab").Order("created_at DESC, id DESC").Offset(offset).Limit(limit).Find(&docs).Error
 	if err != nil {
 		return nil, 0, err
 	}
