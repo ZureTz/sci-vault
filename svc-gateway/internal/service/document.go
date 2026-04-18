@@ -55,6 +55,23 @@ func NewDocumentService(
 	}
 }
 
+// canAccessDocument reports whether userID is allowed to read doc.
+// Access is granted when the user is the uploader, or when the document
+// is lab-visible and the user is a member of that lab.
+func (s *DocumentService) canAccessDocument(ctx context.Context, userID uint, doc *model.Document) (bool, error) {
+	if doc.UploadedByUserID == userID {
+		return true, nil
+	}
+	if doc.Visibility == model.DocVisibilityLab && doc.LabID != nil {
+		if _, err := s.labRepo.FindMember(ctx, *doc.LabID, userID); err == nil {
+			return true, nil
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, err
+		}
+	}
+	return false, nil
+}
+
 // resolveVisibility validates a visibility/labID pair and returns the canonical values to persist.
 // If visibility is "lab", labID must be provided AND the user must be a member of that lab.
 // If visibility is "private", labID is forced to nil.
@@ -147,9 +164,17 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 	return toDocumentResponse(doc, downloadURL), nil
 }
 
-func (s *DocumentService) GetDocument(ctx context.Context, docID uint) (*dto.DocumentResponse, error) {
+func (s *DocumentService) GetDocument(ctx context.Context, userID, docID uint) (*dto.DocumentResponse, error) {
 	doc, err := s.repo.FindByID(ctx, docID)
 	if err != nil {
+		return nil, app_error.ErrDocumentNotFound
+	}
+
+	ok, err := s.canAccessDocument(ctx, userID, &doc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check document access: %w", err)
+	}
+	if !ok {
 		return nil, app_error.ErrDocumentNotFound
 	}
 
@@ -166,23 +191,34 @@ func (s *DocumentService) GetDocument(ctx context.Context, docID uint) (*dto.Doc
 	return toDocumentResponse(&doc, downloadURL), nil
 }
 
-func (s *DocumentService) GetEnrichStatus(ctx context.Context, docID uint) (string, error) {
-	// Fast path: Redis
-	if status, err := s.cacheConn.Get(ctx, enrichStatusKey(docID)); err == nil {
-		return status, nil
-	}
-	// Fallback: DB (handles Redis TTL expiry and cache misses)
+func (s *DocumentService) GetEnrichStatus(ctx context.Context, userID, docID uint) (string, error) {
+	// Authorize against DB — we need the row to check ownership/lab visibility anyway.
 	doc, err := s.repo.FindByID(ctx, docID)
 	if err != nil {
 		return "", app_error.ErrDocumentNotFound
 	}
+	ok, err := s.canAccessDocument(ctx, userID, &doc)
+	if err != nil {
+		return "", fmt.Errorf("failed to check document access: %w", err)
+	}
+	if !ok {
+		return "", app_error.ErrDocumentNotFound
+	}
+
+	// Fast path: Redis
+	if status, err := s.cacheConn.Get(ctx, enrichStatusKey(docID)); err == nil {
+		return status, nil
+	}
 	return doc.EnrichStatus, nil
 }
 
-func (s *DocumentService) RestartEnrichment(ctx context.Context, docID uint) error {
+func (s *DocumentService) RestartEnrichment(ctx context.Context, userID, docID uint) error {
 	doc, err := s.repo.FindByID(ctx, docID)
 	if err != nil {
 		return app_error.ErrDocumentNotFound
+	}
+	if doc.UploadedByUserID != userID {
+		return app_error.ErrNotDocumentOwner
 	}
 
 	// Set the enrichment status in Redis to not_started
