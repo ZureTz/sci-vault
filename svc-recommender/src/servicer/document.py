@@ -20,7 +20,7 @@ _ENRICH_MAX_ATTEMPTS = 3
 _ENRICH_RETRY_BASE_DELAY = 2.0  # seconds; doubles each attempt
 
 _enrichment_executor = concurrent.futures.ThreadPoolExecutor(
-    max_workers=4, thread_name_prefix="enrich"
+    max_workers=8, thread_name_prefix="enrich"
 )
 
 

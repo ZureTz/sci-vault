@@ -24,7 +24,9 @@
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	let fileInput = $state<HTMLInputElement | undefined>(undefined);
-	let selectedFile = $state<File | null>(null);
+	let selectedFiles = $state<File[]>([]);
+	let selectedFile = $derived(selectedFiles[0] ?? null);
+	let isBatch = $derived(selectedFiles.length > 1);
 	let title = $state('');
 	let year = $state('');
 	let doi = $state('');
@@ -102,28 +104,33 @@
 		if (pollTimer) clearInterval(pollTimer);
 	});
 
-	function processFile(file: File | null) {
-		if (file && !file.name.toLowerCase().endsWith('.pdf')) {
+	function processFiles(files: FileList | File[] | null) {
+		if (!files || files.length === 0) {
+			selectedFiles = [];
+			return;
+		}
+		const list = Array.from(files);
+		const invalid = list.find((f) => !f.name.toLowerCase().endsWith('.pdf'));
+		if (invalid) {
 			toast.error($_('document.upload.error.invalid_type'));
 			if (fileInput) fileInput.value = '';
 			return;
 		}
-		selectedFile = file;
+		selectedFiles = list;
 	}
 
 	function handleFileChange(event: Event) {
-		const file = (event.target as HTMLInputElement).files?.[0] ?? null;
-		processFile(file);
+		processFiles((event.target as HTMLInputElement).files);
 	}
 
 	function handleDrop(event: DragEvent) {
 		event.preventDefault();
 		isDragging = false;
-		const file = event.dataTransfer?.files?.[0] ?? null;
-		if (fileInput && event.dataTransfer?.files) {
-			fileInput.files = event.dataTransfer.files;
+		const dropped = event.dataTransfer?.files ?? null;
+		if (fileInput && dropped) {
+			fileInput.files = dropped;
 		}
-		processFile(file);
+		processFiles(dropped);
 	}
 
 	function handleDragOver(event: DragEvent) {
@@ -138,7 +145,7 @@
 
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
-		if (!selectedFile) {
+		if (selectedFiles.length === 0) {
 			toast.error($_('document.upload.error.file_required'));
 			return;
 		}
@@ -150,25 +157,50 @@
 		isSubmitting = true;
 		uploadPercent = 0;
 		try {
-			const yearNum = year ? parseInt(year, 10) : null;
-			await documentApi.uploadDocument(
-				{
-					file: selectedFile,
-					title: title || null,
-					year: yearNum,
-					doi: doi || null,
-					visibility,
-					lab_id: visibility === 'lab' ? Number(selectedLabId) : null
-				},
-				(pct) => (uploadPercent = pct)
-			);
-			toast.success($_('document.upload.success'));
+			const labId = visibility === 'lab' ? Number(selectedLabId) : null;
+			if (isBatch) {
+				const res = await documentApi.batchUploadDocuments(
+					{ files: selectedFiles, visibility, lab_id: labId },
+					(pct) => (uploadPercent = pct)
+				);
+				const total = res.results.length;
+				if (res.failed === 0) {
+					toast.success($_('document.upload.batch_all_success', { values: { total } }));
+				} else if (res.succeeded === 0) {
+					toast.error($_('document.upload.batch_all_failed', { values: { total } }));
+				} else {
+					toast.warning(
+						$_('document.upload.batch_success', {
+							values: { succeeded: res.succeeded, failed: res.failed, total }
+						})
+					);
+				}
+				for (const r of res.results) {
+					if (r.error) {
+						toast.error(`${r.filename}: ${$_(r.error)}`);
+					}
+				}
+			} else {
+				const yearNum = year ? parseInt(year, 10) : null;
+				await documentApi.uploadDocument(
+					{
+						file: selectedFiles[0],
+						title: title || null,
+						year: yearNum,
+						doi: doi || null,
+						visibility,
+						lab_id: labId
+					},
+					(pct) => (uploadPercent = pct)
+				);
+				toast.success($_('document.upload.success'));
+			}
 
 			// Refresh the enrichment queue immediately
 			fetchPendingDocuments();
 
 			// Reset form (preserve visibility/lab choice for next upload)
-			selectedFile = null;
+			selectedFiles = [];
 			title = '';
 			year = '';
 			doi = '';
@@ -214,7 +246,16 @@
 					>
 						<FileUp class="h-5 w-5 shrink-0 text-muted-foreground" />
 						<div class="flex min-w-0 flex-1 flex-col text-sm text-muted-foreground">
-							{#if selectedFile}
+							{#if isBatch}
+								<span class="truncate font-medium text-foreground">
+									{$_('document.upload.selected_files', {
+										values: { count: selectedFiles.length }
+									})}
+								</span>
+								<span class="mt-0.5 truncate text-xs">
+									{selectedFiles.map((f) => f.name).join(', ')}
+								</span>
+							{:else if selectedFile}
 								<span class="truncate font-medium text-foreground">{selectedFile.name}</span>
 								<span class="mt-0.5 text-xs">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span
 								>
@@ -227,46 +268,49 @@
 						id="file"
 						type="file"
 						accept=".pdf"
+						multiple
 						class="hidden"
 						bind:this={fileInput}
 						onchange={handleFileChange}
 					/>
 				</div>
 
-				<!-- Title -->
-				<div class="space-y-1.5">
-					<Label for="title">{$_('document.upload.title_label')}</Label>
-					<Input
-						id="title"
-						bind:value={title}
-						placeholder={$_('document.upload.title_placeholder')}
-						maxlength={255}
-					/>
-				</div>
-
-				<!-- Year & DOI in a row -->
-				<div class="grid grid-cols-2 gap-4">
+				{#if !isBatch}
+					<!-- Title -->
 					<div class="space-y-1.5">
-						<Label for="year">{$_('document.upload.year_label')}</Label>
+						<Label for="title">{$_('document.upload.title_label')}</Label>
 						<Input
-							id="year"
-							type="number"
-							bind:value={year}
-							placeholder={$_('document.upload.year_placeholder')}
-							min={1000}
-							max={9999}
-						/>
-					</div>
-					<div class="space-y-1.5">
-						<Label for="doi">{$_('document.upload.doi_label')}</Label>
-						<Input
-							id="doi"
-							bind:value={doi}
-							placeholder={$_('document.upload.doi_placeholder')}
+							id="title"
+							bind:value={title}
+							placeholder={$_('document.upload.title_placeholder')}
 							maxlength={255}
 						/>
 					</div>
-				</div>
+
+					<!-- Year & DOI in a row -->
+					<div class="grid grid-cols-2 gap-4">
+						<div class="space-y-1.5">
+							<Label for="year">{$_('document.upload.year_label')}</Label>
+							<Input
+								id="year"
+								type="number"
+								bind:value={year}
+								placeholder={$_('document.upload.year_placeholder')}
+								min={1000}
+								max={9999}
+							/>
+						</div>
+						<div class="space-y-1.5">
+							<Label for="doi">{$_('document.upload.doi_label')}</Label>
+							<Input
+								id="doi"
+								bind:value={doi}
+								placeholder={$_('document.upload.doi_placeholder')}
+								maxlength={255}
+							/>
+						</div>
+					</div>
+				{/if}
 
 				<!-- Visibility selector -->
 				<div class="space-y-2">
@@ -347,6 +391,8 @@
 					<Button type="submit" class="w-full" disabled={isSubmitting}>
 						{#if isSubmitting}
 							{$_('document.upload.submitting')}
+						{:else if isBatch}
+							{$_('document.upload.submit_batch', { values: { count: selectedFiles.length } })}
 						{:else}
 							{$_('document.upload.submit')}
 						{/if}
@@ -361,11 +407,11 @@
 			<h3 class="px-1 text-sm font-medium text-muted-foreground">
 				{$_('document.upload.pending_queue')}
 			</h3>
-			<div class="grid gap-3">
+			<div class="grid grid-cols-1 gap-3">
 				{#each pendingDocuments as doc (doc.id)}
 					<a
 						href={resolve(`/documents/${doc.id}`)}
-						class="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary"
+						class="block min-w-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary"
 					>
 						<Card.Root
 							class="flex w-full items-center justify-between overflow-hidden p-4 shadow-sm transition-all hover:bg-muted/50 hover:shadow-md"

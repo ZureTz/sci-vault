@@ -1,9 +1,11 @@
 {
   "cSpell.words": [
     "codegen",
+    "dedup",
     "gonic",
     "pgvector",
     "Presign",
+    "reenrich",
     "rustfs"
   ]
 }

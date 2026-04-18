@@ -1,12 +1,15 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
+	"mime/multipart"
 	"strings"
 	"time"
 
@@ -115,11 +118,32 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 		return nil, err
 	}
 
-	ts := time.Now().UTC()
-	hash := sha256.Sum256([]byte(form.File.Filename + ts.Format(time.RFC3339Nano)))
-	key := fmt.Sprintf("documents/%s/%x", ts.Format("20060102"), hash)
+	// Buffer the whole upload so we can hash it before committing to S3.
+	// Size was validated above (<= 100 MB), so holding it in memory is acceptable.
+	buf, err := io.ReadAll(io.LimitReader(file, maxDocumentSize+1))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read document body: %w", err)
+	}
+	if int64(len(buf)) > maxDocumentSize {
+		return nil, app_error.ErrDocumentTooLarge
+	}
+	contentHash := sha256.Sum256(buf)
+	contentSHA := hex.EncodeToString(contentHash[:])
 
-	if err := s.storageClient.PutObject(ctx, key, file, contentType, true); err != nil {
+	// Duplicate guard: only enforced for private uploads per product requirement.
+	if resolvedVis == model.DocVisibilityPrivate {
+		if _, err := s.repo.FindPrivateByUserIDAndHash(ctx, userID, contentSHA); err == nil {
+			return nil, app_error.ErrDocumentDuplicate
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("failed to check for duplicate: %w", err)
+		}
+	}
+
+	ts := time.Now().UTC()
+	keyHash := sha256.Sum256([]byte(form.File.Filename + ts.Format(time.RFC3339Nano)))
+	key := fmt.Sprintf("documents/%s/%x", ts.Format("20060102"), keyHash)
+
+	if err := s.storageClient.PutObject(ctx, key, bytes.NewReader(buf), contentType, true); err != nil {
 		return nil, fmt.Errorf("failed to upload document: %w", err)
 	}
 
@@ -129,6 +153,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 		FileKey:          key,
 		FileSize:         form.File.Size,
 		ContentType:      contentType,
+		ContentSHA256:    contentSHA,
 		Year:             form.Year,
 		DOI:              form.DOI,
 		UploadedByUserID: userID,
@@ -136,6 +161,10 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 		LabID:            resolvedLabID,
 	}
 	if err := s.repo.Create(ctx, doc); err != nil {
+		// Race with the partial unique index — another concurrent upload won.
+		if strings.Contains(err.Error(), "idx_documents_private_user_sha") {
+			return nil, app_error.ErrDocumentDuplicate
+		}
 		return nil, fmt.Errorf("failed to save document: %w", err)
 	}
 
@@ -162,6 +191,183 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 	}
 
 	return toDocumentResponse(doc, downloadURL), nil
+}
+
+// BatchUploadDocuments uploads multiple files sharing one metadata envelope
+// (visibility + optional lab_id). DB work is batched — one query for duplicate
+// detection across all files, one INSERT for all surviving records — instead
+// of N round trips. Per-file failures are reported via BatchUploadItemResult.Error
+// as the raw sentinel error message; the handler translates to i18n codes.
+func (s *DocumentService) BatchUploadDocuments(ctx context.Context, userID uint, form dto.BatchUploadDocumentForm) (*dto.BatchUploadDocumentResponse, error) {
+	// Whole-batch visibility resolution: invalid visibility or non-member lab
+	// fails the entire request rather than repeating the same error N times.
+	visibility := model.DocVisibilityPrivate
+	if form.Visibility != nil && *form.Visibility != "" {
+		visibility = *form.Visibility
+	}
+	resolvedVis, resolvedLabID, err := s.resolveVisibility(ctx, userID, visibility, form.LabID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Phase 1 — buffer + hash + per-file pre-flight validation.
+	type pending struct {
+		fh          *multipart.FileHeader
+		buf         []byte
+		contentType string
+		hash        string
+		err         string // non-empty when this file is already doomed (size/type/read)
+	}
+	pendingDocs := make([]pending, len(form.Files))
+	hashesToCheck := make([]string, 0, len(form.Files))
+	for i, fh := range form.Files {
+		p := pending{fh: fh}
+		if fh.Size > maxDocumentSize {
+			p.err = app_error.ErrDocumentTooLarge.Error()
+			pendingDocs[i] = p
+			continue
+		}
+		ct := strings.ToLower(fh.Header.Get("Content-Type"))
+		if ct != "application/pdf" {
+			p.err = app_error.ErrDocumentInvalidType.Error()
+			pendingDocs[i] = p
+			continue
+		}
+		p.contentType = ct
+
+		file, openErr := fh.Open()
+		if openErr != nil {
+			p.err = openErr.Error()
+			pendingDocs[i] = p
+			continue
+		}
+		buf, readErr := io.ReadAll(io.LimitReader(file, maxDocumentSize+1))
+		file.Close()
+		if readErr != nil {
+			p.err = readErr.Error()
+			pendingDocs[i] = p
+			continue
+		}
+		if int64(len(buf)) > maxDocumentSize {
+			p.err = app_error.ErrDocumentTooLarge.Error()
+			pendingDocs[i] = p
+			continue
+		}
+		sum := sha256.Sum256(buf)
+		p.buf = buf
+		p.hash = hex.EncodeToString(sum[:])
+		pendingDocs[i] = p
+		hashesToCheck = append(hashesToCheck, p.hash)
+	}
+
+	// Phase 2 — single-query dedup check against the user's existing private docs.
+	// Only relevant for private uploads per product rule.
+	existingHashes := map[string]bool{}
+	if resolvedVis == model.DocVisibilityPrivate && len(hashesToCheck) > 0 {
+		found, err := s.repo.FindPrivateHashesInSet(ctx, userID, hashesToCheck)
+		if err != nil {
+			return nil, fmt.Errorf("failed to batch check duplicates: %w", err)
+		}
+		for _, h := range found {
+			existingHashes[h] = true
+		}
+	}
+
+	// Phase 3 — S3 put for each survivor, collect docs to insert.
+	// Intra-batch dedup: if the same file appears twice in a private batch,
+	// only the first is persisted; subsequent ones are marked duplicate.
+	results := make([]dto.BatchUploadItemResult, len(form.Files))
+	toInsert := make([]*model.Document, 0, len(form.Files))
+	insertIdx := make([]int, 0, len(form.Files)) // result index per inserted doc
+	seenInBatch := map[string]bool{}
+	ts := time.Now().UTC()
+	dayPrefix := ts.Format("20060102")
+	tsNano := ts.Format(time.RFC3339Nano)
+	for i := range pendingDocs {
+		p := pendingDocs[i]
+		results[i].Filename = p.fh.Filename
+		if p.err != "" {
+			results[i].Error = p.err
+			continue
+		}
+		if resolvedVis == model.DocVisibilityPrivate && (existingHashes[p.hash] || seenInBatch[p.hash]) {
+			results[i].Error = app_error.ErrDocumentDuplicate.Error()
+			continue
+		}
+		seenInBatch[p.hash] = true
+
+		keyHash := sha256.Sum256([]byte(p.fh.Filename + tsNano + fmt.Sprint(i)))
+		key := fmt.Sprintf("documents/%s/%x", dayPrefix, keyHash)
+		if err := s.storageClient.PutObject(ctx, key, bytes.NewReader(p.buf), p.contentType, true); err != nil {
+			results[i].Error = err.Error()
+			continue
+		}
+		toInsert = append(toInsert, &model.Document{
+			OriginalFileName: p.fh.Filename,
+			FileKey:          key,
+			FileSize:         p.fh.Size,
+			ContentType:      p.contentType,
+			ContentSHA256:    p.hash,
+			UploadedByUserID: userID,
+			Visibility:       resolvedVis,
+			LabID:            resolvedLabID,
+		})
+		insertIdx = append(insertIdx, i)
+	}
+
+	// Phase 4 — single batch INSERT, then post-insert side effects per doc.
+	if len(toInsert) > 0 {
+		if err := s.repo.CreateBatch(ctx, toInsert); err != nil {
+			// Unique-index race: another concurrent request persisted the same hash.
+			// Fall back to per-row inserts so one colliding file doesn't fail the batch.
+			if strings.Contains(err.Error(), "idx_documents_private_user_sha") {
+				for n, doc := range toInsert {
+					if createErr := s.repo.Create(ctx, doc); createErr != nil {
+						if strings.Contains(createErr.Error(), "idx_documents_private_user_sha") {
+							results[insertIdx[n]].Error = app_error.ErrDocumentDuplicate.Error()
+							continue
+						}
+						results[insertIdx[n]].Error = createErr.Error()
+						continue
+					}
+					id := doc.ID
+					results[insertIdx[n]].DocID = &id
+				}
+			} else {
+				return nil, fmt.Errorf("failed to batch insert documents: %w", err)
+			}
+		} else {
+			for n, doc := range toInsert {
+				id := doc.ID
+				results[insertIdx[n]].DocID = &id
+			}
+		}
+
+		for _, doc := range toInsert {
+			if doc.ID == 0 {
+				continue
+			}
+			if err := s.cacheConn.Set(ctx, enrichStatusKey(doc.ID), model.EnrichStatusNotStarted, enrichStatusTTL); err != nil {
+				slog.Warn("Failed to set enrich status in cache", "docID", doc.ID, "err", err)
+			}
+			if _, err := s.recommenderClient.EnrichDocument(ctx, uint64(doc.ID), doc.FileKey); err != nil {
+				slog.Warn("EnrichDocument gRPC call failed", "docID", doc.ID, "err", err)
+			}
+		}
+		if _, err := s.cacheConn.Del(ctx, dashboardStatsKey(userID)); err != nil {
+			slog.Warn("Failed to invalidate dashboard stats cache", "userID", userID, "err", err)
+		}
+	}
+
+	resp := &dto.BatchUploadDocumentResponse{Results: results}
+	for _, r := range results {
+		if r.Error != "" {
+			resp.Failed++
+		} else {
+			resp.Succeeded++
+		}
+	}
+	return resp, nil
 }
 
 func (s *DocumentService) GetDocument(ctx context.Context, userID, docID uint) (*dto.DocumentResponse, error) {

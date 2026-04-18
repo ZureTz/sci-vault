@@ -216,6 +216,15 @@
 			</div>
 		</div>
 		<div class="flex items-center space-x-2">
+			<Button
+				variant="outline"
+				onclick={loadDocuments}
+				disabled={isLoading}
+				aria-label={$_('document.mine.refresh')}
+			>
+				<RefreshCw class={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+				{$_('document.mine.refresh')}
+			</Button>
 			<Button variant="outline" onclick={() => goto(resolve('/documents/upload'))}>
 				<Upload class="mr-2 h-4 w-4" />
 				{$_('document.mine.go_upload')}

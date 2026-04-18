@@ -109,6 +109,7 @@ func (deps *RouterDeps) registerAuthenticatedRoutes(group *gin.RouterGroup) {
 func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 	group.GET("/search", deps.DocumentHandler.SearchDocuments)
 	group.POST("/upload", deps.DocumentHandler.UploadDocument)
+	group.POST("/upload/batch", deps.DocumentHandler.BatchUploadDocuments)
 	group.GET("/mine", deps.DocumentHandler.ListMyDocuments)
 	group.GET("/pending", deps.DocumentHandler.ListPendingDocuments)
 	group.POST("/visibility/batch", deps.DocumentHandler.BatchUpdateVisibility)

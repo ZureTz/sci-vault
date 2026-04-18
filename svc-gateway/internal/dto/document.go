@@ -14,6 +14,28 @@ type UploadDocumentForm struct {
 	LabID      *uint                 `form:"lab_id" binding:"omitempty"`
 }
 
+// BatchUploadDocumentForm accepts multiple files sharing a single metadata envelope.
+// Per-file title defaults to the filename; year / DOI are not supported in batch mode.
+type BatchUploadDocumentForm struct {
+	Files      []*multipart.FileHeader `form:"files" binding:"required,min=1,max=20"`
+	Visibility *string                 `form:"visibility" binding:"omitempty,oneof=private lab"`
+	LabID      *uint                   `form:"lab_id" binding:"omitempty"`
+}
+
+// BatchUploadItemResult reports the outcome of a single file in a batch upload.
+// Exactly one of DocID / Error is populated.
+type BatchUploadItemResult struct {
+	Filename string `json:"filename"`
+	DocID    *uint  `json:"doc_id,omitempty"`
+	Error    string `json:"error,omitempty"`
+}
+
+type BatchUploadDocumentResponse struct {
+	Results   []BatchUploadItemResult `json:"results"`
+	Succeeded int                     `json:"succeeded"`
+	Failed    int                     `json:"failed"`
+}
+
 type DocumentIDUri struct {
 	DocID uint `uri:"doc_id" binding:"required"`
 }

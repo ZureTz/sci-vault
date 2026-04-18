@@ -17,6 +17,7 @@ import (
 
 type DocumentService interface {
 	UploadDocument(ctx context.Context, userID uint, file io.Reader, form dto.UploadDocumentForm) (*dto.DocumentResponse, error)
+	BatchUploadDocuments(ctx context.Context, userID uint, form dto.BatchUploadDocumentForm) (*dto.BatchUploadDocumentResponse, error)
 	GetDocument(ctx context.Context, userID, docID uint) (*dto.DocumentResponse, error)
 	GetEnrichStatus(ctx context.Context, userID, docID uint) (string, error)
 	ListMyDocuments(ctx context.Context, userID uint, page, pageSize int) (*dto.ListDocumentsResponse, error)
@@ -64,6 +65,8 @@ func (h *DocumentHandler) UploadDocument(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.upload_document.too_large")))
 		case errors.Is(err, app_error.ErrDocumentInvalidType):
 			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.upload_document.unsupported_type")))
+		case errors.Is(err, app_error.ErrDocumentDuplicate):
+			c.JSON(http.StatusConflict, utils.ErrorResponse(fmt.Errorf("service.upload_document.duplicate")))
 		case errors.Is(err, app_error.ErrLabRequiredForLabVis):
 			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.upload_document.lab_required")))
 		case errors.Is(err, app_error.ErrInvalidVisibility):
@@ -77,6 +80,61 @@ func (h *DocumentHandler) UploadDocument(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, resp)
+}
+
+// batchUploadItemErrorCode maps a per-file sentinel error message (set by
+// DocumentService.BatchUploadDocuments) to the stable i18n code the frontend
+// renders. Unknown errors fall back to the generic failure code.
+func batchUploadItemErrorCode(msg string) string {
+	switch msg {
+	case app_error.ErrDocumentTooLarge.Error():
+		return "service.upload_document.too_large"
+	case app_error.ErrDocumentInvalidType.Error():
+		return "service.upload_document.unsupported_type"
+	case app_error.ErrDocumentDuplicate.Error():
+		return "service.upload_document.duplicate"
+	default:
+		return "service.upload_document.failed"
+	}
+}
+
+func (h *DocumentHandler) BatchUploadDocuments(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
+		return
+	}
+
+	var form dto.BatchUploadDocumentForm
+	if err := c.ShouldBind(&form); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	resp, err := h.documentService.BatchUploadDocuments(c.Request.Context(), userID, form)
+	if err != nil {
+		// Whole-batch failures share the single-upload error shape (visibility/lab resolution).
+		switch {
+		case errors.Is(err, app_error.ErrLabRequiredForLabVis):
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.upload_document.lab_required")))
+		case errors.Is(err, app_error.ErrInvalidVisibility):
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.upload_document.invalid_visibility")))
+		case errors.Is(err, app_error.ErrNotMember):
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.upload_document.not_lab_member")))
+		default:
+			slog.Error("BatchUploadDocuments service error", "err", err)
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.upload_document.failed")))
+		}
+		return
+	}
+
+	// Translate per-file raw sentinel messages into i18n codes.
+	for i := range resp.Results {
+		if resp.Results[i].Error != "" {
+			resp.Results[i].Error = batchUploadItemErrorCode(resp.Results[i].Error)
+		}
+	}
+	c.JSON(http.StatusOK, resp)
 }
 
 func (h *DocumentHandler) UpdateVisibility(c *gin.Context) {
