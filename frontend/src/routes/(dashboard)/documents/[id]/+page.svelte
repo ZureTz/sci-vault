@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { _, locale } from 'svelte-i18n';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import {
 		FileText,
 		LoaderCircle,
@@ -48,6 +50,19 @@
 	let isEnglishLocale = $derived(($locale ?? 'en').startsWith('en'));
 	let currentUser = $derived(getUser());
 	let isOwner = $derived(document != null && document.uploaded_by === Number(currentUser.id));
+
+	// Back navigation: if the user arrived from inside the app, pop history;
+	// otherwise (direct link, refresh, external) fall back to a sensible default
+	// so the button is never a no-op.
+	function goBack() {
+		const referrer = window.document.referrer;
+		const fromSameOrigin = referrer.length > 0 && referrer.startsWith(window.location.origin);
+		if (fromSameOrigin && window.history.length > 1) {
+			window.history.back();
+		} else {
+			goto(resolve('/documents/mine'));
+		}
+	}
 
 	// Visibility edit state
 	let visDialogOpen = $state(false);
@@ -204,7 +219,7 @@
 <div class="mx-auto w-full max-w-6xl space-y-6">
 	<!-- Actions Bar -->
 	<div class="flex items-center justify-between">
-		<Button variant="ghost" size="sm" onclick={() => history.back()}>
+		<Button variant="ghost" size="sm" onclick={goBack}>
 			<ArrowLeft class="mr-2 h-4 w-4" />
 			{$_('document.detail.back')}
 		</Button>
