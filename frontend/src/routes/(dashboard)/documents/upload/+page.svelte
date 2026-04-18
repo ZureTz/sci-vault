@@ -18,6 +18,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { Progress } from '$lib/components/ui/progress';
 	import documentApi, { type DocumentListItem, type DocumentVisibility } from '$lib/api/document';
 	import labApi, { type LabListItem } from '$lib/api/lab';
 	import { getActiveLab } from '$lib/stores/lab.svelte';
@@ -378,12 +379,7 @@
 							<span>{$_('document.upload.submitting')}</span>
 							<span>{uploadPercent}%</span>
 						</div>
-						<div class="h-2 w-full overflow-hidden rounded-full bg-muted">
-							<div
-								class="h-full bg-primary transition-all duration-300"
-								style="width: {uploadPercent}%"
-							></div>
-						</div>
+						<Progress value={uploadPercent} class="h-2" />
 					</div>
 				{/if}
 
