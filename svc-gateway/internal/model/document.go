@@ -51,7 +51,7 @@ type Document struct {
 	Authors   pq.StringArray `gorm:"type:text[]"`
 	Summary   *string
 	Tags      pq.StringArray   `gorm:"type:text[]"`
-	Embedding *pgvector.Vector `gorm:"type:vector(1536)"`
+	Embedding *pgvector.Vector `gorm:"type:vector(768)"`
 
 	// User interactions
 	ViewCount uint `gorm:"default:0;not null"`
