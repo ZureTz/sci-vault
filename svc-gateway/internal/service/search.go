@@ -10,7 +10,6 @@ import (
 	"gorm.io/gorm"
 
 	"gateway/internal/dto"
-	"gateway/internal/model"
 	"gateway/internal/repo"
 	"gateway/pkg/app_error"
 	"gateway/pkg/grpc_client"
@@ -75,18 +74,15 @@ func (s *SearchService) SearchDocuments(ctx context.Context, userID uint, q dto.
 		}
 	}
 
-	// Record history for successful searches only. A failure to persist history
-	// must not fail the request — it's a non-essential side effect.
-	history := &model.SearchHistory{
-		UserID:      userID,
-		Query:       strings.TrimSpace(q.Query),
-		ResultCount: len(results),
-	}
+	// Record (or refresh) history for successful searches. Dedupes by
+	// (user_id, query, lab_id) so re-searching the same query just bumps
+	// updated_at. Failures here must not fail the request.
+	var labIDPtr *uint
 	if q.LabID > 0 {
 		labID := q.LabID
-		history.LabID = &labID
+		labIDPtr = &labID
 	}
-	if err := s.repo.CreateHistory(ctx, history); err != nil {
+	if err := s.repo.UpsertHistory(ctx, userID, labIDPtr, strings.TrimSpace(q.Query), len(results)); err != nil {
 		slog.Warn("failed to record search history", "userID", userID, "err", err)
 	}
 
@@ -108,7 +104,7 @@ func (s *SearchService) ListMyHistory(ctx context.Context, userID uint, limit in
 			Query:       r.Query,
 			LabID:       r.LabID,
 			ResultCount: r.ResultCount,
-			CreatedAt:   r.CreatedAt,
+			LastUsedAt:  r.UpdatedAt,
 		}
 	}
 	return &dto.ListSearchHistoryResponse{Items: items}, nil

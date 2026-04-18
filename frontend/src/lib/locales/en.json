@@ -226,7 +226,17 @@
 		"match_semantic": "Semantic",
 		"match_keyword": "Keyword",
 		"more": "more",
-		"show_less": "Show less"
+		"show_less": "Show less",
+		"history_title": "Recent searches",
+		"history_empty": "No recent searches yet. Try searching for something above.",
+		"history_result_count": "{count} result(s)",
+		"history_clear": "Clear history",
+		"history_clear_confirm_title": "Clear all recent searches?",
+		"history_clear_confirm_description": "This will permanently delete your search history. This action cannot be undone.",
+		"history_clear_confirm_action": "Clear",
+		"history_clear_cancel": "Cancel",
+		"history_cleared": "Search history cleared",
+		"history_just_now": "just now"
 	},
 	"service": {
 		"internal": {

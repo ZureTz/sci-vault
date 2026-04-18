@@ -225,7 +225,17 @@
 		"match_semantic": "语义匹配",
 		"match_keyword": "关键词匹配",
 		"more": "更多",
-		"show_less": "收起"
+		"show_less": "收起",
+		"history_title": "最近搜索",
+		"history_empty": "暂无搜索记录，可在上方输入关键词开始搜索。",
+		"history_result_count": "{count} 条结果",
+		"history_clear": "清除记录",
+		"history_clear_confirm_title": "清除所有搜索记录？",
+		"history_clear_confirm_description": "此操作将永久删除您的搜索记录，且无法撤销。",
+		"history_clear_confirm_action": "清除",
+		"history_clear_cancel": "取消",
+		"history_cleared": "搜索记录已清除",
+		"history_just_now": "刚刚"
 	},
 	"service": {
 		"internal": {

@@ -90,30 +90,6 @@ export interface BatchUpdateVisibilityResponse {
 	updated: number;
 }
 
-// MatchType mirrors the proto MatchType enum.
-export const MatchType = {
-	UNSPECIFIED: 0,
-	SEMANTIC: 1,
-	KEYWORD: 2
-} as const;
-
-export type MatchTypeValue = (typeof MatchType)[keyof typeof MatchType];
-
-export interface SearchResultItem {
-	doc_id: number;
-	title: string;
-	original_file_name: string;
-	summary: string;
-	authors: string[];
-	tags: string[];
-	similarity: number;
-	match_type: MatchTypeValue;
-}
-
-export interface SearchDocumentsResponse {
-	results: SearchResultItem[];
-}
-
 const documentApi = {
 	listMyDocuments(page = 1, pageSize = 20): Promise<ListDocumentsResponse> {
 		return request.get<ListDocumentsResponse>('/docs/mine', {
@@ -198,13 +174,6 @@ const documentApi = {
 			'/docs/visibility/batch',
 			data
 		) as unknown as Promise<BatchUpdateVisibilityResponse>;
-	},
-
-	searchDocuments(query: string, labId?: number, limit?: number): Promise<SearchDocumentsResponse> {
-		return request.get<SearchDocumentsResponse>('/docs/search', {
-			params: { query, lab_id: labId || undefined, limit: limit || undefined },
-			timeout: 30000
-		}) as unknown as Promise<SearchDocumentsResponse>;
 	}
 };
 
