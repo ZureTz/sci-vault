@@ -32,6 +32,7 @@ type Document struct {
 	FileKey          string  `gorm:"not null;uniqueIndex"` // S3 object key: documents/{time}/{hash}
 	FileSize         int64   `gorm:"not null"`
 	ContentType      string  `gorm:"not null"`
+	ContentSHA256    string  `gorm:"type:char(64);index"` // hex sha256 of file bytes; used for dedup
 	Year             *int    // publication year, optional at upload time
 	DOI              *string // digital Object Identifier, optional at upload time
 

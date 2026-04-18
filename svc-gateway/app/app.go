@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -22,6 +23,7 @@ import (
 	"gateway/pkg/jwt"
 	"gateway/pkg/logger"
 	"gateway/pkg/mailer"
+	"gateway/pkg/reenrich"
 	"gateway/pkg/storage"
 )
 
@@ -39,6 +41,9 @@ type App struct {
 	storageClient     *storage.Client
 	recommenderClient *grpc_client.RecommenderClient
 	mailer            *mailer.Mailer
+
+	// Background workers
+	reenrichScheduler *reenrich.Scheduler
 }
 
 // New initializes all project dependencies, completes DI (Dependency Injection), and returns a ready-to-run App.
@@ -81,6 +86,14 @@ func New(configPath string) (*App, error) {
 		return nil, fmt.Errorf("failed to create embedding hnsw index: %w", err)
 	}
 
+	// Dedup guard: a user cannot upload the same bytes twice as a private document.
+	// Lab/public copies are intentionally allowed (different context of ownership).
+	if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_documents_private_user_sha
+		ON documents (uploaded_by_user_id, content_sha256)
+		WHERE visibility = 'private' AND deleted_at IS NULL AND content_sha256 <> ''`).Error; err != nil {
+		return nil, fmt.Errorf("failed to create private dedup index: %w", err)
+	}
+
 	storageClient := storage.NewClient(cfg.Storage.Endpoint, cfg.Storage.PresignEndpoint, cfg.Storage.AccessKey, cfg.Storage.SecretKey, cfg.Storage.PrivateBucket, cfg.Storage.PublicBucket, cfg.Storage.PublicProxyPath, cfg.Storage.PrivateProxyPath, cfg.Storage.UseSSL)
 	if err := storageClient.EnsureBuckets(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to ensure storage buckets: %w", err)
@@ -91,7 +104,6 @@ func New(configPath string) (*App, error) {
 	cacheConn := cache.NewCacheConnector(cfg.Redis.Addr, cfg.Redis.Password, cfg.Redis.DB)
 
 	mailSrv := mailer.NewMailer(cfg.Mailer.Host, cfg.Mailer.Port, cfg.Mailer.User, cfg.Mailer.Password)
-	go mailSrv.Start()
 
 	// 2. Initialize repositories layer (data access)
 	userRepo := repo.NewUserRepo(db)
@@ -138,6 +150,10 @@ func New(configPath string) (*App, error) {
 		Handler: r,
 	}
 
+	// 7. Background workers. Sweeps docs stuck at enrich_status=not_started
+	// past the recommender's in-process retry budget and re-invokes EnrichDocument.
+	reenrichScheduler := reenrich.NewScheduler(documentRepo, recommenderClient, time.Hour)
+
 	return &App{
 		cfg:               cfg,
 		engine:            r,
@@ -147,11 +163,16 @@ func New(configPath string) (*App, error) {
 		storageClient:     storageClient,
 		recommenderClient: recommenderClient,
 		mailer:            mailSrv,
+		reenrichScheduler: reenrichScheduler,
 	}, nil
 }
 
-// Run starts the HTTP server (blocking operation)
+// Run starts the HTTP server (blocking operation) alongside the long-running
+// background workers (mail dispatch loop and the re-enrich scheduler).
 func (a *App) Run() error {
+	go a.mailer.Start()
+	go a.reenrichScheduler.Start()
+
 	slog.Info("starting gateway", "addr", a.server.Addr)
 	if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("server error: %w", err)
@@ -166,6 +187,8 @@ func (a *App) Shutdown(ctx context.Context) error {
 
 // Close releases all basic resources held by App, such as database connections, gRPC connections, cache connections, etc.
 func (a *App) Close() {
+	a.mailer.Close()
+	a.reenrichScheduler.Stop()
 	if err := a.recommenderClient.Close(); err != nil {
 		slog.Warn("error closing recommender gRPC client", "err", err)
 	}
