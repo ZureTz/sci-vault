@@ -4,6 +4,7 @@ import logging
 
 import grpc
 
+from cache.search import SearchCache
 from genai.search import SearchGenAI
 from pb.recommender.v1 import recommender_pb2
 from repository.search import SearchRepository, SearchHit
@@ -22,9 +23,15 @@ class SearchServicer:
             (deduplicated against vector hits).
     """
 
-    def __init__(self, search_repo: SearchRepository, genai: SearchGenAI) -> None:
+    def __init__(
+        self,
+        search_repo: SearchRepository,
+        genai: SearchGenAI,
+        cache: SearchCache,
+    ) -> None:
         self._repo = search_repo
         self._genai = genai
+        self._cache = cache
 
     def SemanticSearch(
         self,
@@ -45,7 +52,12 @@ class SearchServicer:
         )
 
         # Phase 1: vector similarity search
-        query_embedding = self._genai.embed_query(query)
+        query_embedding = self._cache.get_embedding(query)
+        if query_embedding is None:
+            query_embedding = self._genai.embed_query(query)
+            self._cache.set_embedding(query, query_embedding)
+        else:
+            log.info("SemanticSearch: query embedding cache hit")
         vector_hits = self._repo.vector_search(
             query_embedding=query_embedding,
             user_id=request.user_id,
