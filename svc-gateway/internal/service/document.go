@@ -516,45 +516,6 @@ func (s *DocumentService) BatchUpdateVisibility(ctx context.Context, userID uint
 	return updated, nil
 }
 
-func (s *DocumentService) SearchDocuments(ctx context.Context, userID uint, q dto.SearchDocumentsQuery) (*dto.SearchDocumentsResponse, error) {
-	limit := uint32(q.Limit)
-	if limit == 0 {
-		limit = 10
-	}
-
-	// If a lab_id is provided, the caller must be a member of that lab;
-	// otherwise they could read any lab's shared documents by guessing IDs.
-	if q.LabID > 0 {
-		if _, err := s.labRepo.FindMember(ctx, q.LabID, userID); err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, app_error.ErrNotMember
-			}
-			return nil, fmt.Errorf("failed to check lab membership: %w", err)
-		}
-	}
-
-	resp, err := s.recommenderClient.SemanticSearch(ctx, q.Query, uint64(userID), uint64(q.LabID), limit)
-	if err != nil {
-		return nil, fmt.Errorf("semantic search RPC: %w", err)
-	}
-
-	results := make([]dto.SearchResultItem, len(resp.Results))
-	for i, r := range resp.Results {
-		results[i] = dto.SearchResultItem{
-			DocID:            uint(r.DocId),
-			Title:            r.Title,
-			OriginalFileName: r.OriginalFileName,
-			Summary:          r.Summary,
-			Authors:          r.Authors,
-			Tags:             r.Tags,
-			Similarity:       r.Similarity,
-			MatchType:        int32(r.GetMatchType()),
-		}
-	}
-
-	return &dto.SearchDocumentsResponse{Results: results}, nil
-}
-
 // downloadFilename ensures the filename ends with ".pdf".
 func downloadFilename(original string) string {
 	if strings.HasSuffix(strings.ToLower(original), ".pdf") {

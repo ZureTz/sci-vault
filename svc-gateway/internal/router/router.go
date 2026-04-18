@@ -21,6 +21,7 @@ type RouterDeps struct {
 	UserHandler      *handler.UserHandler
 	AuthHandler      *handler.AuthHandler
 	DocumentHandler  *handler.DocumentHandler
+	SearchHandler    *handler.SearchHandler
 	StatsHandler     *handler.StatsHandler
 	TranslateHandler *handler.TranslateHandler
 	LabHandler       *handler.LabHandler
@@ -56,6 +57,7 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 	{
 		deps.registerAuthenticatedRoutes(protected.Group("/auth"))
 		deps.registerDocumentRoutes(protected.Group("/docs"))
+		deps.registerSearchRoutes(protected.Group("/search"))
 		deps.registerStatsRoutes(protected.Group("/stats"))
 		deps.registerTranslateRoutes(protected.Group("/translate"))
 		deps.registerLabRoutes(protected.Group("/labs"))
@@ -107,7 +109,6 @@ func (deps *RouterDeps) registerAuthenticatedRoutes(group *gin.RouterGroup) {
 
 // Document routes (/api/v1/docs/...)
 func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
-	group.GET("/search", deps.DocumentHandler.SearchDocuments)
 	group.POST("/upload", deps.DocumentHandler.UploadDocument)
 	group.POST("/upload/batch", deps.DocumentHandler.BatchUploadDocuments)
 	group.GET("/mine", deps.DocumentHandler.ListMyDocuments)
@@ -117,6 +118,13 @@ func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 	group.GET("/:doc_id/enrich_status", deps.DocumentHandler.GetEnrichStatus)
 	group.POST("/:doc_id/restart_enrichment", deps.DocumentHandler.RestartEnrichment)
 	group.PATCH("/:doc_id/visibility", deps.DocumentHandler.UpdateVisibility)
+}
+
+// Search routes (/api/v1/search/...)
+func (deps *RouterDeps) registerSearchRoutes(group *gin.RouterGroup) {
+	group.GET("", deps.SearchHandler.SearchDocuments)
+	group.GET("/history", deps.SearchHandler.ListMyHistory)
+	group.DELETE("/history", deps.SearchHandler.ClearMyHistory)
 }
 
 // Stats routes (/api/v1/stats/...)
