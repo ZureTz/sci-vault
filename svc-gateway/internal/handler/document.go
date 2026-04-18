@@ -17,11 +17,11 @@ import (
 
 type DocumentService interface {
 	UploadDocument(ctx context.Context, userID uint, file io.Reader, form dto.UploadDocumentForm) (*dto.DocumentResponse, error)
-	GetDocument(ctx context.Context, docID uint) (*dto.DocumentResponse, error)
-	GetEnrichStatus(ctx context.Context, docID uint) (string, error)
+	GetDocument(ctx context.Context, userID, docID uint) (*dto.DocumentResponse, error)
+	GetEnrichStatus(ctx context.Context, userID, docID uint) (string, error)
 	ListMyDocuments(ctx context.Context, userID uint, page, pageSize int) (*dto.ListDocumentsResponse, error)
 	ListPendingDocuments(ctx context.Context, userID uint) (*dto.ListDocumentsResponse, error)
-	RestartEnrichment(ctx context.Context, docID uint) error
+	RestartEnrichment(ctx context.Context, userID, docID uint) error
 	UpdateVisibility(ctx context.Context, docID, userID uint, req dto.UpdateVisibilityRequest) error
 	BatchUpdateVisibility(ctx context.Context, userID uint, req dto.BatchUpdateVisibilityRequest) (int64, error)
 	SearchDocuments(ctx context.Context, userID uint, q dto.SearchDocumentsQuery) (*dto.SearchDocumentsResponse, error)
@@ -151,14 +151,24 @@ func (h *DocumentHandler) BatchUpdateVisibility(c *gin.Context) {
 }
 
 func (h *DocumentHandler) GetEnrichStatus(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
+		return
+	}
+
 	var uri dto.DocumentIDUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
 		return
 	}
 
-	status, err := h.documentService.GetEnrichStatus(c.Request.Context(), uri.DocID)
+	status, err := h.documentService.GetEnrichStatus(c.Request.Context(), userID, uri.DocID)
 	if err != nil {
+		if errors.Is(err, app_error.ErrDocumentNotFound) {
+			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.get_enrich_status.not_found")))
+			return
+		}
 		slog.Error("GetEnrichStatus service error", "err", err)
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.get_enrich_status.failed")))
 		return
@@ -212,13 +222,19 @@ func (h *DocumentHandler) ListPendingDocuments(c *gin.Context) {
 }
 
 func (h *DocumentHandler) GetDocument(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
+		return
+	}
+
 	var uri dto.DocumentIDUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
 		return
 	}
 
-	resp, err := h.documentService.GetDocument(c.Request.Context(), uri.DocID)
+	resp, err := h.documentService.GetDocument(c.Request.Context(), userID, uri.DocID)
 	if err != nil {
 		if errors.Is(err, app_error.ErrDocumentNotFound) {
 			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.get_document.not_found")))
@@ -232,16 +248,26 @@ func (h *DocumentHandler) GetDocument(c *gin.Context) {
 }
 
 func (h *DocumentHandler) RestartEnrichment(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
+		return
+	}
+
 	var uri dto.DocumentIDUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
 		return
 	}
 
-	err := h.documentService.RestartEnrichment(c.Request.Context(), uri.DocID)
+	err := h.documentService.RestartEnrichment(c.Request.Context(), userID, uri.DocID)
 	if err != nil {
 		if errors.Is(err, app_error.ErrDocumentNotFound) {
 			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.restart_enrichment.not_found")))
+			return
+		}
+		if errors.Is(err, app_error.ErrNotDocumentOwner) {
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.restart_enrichment.forbidden")))
 			return
 		}
 		slog.Error("RestartEnrichment service error", "err", err)
