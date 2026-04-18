@@ -5,11 +5,16 @@
   ],
   "cSpell.words": [
     "conninfo",
+    "frombuffer",
     "genai",
     "grpcio",
     "pgvector",
     "psycopg",
     "pyyaml",
+    "tobytes",
+    "tsquery",
+    "tsvec",
+    "tsvector",
     "vertexai"
   ]
 }

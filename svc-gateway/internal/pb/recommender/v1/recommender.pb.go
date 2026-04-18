@@ -21,6 +21,58 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// MatchType indicates how a search result was found.
+type MatchType int32
+
+const (
+	MatchType_MATCH_TYPE_UNSPECIFIED MatchType = 0
+	// MATCH_TYPE_SEMANTIC — matched via vector cosine similarity.
+	MatchType_MATCH_TYPE_SEMANTIC MatchType = 1
+	// MATCH_TYPE_KEYWORD — matched via full-text keyword search.
+	MatchType_MATCH_TYPE_KEYWORD MatchType = 2
+)
+
+// Enum value maps for MatchType.
+var (
+	MatchType_name = map[int32]string{
+		0: "MATCH_TYPE_UNSPECIFIED",
+		1: "MATCH_TYPE_SEMANTIC",
+		2: "MATCH_TYPE_KEYWORD",
+	}
+	MatchType_value = map[string]int32{
+		"MATCH_TYPE_UNSPECIFIED": 0,
+		"MATCH_TYPE_SEMANTIC":    1,
+		"MATCH_TYPE_KEYWORD":     2,
+	}
+)
+
+func (x MatchType) Enum() *MatchType {
+	p := new(MatchType)
+	*p = x
+	return p
+}
+
+func (x MatchType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MatchType) Descriptor() protoreflect.EnumDescriptor {
+	return file_recommender_v1_recommender_proto_enumTypes[0].Descriptor()
+}
+
+func (MatchType) Type() protoreflect.EnumType {
+	return &file_recommender_v1_recommender_proto_enumTypes[0]
+}
+
+func (x MatchType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MatchType.Descriptor instead.
+func (MatchType) EnumDescriptor() ([]byte, []int) {
+	return file_recommender_v1_recommender_proto_rawDescGZIP(), []int{0}
+}
+
 // HealthRequest is an empty message used for health check requests.
 type HealthRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -315,6 +367,227 @@ func (x *TranslateTextResponse) GetChunk() string {
 	return ""
 }
 
+// SemanticSearchRequest carries the query and scope for vector similarity search.
+type SemanticSearchRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// query is the natural-language search text to embed with RETRIEVAL_QUERY.
+	Query string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	// user_id of the requesting user (for access control on private docs).
+	UserId uint64 `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// lab_id to include lab-visible documents. 0 means private-only search.
+	LabId uint64 `protobuf:"varint,3,opt,name=lab_id,json=labId,proto3" json:"lab_id,omitempty"`
+	// limit is the maximum number of results to return (default: 10, max: 50).
+	Limit         uint32 `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SemanticSearchRequest) Reset() {
+	*x = SemanticSearchRequest{}
+	mi := &file_recommender_v1_recommender_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SemanticSearchRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SemanticSearchRequest) ProtoMessage() {}
+
+func (x *SemanticSearchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_recommender_v1_recommender_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SemanticSearchRequest.ProtoReflect.Descriptor instead.
+func (*SemanticSearchRequest) Descriptor() ([]byte, []int) {
+	return file_recommender_v1_recommender_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SemanticSearchRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *SemanticSearchRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *SemanticSearchRequest) GetLabId() uint64 {
+	if x != nil {
+		return x.LabId
+	}
+	return 0
+}
+
+func (x *SemanticSearchRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+// SearchResult is a single document returned by semantic search.
+type SearchResult struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	DocId            uint64                 `protobuf:"varint,1,opt,name=doc_id,json=docId,proto3" json:"doc_id,omitempty"`
+	Title            string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	OriginalFileName string                 `protobuf:"bytes,3,opt,name=original_file_name,json=originalFileName,proto3" json:"original_file_name,omitempty"`
+	Summary          string                 `protobuf:"bytes,4,opt,name=summary,proto3" json:"summary,omitempty"`
+	Authors          []string               `protobuf:"bytes,5,rep,name=authors,proto3" json:"authors,omitempty"`
+	Tags             []string               `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty"`
+	// similarity is 1 - cosine_distance, i.e. higher = more similar.
+	Similarity float64 `protobuf:"fixed64,7,opt,name=similarity,proto3" json:"similarity,omitempty"`
+	// match_type indicates whether this result came from vector or keyword search.
+	MatchType     MatchType `protobuf:"varint,8,opt,name=match_type,json=matchType,proto3,enum=recommender.v1.MatchType" json:"match_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchResult) Reset() {
+	*x = SearchResult{}
+	mi := &file_recommender_v1_recommender_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchResult) ProtoMessage() {}
+
+func (x *SearchResult) ProtoReflect() protoreflect.Message {
+	mi := &file_recommender_v1_recommender_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchResult.ProtoReflect.Descriptor instead.
+func (*SearchResult) Descriptor() ([]byte, []int) {
+	return file_recommender_v1_recommender_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SearchResult) GetDocId() uint64 {
+	if x != nil {
+		return x.DocId
+	}
+	return 0
+}
+
+func (x *SearchResult) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *SearchResult) GetOriginalFileName() string {
+	if x != nil {
+		return x.OriginalFileName
+	}
+	return ""
+}
+
+func (x *SearchResult) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *SearchResult) GetAuthors() []string {
+	if x != nil {
+		return x.Authors
+	}
+	return nil
+}
+
+func (x *SearchResult) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *SearchResult) GetSimilarity() float64 {
+	if x != nil {
+		return x.Similarity
+	}
+	return 0
+}
+
+func (x *SearchResult) GetMatchType() MatchType {
+	if x != nil {
+		return x.MatchType
+	}
+	return MatchType_MATCH_TYPE_UNSPECIFIED
+}
+
+// SemanticSearchResponse wraps the list of search results.
+type SemanticSearchResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Results       []*SearchResult        `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SemanticSearchResponse) Reset() {
+	*x = SemanticSearchResponse{}
+	mi := &file_recommender_v1_recommender_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SemanticSearchResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SemanticSearchResponse) ProtoMessage() {}
+
+func (x *SemanticSearchResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_recommender_v1_recommender_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SemanticSearchResponse.ProtoReflect.Descriptor instead.
+func (*SemanticSearchResponse) Descriptor() ([]byte, []int) {
+	return file_recommender_v1_recommender_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SemanticSearchResponse) GetResults() []*SearchResult {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
 var File_recommender_v1_recommender_proto protoreflect.FileDescriptor
 
 const file_recommender_v1_recommender_proto_rawDesc = "" +
@@ -333,11 +606,35 @@ const file_recommender_v1_recommender_proto_rawDesc = "" +
 	"\x04text\x18\x01 \x01(\tR\x04text\x12'\n" +
 	"\x0ftarget_language\x18\x02 \x01(\tR\x0etargetLanguage\"-\n" +
 	"\x15TranslateTextResponse\x12\x14\n" +
-	"\x05chunk\x18\x01 \x01(\tR\x05chunk2\x9e\x02\n" +
+	"\x05chunk\x18\x01 \x01(\tR\x05chunk\"s\n" +
+	"\x15SemanticSearchRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x04R\x06userId\x12\x15\n" +
+	"\x06lab_id\x18\x03 \x01(\x04R\x05labId\x12\x14\n" +
+	"\x05limit\x18\x04 \x01(\rR\x05limit\"\x8b\x02\n" +
+	"\fSearchResult\x12\x15\n" +
+	"\x06doc_id\x18\x01 \x01(\x04R\x05docId\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12,\n" +
+	"\x12original_file_name\x18\x03 \x01(\tR\x10originalFileName\x12\x18\n" +
+	"\asummary\x18\x04 \x01(\tR\asummary\x12\x18\n" +
+	"\aauthors\x18\x05 \x03(\tR\aauthors\x12\x12\n" +
+	"\x04tags\x18\x06 \x03(\tR\x04tags\x12\x1e\n" +
+	"\n" +
+	"similarity\x18\a \x01(\x01R\n" +
+	"similarity\x128\n" +
+	"\n" +
+	"match_type\x18\b \x01(\x0e2\x19.recommender.v1.MatchTypeR\tmatchType\"P\n" +
+	"\x16SemanticSearchResponse\x126\n" +
+	"\aresults\x18\x01 \x03(\v2\x1c.recommender.v1.SearchResultR\aresults*X\n" +
+	"\tMatchType\x12\x1a\n" +
+	"\x16MATCH_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
+	"\x13MATCH_TYPE_SEMANTIC\x10\x01\x12\x16\n" +
+	"\x12MATCH_TYPE_KEYWORD\x10\x022\xff\x02\n" +
 	"\x12RecommenderService\x12G\n" +
 	"\x06Health\x12\x1d.recommender.v1.HealthRequest\x1a\x1e.recommender.v1.HealthResponse\x12_\n" +
 	"\x0eEnrichDocument\x12%.recommender.v1.EnrichDocumentRequest\x1a&.recommender.v1.EnrichDocumentResponse\x12^\n" +
-	"\rTranslateText\x12$.recommender.v1.TranslateTextRequest\x1a%.recommender.v1.TranslateTextResponse0\x01B!Z\x1fgateway/internal/pb/recommenderb\x06proto3"
+	"\rTranslateText\x12$.recommender.v1.TranslateTextRequest\x1a%.recommender.v1.TranslateTextResponse0\x01\x12_\n" +
+	"\x0eSemanticSearch\x12%.recommender.v1.SemanticSearchRequest\x1a&.recommender.v1.SemanticSearchResponseB!Z\x1fgateway/internal/pb/recommenderb\x06proto3"
 
 var (
 	file_recommender_v1_recommender_proto_rawDescOnce sync.Once
@@ -351,27 +648,36 @@ func file_recommender_v1_recommender_proto_rawDescGZIP() []byte {
 	return file_recommender_v1_recommender_proto_rawDescData
 }
 
-var file_recommender_v1_recommender_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_recommender_v1_recommender_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_recommender_v1_recommender_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_recommender_v1_recommender_proto_goTypes = []any{
-	(*HealthRequest)(nil),          // 0: recommender.v1.HealthRequest
-	(*HealthResponse)(nil),         // 1: recommender.v1.HealthResponse
-	(*EnrichDocumentRequest)(nil),  // 2: recommender.v1.EnrichDocumentRequest
-	(*EnrichDocumentResponse)(nil), // 3: recommender.v1.EnrichDocumentResponse
-	(*TranslateTextRequest)(nil),   // 4: recommender.v1.TranslateTextRequest
-	(*TranslateTextResponse)(nil),  // 5: recommender.v1.TranslateTextResponse
+	(MatchType)(0),                 // 0: recommender.v1.MatchType
+	(*HealthRequest)(nil),          // 1: recommender.v1.HealthRequest
+	(*HealthResponse)(nil),         // 2: recommender.v1.HealthResponse
+	(*EnrichDocumentRequest)(nil),  // 3: recommender.v1.EnrichDocumentRequest
+	(*EnrichDocumentResponse)(nil), // 4: recommender.v1.EnrichDocumentResponse
+	(*TranslateTextRequest)(nil),   // 5: recommender.v1.TranslateTextRequest
+	(*TranslateTextResponse)(nil),  // 6: recommender.v1.TranslateTextResponse
+	(*SemanticSearchRequest)(nil),  // 7: recommender.v1.SemanticSearchRequest
+	(*SearchResult)(nil),           // 8: recommender.v1.SearchResult
+	(*SemanticSearchResponse)(nil), // 9: recommender.v1.SemanticSearchResponse
 }
 var file_recommender_v1_recommender_proto_depIdxs = []int32{
-	0, // 0: recommender.v1.RecommenderService.Health:input_type -> recommender.v1.HealthRequest
-	2, // 1: recommender.v1.RecommenderService.EnrichDocument:input_type -> recommender.v1.EnrichDocumentRequest
-	4, // 2: recommender.v1.RecommenderService.TranslateText:input_type -> recommender.v1.TranslateTextRequest
-	1, // 3: recommender.v1.RecommenderService.Health:output_type -> recommender.v1.HealthResponse
-	3, // 4: recommender.v1.RecommenderService.EnrichDocument:output_type -> recommender.v1.EnrichDocumentResponse
-	5, // 5: recommender.v1.RecommenderService.TranslateText:output_type -> recommender.v1.TranslateTextResponse
-	3, // [3:6] is the sub-list for method output_type
-	0, // [0:3] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: recommender.v1.SearchResult.match_type:type_name -> recommender.v1.MatchType
+	8, // 1: recommender.v1.SemanticSearchResponse.results:type_name -> recommender.v1.SearchResult
+	1, // 2: recommender.v1.RecommenderService.Health:input_type -> recommender.v1.HealthRequest
+	3, // 3: recommender.v1.RecommenderService.EnrichDocument:input_type -> recommender.v1.EnrichDocumentRequest
+	5, // 4: recommender.v1.RecommenderService.TranslateText:input_type -> recommender.v1.TranslateTextRequest
+	7, // 5: recommender.v1.RecommenderService.SemanticSearch:input_type -> recommender.v1.SemanticSearchRequest
+	2, // 6: recommender.v1.RecommenderService.Health:output_type -> recommender.v1.HealthResponse
+	4, // 7: recommender.v1.RecommenderService.EnrichDocument:output_type -> recommender.v1.EnrichDocumentResponse
+	6, // 8: recommender.v1.RecommenderService.TranslateText:output_type -> recommender.v1.TranslateTextResponse
+	9, // 9: recommender.v1.RecommenderService.SemanticSearch:output_type -> recommender.v1.SemanticSearchResponse
+	6, // [6:10] is the sub-list for method output_type
+	2, // [2:6] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_recommender_v1_recommender_proto_init() }
@@ -384,13 +690,14 @@ func file_recommender_v1_recommender_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_recommender_v1_recommender_proto_rawDesc), len(file_recommender_v1_recommender_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   6,
+			NumEnums:      1,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_recommender_v1_recommender_proto_goTypes,
 		DependencyIndexes: file_recommender_v1_recommender_proto_depIdxs,
+		EnumInfos:         file_recommender_v1_recommender_proto_enumTypes,
 		MessageInfos:      file_recommender_v1_recommender_proto_msgTypes,
 	}.Build()
 	File_recommender_v1_recommender_proto = out.File

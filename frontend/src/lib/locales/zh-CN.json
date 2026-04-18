@@ -29,6 +29,8 @@
 		"no_labs_hint": "加入或创建实验室",
 		"no_labs_desc": "使用邀请码加入现有实验室，或创建您自己的实验室。",
 		"members": "名成员",
+		"ai_discovery": "AI 探索",
+		"search": "语义搜索",
 		"lab_members": "成员管理",
 		"lab_settings": "实验室设置",
 		"account": "账户",
@@ -48,6 +50,7 @@
 		"labs": "实验室",
 		"create_lab": "创建实验室",
 		"join_lab": "加入实验室",
+		"search": "语义搜索",
 		"lab_members": "成员管理",
 		"lab_settings": "实验室设置",
 		"toggle_menu": "切换菜单",
@@ -206,6 +209,34 @@
 			}
 		}
 	},
+	"search": {
+		"title": "语义搜索",
+		"description": "使用自然语言搜索您的文献。",
+		"placeholder": "描述您想要查找的内容...",
+		"submit": "搜索",
+		"searching": "搜索中...",
+		"no_results": "未找到结果",
+		"no_results_hint": "请尝试不同的关键词，或确认您的文献已完成数据丰富处理。",
+		"result_count": "找到 {count} 条结果",
+		"similarity": "相关度",
+		"no_lab_hint": "在侧边栏选择一个实验室，可将实验室文献纳入搜索范围。",
+		"lab_scope": "搜索范围包含：{lab}",
+		"view": "查看",
+		"match_semantic": "语义匹配",
+		"match_keyword": "关键词匹配",
+		"more": "更多",
+		"show_less": "收起",
+		"history_title": "最近搜索",
+		"history_empty": "暂无搜索记录，可在上方输入关键词开始搜索。",
+		"history_result_count": "{count} 条结果",
+		"history_clear": "清除记录",
+		"history_clear_confirm_title": "清除所有搜索记录？",
+		"history_clear_confirm_description": "此操作将永久删除您的搜索记录，且无法撤销。",
+		"history_clear_confirm_action": "清除",
+		"history_clear_cancel": "取消",
+		"history_cleared": "搜索记录已清除",
+		"history_just_now": "刚刚"
+	},
 	"service": {
 		"internal": {
 			"network": "无法连接到服务器，请检查网络或稍后再试",
@@ -265,16 +296,31 @@
 			"failed": "更新可见范围失败，请稍后重试",
 			"success": "可见范围已更新"
 		},
-		"get_dashboard_stats": {
+		"get_my_dashboard_stats": {
 			"failed": "加载仪表盘统计数据失败"
+		},
+		"get_my_labs": {
+			"failed": "加载实验室列表失败，请稍后重试"
 		},
 		"translate": {
 			"failed": "翻译服务暂时不可用"
 		},
 		"restart_enrichment": {
 			"not_found": "未找到该文档",
+			"forbidden": "仅文档上传者可以重新开始处理",
 			"failed": "重新处理失败，请稍后重试",
 			"success": "已成功重新开始处理"
+		},
+		"get_enrich_status": {
+			"not_found": "未找到该文档",
+			"failed": "加载处理状态失败"
+		},
+		"search_documents": {
+			"not_lab_member": "您不是所选实验室的成员",
+			"failed": "搜索文档失败，请稍后重试"
+		},
+		"list_documents": {
+			"failed": "加载文档列表失败，请稍后重试"
 		},
 		"create_lab": {
 			"failed": "创建实验室失败，请稍后重试"

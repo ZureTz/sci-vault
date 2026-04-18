@@ -29,6 +29,8 @@
 		"no_labs_hint": "Join or create a lab",
 		"no_labs_desc": "Join an existing lab with an invite code, or create your own.",
 		"members": "members",
+		"ai_discovery": "AI Discovery",
+		"search": "Search",
 		"lab_members": "Members",
 		"lab_settings": "Lab Settings",
 		"account": "Account",
@@ -48,6 +50,7 @@
 		"labs": "Labs",
 		"create_lab": "Create Lab",
 		"join_lab": "Join Lab",
+		"search": "Search",
 		"lab_members": "Members",
 		"lab_settings": "Lab Settings",
 		"toggle_menu": "Toggle menu",
@@ -207,6 +210,34 @@
 			}
 		}
 	},
+	"search": {
+		"title": "Semantic Search",
+		"description": "Search across your documents using natural language.",
+		"placeholder": "Describe what you're looking for...",
+		"submit": "Search",
+		"searching": "Searching...",
+		"no_results": "No results found",
+		"no_results_hint": "Try different keywords or check that your documents have been enriched.",
+		"result_count": "{count} result(s) found",
+		"similarity": "Relevance",
+		"no_lab_hint": "Select a lab from the sidebar to include lab documents in search results.",
+		"lab_scope": "Including documents from: {lab}",
+		"view": "View",
+		"match_semantic": "Semantic",
+		"match_keyword": "Keyword",
+		"more": "more",
+		"show_less": "Show less",
+		"history_title": "Recent searches",
+		"history_empty": "No recent searches yet. Try searching for something above.",
+		"history_result_count": "{count} result(s)",
+		"history_clear": "Clear history",
+		"history_clear_confirm_title": "Clear all recent searches?",
+		"history_clear_confirm_description": "This will permanently delete your search history. This action cannot be undone.",
+		"history_clear_confirm_action": "Clear",
+		"history_clear_cancel": "Cancel",
+		"history_cleared": "Search history cleared",
+		"history_just_now": "just now"
+	},
 	"service": {
 		"internal": {
 			"network": "Unable to connect to the server, please check your network or try again later",
@@ -266,16 +297,31 @@
 			"failed": "Failed to update visibility, please try again",
 			"success": "Visibility updated successfully"
 		},
-		"get_dashboard_stats": {
+		"get_my_dashboard_stats": {
 			"failed": "Failed to load dashboard statistics"
+		},
+		"get_my_labs": {
+			"failed": "Failed to load labs, please try again"
 		},
 		"translate": {
 			"failed": "Translation service is temporarily unavailable"
 		},
 		"restart_enrichment": {
 			"not_found": "Document not found",
+			"forbidden": "Only the document uploader can restart enrichment",
 			"failed": "Failed to restart enrichment, please try again",
 			"success": "Enrichment task restarted successfully"
+		},
+		"get_enrich_status": {
+			"not_found": "Document not found",
+			"failed": "Failed to load enrichment status"
+		},
+		"search_documents": {
+			"not_lab_member": "You are not a member of the selected lab",
+			"failed": "Failed to search documents, please try again"
+		},
+		"list_documents": {
+			"failed": "Failed to load documents, please try again"
 		},
 		"create_lab": {
 			"failed": "Failed to create lab, please try again"

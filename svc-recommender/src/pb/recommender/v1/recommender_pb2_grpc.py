@@ -30,6 +30,11 @@ class RecommenderServiceStub(object):
                 request_serializer=recommender_dot_v1_dot_recommender__pb2.TranslateTextRequest.SerializeToString,
                 response_deserializer=recommender_dot_v1_dot_recommender__pb2.TranslateTextResponse.FromString,
                 _registered_method=True)
+        self.SemanticSearch = channel.unary_unary(
+                '/recommender.v1.RecommenderService/SemanticSearch',
+                request_serializer=recommender_dot_v1_dot_recommender__pb2.SemanticSearchRequest.SerializeToString,
+                response_deserializer=recommender_dot_v1_dot_recommender__pb2.SemanticSearchResponse.FromString,
+                _registered_method=True)
 
 
 class RecommenderServiceServicer(object):
@@ -60,6 +65,17 @@ class RecommenderServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SemanticSearch(self, request, context):
+        """SemanticSearch embeds the query text (RETRIEVAL_QUERY task type) and
+        searches for similar documents in the vector space (cosine similarity).
+        If vector similarity is sparse, fallback to keyword search based on remaining count of results to return.
+        Access control is enforced: only private docs owned by the user and
+        lab-visible docs in the given lab are considered.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_RecommenderServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -77,6 +93,11 @@ def add_RecommenderServiceServicer_to_server(servicer, server):
                     servicer.TranslateText,
                     request_deserializer=recommender_dot_v1_dot_recommender__pb2.TranslateTextRequest.FromString,
                     response_serializer=recommender_dot_v1_dot_recommender__pb2.TranslateTextResponse.SerializeToString,
+            ),
+            'SemanticSearch': grpc.unary_unary_rpc_method_handler(
+                    servicer.SemanticSearch,
+                    request_deserializer=recommender_dot_v1_dot_recommender__pb2.SemanticSearchRequest.FromString,
+                    response_serializer=recommender_dot_v1_dot_recommender__pb2.SemanticSearchResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -161,6 +182,33 @@ class RecommenderService(object):
             '/recommender.v1.RecommenderService/TranslateText',
             recommender_dot_v1_dot_recommender__pb2.TranslateTextRequest.SerializeToString,
             recommender_dot_v1_dot_recommender__pb2.TranslateTextResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SemanticSearch(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/recommender.v1.RecommenderService/SemanticSearch',
+            recommender_dot_v1_dot_recommender__pb2.SemanticSearchRequest.SerializeToString,
+            recommender_dot_v1_dot_recommender__pb2.SemanticSearchResponse.FromString,
             options,
             channel_credentials,
             insecure,

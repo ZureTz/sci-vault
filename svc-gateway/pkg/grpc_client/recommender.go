@@ -69,6 +69,19 @@ func (r *RecommenderClient) TranslateTextStream(ctx context.Context, text, targe
 	})
 }
 
+// SemanticSearch calls the Python service to embed a query and search for similar documents.
+// Uses a generous timeout since query embedding involves a Gemini API call.
+func (r *RecommenderClient) SemanticSearch(ctx context.Context, query string, userID, labID uint64, limit uint32) (*pb.SemanticSearchResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	return r.client.SemanticSearch(ctx, &pb.SemanticSearchRequest{
+		Query:  query,
+		UserId: userID,
+		LabId:  labID,
+		Limit:  limit,
+	})
+}
+
 // Close releases the underlying gRPC connection.
 func (r *RecommenderClient) Close() error {
 	return r.conn.Close()

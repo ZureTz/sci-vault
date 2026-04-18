@@ -22,6 +22,7 @@ const (
 	RecommenderService_Health_FullMethodName         = "/recommender.v1.RecommenderService/Health"
 	RecommenderService_EnrichDocument_FullMethodName = "/recommender.v1.RecommenderService/EnrichDocument"
 	RecommenderService_TranslateText_FullMethodName  = "/recommender.v1.RecommenderService/TranslateText"
+	RecommenderService_SemanticSearch_FullMethodName = "/recommender.v1.RecommenderService/SemanticSearch"
 )
 
 // RecommenderServiceClient is the client API for RecommenderService service.
@@ -39,6 +40,12 @@ type RecommenderServiceClient interface {
 	// TranslateText translates the given text into the target language using LLM,
 	// streaming back translated chunks as they are generated.
 	TranslateText(ctx context.Context, in *TranslateTextRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TranslateTextResponse], error)
+	// SemanticSearch embeds the query text (RETRIEVAL_QUERY task type) and
+	// searches for similar documents in the vector space (cosine similarity).
+	// If vector similarity is sparse, fallback to keyword search based on remaining count of results to return.
+	// Access control is enforced: only private docs owned by the user and
+	// lab-visible docs in the given lab are considered.
+	SemanticSearch(ctx context.Context, in *SemanticSearchRequest, opts ...grpc.CallOption) (*SemanticSearchResponse, error)
 }
 
 type recommenderServiceClient struct {
@@ -88,6 +95,16 @@ func (c *recommenderServiceClient) TranslateText(ctx context.Context, in *Transl
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type RecommenderService_TranslateTextClient = grpc.ServerStreamingClient[TranslateTextResponse]
 
+func (c *recommenderServiceClient) SemanticSearch(ctx context.Context, in *SemanticSearchRequest, opts ...grpc.CallOption) (*SemanticSearchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SemanticSearchResponse)
+	err := c.cc.Invoke(ctx, RecommenderService_SemanticSearch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RecommenderServiceServer is the server API for RecommenderService service.
 // All implementations must embed UnimplementedRecommenderServiceServer
 // for forward compatibility.
@@ -103,6 +120,12 @@ type RecommenderServiceServer interface {
 	// TranslateText translates the given text into the target language using LLM,
 	// streaming back translated chunks as they are generated.
 	TranslateText(*TranslateTextRequest, grpc.ServerStreamingServer[TranslateTextResponse]) error
+	// SemanticSearch embeds the query text (RETRIEVAL_QUERY task type) and
+	// searches for similar documents in the vector space (cosine similarity).
+	// If vector similarity is sparse, fallback to keyword search based on remaining count of results to return.
+	// Access control is enforced: only private docs owned by the user and
+	// lab-visible docs in the given lab are considered.
+	SemanticSearch(context.Context, *SemanticSearchRequest) (*SemanticSearchResponse, error)
 	mustEmbedUnimplementedRecommenderServiceServer()
 }
 
@@ -121,6 +144,9 @@ func (UnimplementedRecommenderServiceServer) EnrichDocument(context.Context, *En
 }
 func (UnimplementedRecommenderServiceServer) TranslateText(*TranslateTextRequest, grpc.ServerStreamingServer[TranslateTextResponse]) error {
 	return status.Error(codes.Unimplemented, "method TranslateText not implemented")
+}
+func (UnimplementedRecommenderServiceServer) SemanticSearch(context.Context, *SemanticSearchRequest) (*SemanticSearchResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SemanticSearch not implemented")
 }
 func (UnimplementedRecommenderServiceServer) mustEmbedUnimplementedRecommenderServiceServer() {}
 func (UnimplementedRecommenderServiceServer) testEmbeddedByValue()                            {}
@@ -190,6 +216,24 @@ func _RecommenderService_TranslateText_Handler(srv interface{}, stream grpc.Serv
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type RecommenderService_TranslateTextServer = grpc.ServerStreamingServer[TranslateTextResponse]
 
+func _RecommenderService_SemanticSearch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SemanticSearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RecommenderServiceServer).SemanticSearch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RecommenderService_SemanticSearch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RecommenderServiceServer).SemanticSearch(ctx, req.(*SemanticSearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RecommenderService_ServiceDesc is the grpc.ServiceDesc for RecommenderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -204,6 +248,10 @@ var RecommenderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "EnrichDocument",
 			Handler:    _RecommenderService_EnrichDocument_Handler,
+		},
+		{
+			MethodName: "SemanticSearch",
+			Handler:    _RecommenderService_SemanticSearch_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

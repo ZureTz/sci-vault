@@ -6,9 +6,9 @@ from typing import Optional
 import numpy as np
 from psycopg_pool import ConnectionPool
 
-log = logging.getLogger(__name__)
+from repository import ENRICH_STATUS_DONE
 
-_DB_STATUS_DONE = "done"
+log = logging.getLogger(__name__)
 
 
 class DocumentRepository:
@@ -59,7 +59,7 @@ class DocumentRepository:
                         year,
                         doi,
                         embedding,
-                        _DB_STATUS_DONE,
+                        ENRICH_STATUS_DONE,
                         doc_id,
                     ),
                 )

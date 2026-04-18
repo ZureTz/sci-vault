@@ -78,13 +78,13 @@ class DocumentGenAI:
         return DocumentMetadata.model_validate_json(response.text)
 
     def compute_embedding(self, summary_text: str) -> np.ndarray:
-        """Call embedding model to compute a 1536-dim vector for the summary."""
+        """Call embedding model to compute a 768-dim vector for the summary."""
         response = self._embedding_client.models.embed_content(
             model="gemini-embedding-001",
             contents=summary_text,
             config=types.EmbedContentConfig(
                 task_type="RETRIEVAL_DOCUMENT",
-                output_dimensionality=1536,
+                output_dimensionality=768,
             ),
         )
         if not response.embeddings:

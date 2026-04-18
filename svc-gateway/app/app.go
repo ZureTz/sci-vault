@@ -78,6 +78,7 @@ func New(configPath string) (*App, error) {
 		&model.Document{},
 		&model.Lab{},
 		&model.LabMember{},
+		&model.SearchHistory{},
 	); err != nil {
 		return nil, err
 	}
@@ -109,12 +110,14 @@ func New(configPath string) (*App, error) {
 	userRepo := repo.NewUserRepo(db)
 	userAvatarRepo := repo.NewUserProfileRepo(db)
 	documentRepo := repo.NewDocumentRepo(db)
+	searchRepo := repo.NewSearchRepo(db)
 	statsRepo := repo.NewStatsRepo(db)
 	labRepo := repo.NewLabRepo(db)
 
 	// 3. Initialize services layer (business logic)
 	userService := service.NewUserService(userRepo, userAvatarRepo, jwtGenerator, mailSrv, cacheConn, storageClient)
 	documentService := service.NewDocumentService(documentRepo, labRepo, storageClient, recommenderClient, cacheConn)
+	searchService := service.NewSearchService(searchRepo, labRepo, recommenderClient)
 	statsService := service.NewStatsService(statsRepo, cacheConn)
 	healthService := service.NewHealthService(recommenderClient)
 	translateService := service.NewTranslateService(recommenderClient)
@@ -125,6 +128,7 @@ func New(configPath string) (*App, error) {
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler()
 	documentHandler := handler.NewDocumentHandler(documentService)
+	searchHandler := handler.NewSearchHandler(searchService)
 	statsHandler := handler.NewStatsHandler(statsService)
 	translateHandler := handler.NewTranslateHandler(translateService)
 	labHandler := handler.NewLabHandler(labService)
@@ -135,6 +139,7 @@ func New(configPath string) (*App, error) {
 		UserHandler:      userHandler,
 		AuthHandler:      authHandler,
 		DocumentHandler:  documentHandler,
+		SearchHandler:    searchHandler,
 		StatsHandler:     statsHandler,
 		TranslateHandler: translateHandler,
 		LabHandler:       labHandler,
