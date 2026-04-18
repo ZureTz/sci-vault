@@ -292,6 +292,10 @@ func (h *DocumentHandler) SearchDocuments(c *gin.Context) {
 
 	resp, err := h.documentService.SearchDocuments(c.Request.Context(), userID, q)
 	if err != nil {
+		if errors.Is(err, app_error.ErrNotMember) {
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.search_documents.not_lab_member")))
+			return
+		}
 		slog.Error("SearchDocuments service error", "err", err)
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.search_documents.failed")))
 		return

@@ -279,16 +279,31 @@
 			"failed": "Failed to update visibility, please try again",
 			"success": "Visibility updated successfully"
 		},
-		"get_dashboard_stats": {
+		"get_my_dashboard_stats": {
 			"failed": "Failed to load dashboard statistics"
+		},
+		"get_my_labs": {
+			"failed": "Failed to load labs, please try again"
 		},
 		"translate": {
 			"failed": "Translation service is temporarily unavailable"
 		},
 		"restart_enrichment": {
 			"not_found": "Document not found",
+			"forbidden": "Only the document uploader can restart enrichment",
 			"failed": "Failed to restart enrichment, please try again",
 			"success": "Enrichment task restarted successfully"
+		},
+		"get_enrich_status": {
+			"not_found": "Document not found",
+			"failed": "Failed to load enrichment status"
+		},
+		"search_documents": {
+			"not_lab_member": "You are not a member of the selected lab",
+			"failed": "Failed to search documents, please try again"
+		},
+		"list_documents": {
+			"failed": "Failed to load documents, please try again"
 		},
 		"create_lab": {
 			"failed": "Failed to create lab, please try again"

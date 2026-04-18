@@ -278,16 +278,31 @@
 			"failed": "更新可见范围失败，请稍后重试",
 			"success": "可见范围已更新"
 		},
-		"get_dashboard_stats": {
+		"get_my_dashboard_stats": {
 			"failed": "加载仪表盘统计数据失败"
+		},
+		"get_my_labs": {
+			"failed": "加载实验室列表失败，请稍后重试"
 		},
 		"translate": {
 			"failed": "翻译服务暂时不可用"
 		},
 		"restart_enrichment": {
 			"not_found": "未找到该文档",
+			"forbidden": "仅文档上传者可以重新开始处理",
 			"failed": "重新处理失败，请稍后重试",
 			"success": "已成功重新开始处理"
+		},
+		"get_enrich_status": {
+			"not_found": "未找到该文档",
+			"failed": "加载处理状态失败"
+		},
+		"search_documents": {
+			"not_lab_member": "您不是所选实验室的成员",
+			"failed": "搜索文档失败，请稍后重试"
+		},
+		"list_documents": {
+			"failed": "加载文档列表失败，请稍后重试"
 		},
 		"create_lab": {
 			"failed": "创建实验室失败，请稍后重试"

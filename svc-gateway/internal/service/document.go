@@ -316,6 +316,17 @@ func (s *DocumentService) SearchDocuments(ctx context.Context, userID uint, q dt
 		limit = 10
 	}
 
+	// If a lab_id is provided, the caller must be a member of that lab;
+	// otherwise they could read any lab's shared documents by guessing IDs.
+	if q.LabID > 0 {
+		if _, err := s.labRepo.FindMember(ctx, q.LabID, userID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, app_error.ErrNotMember
+			}
+			return nil, fmt.Errorf("failed to check lab membership: %w", err)
+		}
+	}
+
 	resp, err := s.recommenderClient.SemanticSearch(ctx, q.Query, uint64(userID), uint64(q.LabID), limit)
 	if err != nil {
 		return nil, fmt.Errorf("semantic search RPC: %w", err)
