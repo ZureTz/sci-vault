@@ -133,7 +133,7 @@ func (r *documentRepo) IncrementLikeCount(ctx context.Context, id uint) error {
 func (r *documentRepo) UpdateVisibility(ctx context.Context, docID, ownerID uint, visibility string, labID *uint) error {
 	res := r.db.WithContext(ctx).Model(&model.Document{}).
 		Where("id = ? AND uploaded_by_user_id = ?", docID, ownerID).
-		Updates(map[string]interface{}{
+		Updates(map[string]any{
 			"visibility": visibility,
 			"lab_id":     labID,
 		})
@@ -151,7 +151,7 @@ func (r *documentRepo) UpdateVisibility(ctx context.Context, docID, ownerID uint
 func (r *documentRepo) BatchUpdateVisibility(ctx context.Context, docIDs []uint, ownerID uint, visibility string, labID *uint) (int64, error) {
 	res := r.db.WithContext(ctx).Model(&model.Document{}).
 		Where("id IN ? AND uploaded_by_user_id = ?", docIDs, ownerID).
-		Updates(map[string]interface{}{
+		Updates(map[string]any{
 			"visibility": visibility,
 			"lab_id":     labID,
 		})
