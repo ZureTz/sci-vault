@@ -57,6 +57,24 @@ export interface DocumentResponse {
 	created_at: string;
 }
 
+export interface BatchUploadDocumentRequest {
+	files: File[];
+	visibility?: DocumentVisibility;
+	lab_id?: number | null;
+}
+
+export interface BatchUploadItemResult {
+	filename: string;
+	doc_id?: number;
+	error?: string;
+}
+
+export interface BatchUploadDocumentResponse {
+	results: BatchUploadItemResult[];
+	succeeded: number;
+	failed: number;
+}
+
 export interface UpdateVisibilityRequest {
 	visibility: DocumentVisibility;
 	lab_id?: number | null;
@@ -111,6 +129,25 @@ const documentApi = {
 					}
 				: undefined
 		}) as unknown as Promise<DocumentResponse>;
+	},
+
+	batchUploadDocuments(
+		data: BatchUploadDocumentRequest,
+		onProgress?: (percent: number) => void
+	): Promise<BatchUploadDocumentResponse> {
+		const formData = new FormData();
+		for (const f of data.files) formData.append('files', f);
+		if (data.visibility) formData.append('visibility', data.visibility);
+		if (data.lab_id != null) formData.append('lab_id', String(data.lab_id));
+		return request.post<FormData, BatchUploadDocumentResponse>('/docs/upload/batch', formData, {
+			headers: { 'Content-Type': 'multipart/form-data' },
+			timeout: 0,
+			onUploadProgress: onProgress
+				? (e) => {
+						if (e.total) onProgress(Math.round((e.loaded / e.total) * 100));
+					}
+				: undefined
+		}) as unknown as Promise<BatchUploadDocumentResponse>;
 	},
 
 	getDocument(docId: number): Promise<DocumentResponse> {

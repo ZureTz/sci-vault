@@ -13,6 +13,7 @@ var (
 	ErrDocumentTooLarge      = errors.New("document file too large")
 	ErrDocumentInvalidType   = errors.New("unsupported document type; only PDF is accepted")
 	ErrDocumentNotFound      = errors.New("document not found")
+	ErrDocumentDuplicate     = errors.New("an identical private document already exists for this user")
 	ErrNotDocumentOwner      = errors.New("only the document uploader can perform this action")
 	ErrInvalidVisibility     = errors.New("invalid visibility value; must be 'private' or 'lab'")
 	ErrLabRequiredForLabVis  = errors.New("lab_id is required when visibility is 'lab'")
