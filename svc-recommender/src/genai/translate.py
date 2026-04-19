@@ -2,6 +2,7 @@
 
 import logging
 from collections.abc import Iterator
+from typing import Optional
 
 import google.genai as genai
 from google.genai import types
@@ -13,11 +14,16 @@ log = logging.getLogger(__name__)
 class TranslateGenAI:
     """Translates text using Gemini with streaming output."""
 
-    def __init__(self, client: genai.Client) -> None:
+    def __init__(self, client: Optional[genai.Client]) -> None:
         self._client = client
 
     def translate_stream(self, text: str, target_language: str) -> Iterator[str]:
         """Translate text into target_language, yielding chunks as they arrive."""
+        if not self._client:
+            log.warning("GenAI translate is disabled (missing API key). Yielding original text.")
+            yield f"[Translation Disabled] {text}"
+            return
+
         prompt = (
             f"Translate the following academic text into {target_language}. "
             "Preserve the original meaning, tone, and technical terminology. "
