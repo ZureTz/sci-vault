@@ -1,6 +1,7 @@
 """Google GenAI client."""
 
 import logging
+from typing import Optional
 
 import google.genai as genai
 from google.genai import types
@@ -34,19 +35,29 @@ class GenAI:
                 )
             return genai.Client(api_key=cfg.google_genai_api_key, http_options=opts)
 
-        log.info(
-            "building GenAI clients (Vertex AI=%s, metadata_timeout=%dms, embedding_timeout=%dms)",
-            cfg.google_genai_use_vertexai,
-            _METADATA_TIMEOUT_MS,
-            _EMBEDDING_TIMEOUT_MS,
-        )
-        self._metadata_client = _build(_METADATA_TIMEOUT_MS)
-        self._embedding_client = _build(_EMBEDDING_TIMEOUT_MS)
+        try:
+            log.info(
+                "building GenAI clients (Vertex AI=%s, metadata_timeout=%dms, embedding_timeout=%dms)",
+                cfg.google_genai_use_vertexai,
+                _METADATA_TIMEOUT_MS,
+                _EMBEDDING_TIMEOUT_MS,
+            )
+            
+            # Check if neither API key nor credentials are set, and if creation fails, gracefully fallback
+            if not cfg.google_genai_api_key and not cfg.google_genai_use_vertexai:
+                raise ValueError("No API key provided and Vertex AI is disabled")
+                
+            self._metadata_client = _build(_METADATA_TIMEOUT_MS)
+            self._embedding_client = _build(_EMBEDDING_TIMEOUT_MS)
+        except Exception as exc:
+            log.warning("GenAI client initialization failed: %s! GenAI features will be disabled.", exc)
+            self._metadata_client: Optional[genai.Client] = None
+            self._embedding_client: Optional[genai.Client] = None
 
     @property
-    def metadata_client(self) -> genai.Client:
+    def metadata_client(self) -> Optional[genai.Client]:
         return self._metadata_client
 
     @property
-    def embedding_client(self) -> genai.Client:
+    def embedding_client(self) -> Optional[genai.Client]:
         return self._embedding_client

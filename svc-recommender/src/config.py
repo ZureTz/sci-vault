@@ -115,6 +115,8 @@ class Config:
         (i.e. the directory that contains ``main.py``).  The file is optional;
         if it is missing the service falls back to built-in defaults.
         """
+        import time
+        
         # Locate config.yaml: caller may supply an explicit path, otherwise
         # search the current working directory and the project root (src/../).
         if config_path is None:
@@ -127,10 +129,23 @@ class Config:
         values: dict = dict(_DEFAULTS)
 
         if config_path and config_path.exists():
-            with config_path.open() as fh:
-                file_data = yaml.safe_load(fh) or {}
-            values.update(file_data)
-            log.info("loaded config from %s", config_path)
+            # Retry logic for Docker for Mac volume mount compatibility
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    with config_path.open() as fh:
+                        file_data = yaml.safe_load(fh) or {}
+                    values.update(file_data)
+                    log.info("loaded config from %s", config_path)
+                    break
+                except OSError as e:
+                    if attempt < max_retries - 1:
+                        log.warning("Failed to read config (attempt %d/%d): %s. Retrying...", 
+                                   attempt + 1, max_retries, e)
+                        time.sleep(0.5)
+                    else:
+                        log.error("Failed to read config after %d attempts: %s. Using defaults.", 
+                                 max_retries, e)
         else:
             log.info("no config.yaml found, using defaults and environment variables")
 
