@@ -42,7 +42,9 @@ class DocumentGenAI:
     """Encapsulates GenAI calls for document enrichment."""
 
     def __init__(
-        self, metadata_client: Optional[genai.Client], embedding_client: Optional[genai.Client]
+        self,
+        metadata_client: Optional[genai.Client],
+        embedding_client: Optional[genai.Client],
     ) -> None:
         self._metadata_client = metadata_client
         self._embedding_client = embedding_client
