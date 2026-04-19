@@ -42,15 +42,18 @@ class GenAI:
                 _METADATA_TIMEOUT_MS,
                 _EMBEDDING_TIMEOUT_MS,
             )
-            
+
             # Check if neither API key nor credentials are set, and if creation fails, gracefully fallback
             if not cfg.google_genai_api_key and not cfg.google_genai_use_vertexai:
                 raise ValueError("No API key provided and Vertex AI is disabled")
-                
+
             self._metadata_client = _build(_METADATA_TIMEOUT_MS)
             self._embedding_client = _build(_EMBEDDING_TIMEOUT_MS)
         except Exception as exc:
-            log.warning("GenAI client initialization failed: %s! GenAI features will be disabled.", exc)
+            log.warning(
+                "GenAI client initialization failed: %s! GenAI features will be disabled.",
+                exc,
+            )
             self._metadata_client: Optional[genai.Client] = None
             self._embedding_client: Optional[genai.Client] = None
 

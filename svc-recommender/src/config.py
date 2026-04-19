@@ -116,7 +116,7 @@ class Config:
         if it is missing the service falls back to built-in defaults.
         """
         import time
-        
+
         # Locate config.yaml: caller may supply an explicit path, otherwise
         # search the current working directory and the project root (src/../).
         if config_path is None:
@@ -140,12 +140,19 @@ class Config:
                     break
                 except OSError as e:
                     if attempt < max_retries - 1:
-                        log.warning("Failed to read config (attempt %d/%d): %s. Retrying...", 
-                                   attempt + 1, max_retries, e)
+                        log.warning(
+                            "Failed to read config (attempt %d/%d): %s. Retrying...",
+                            attempt + 1,
+                            max_retries,
+                            e,
+                        )
                         time.sleep(0.5)
                     else:
-                        log.error("Failed to read config after %d attempts: %s. Using defaults.", 
-                                 max_retries, e)
+                        log.error(
+                            "Failed to read config after %d attempts: %s. Using defaults.",
+                            max_retries,
+                            e,
+                        )
         else:
             log.info("no config.yaml found, using defaults and environment variables")
 

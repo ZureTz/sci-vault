@@ -20,7 +20,9 @@ class TranslateGenAI:
     def translate_stream(self, text: str, target_language: str) -> Iterator[str]:
         """Translate text into target_language, yielding chunks as they arrive."""
         if not self._client:
-            log.warning("GenAI translate is disabled (missing API key). Yielding original text.")
+            log.warning(
+                "GenAI translate is disabled (missing API key). Yielding original text."
+            )
             yield f"[Translation Disabled] {text}"
             return
 
