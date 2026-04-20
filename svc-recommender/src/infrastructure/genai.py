@@ -13,16 +13,20 @@ DEFAULT_MODEL = "gemini-3-flash-preview"
 
 # Metadata extraction uploads a full PDF and may take significant time.
 # Embedding is text-only and should be fast.
+# Translate streams tokens and needs a moderate budget.
+# Search embeds short query text and should be fast.
 # HttpOptions.timeout is in milliseconds.
 _METADATA_TIMEOUT_MS = 120_000
 _EMBEDDING_TIMEOUT_MS = 30_000
+_TRANSLATE_TIMEOUT_MS = 60_000
+_SEARCH_TIMEOUT_MS = 30_000
 
 
 class GenAI:
-    """Wraps a pair of google.genai.Client instances with appropriate timeouts.
+    """Wraps a set of google.genai.Client instances with appropriate timeouts.
 
-    Two clients are used because the SDK applies timeout at the HTTP client
-    level, and PDF extraction needs a much longer budget than embedding.
+    Separate clients are used because the SDK applies timeout at the HTTP
+    client level, and each feature has a different latency profile.
     """
 
     def __init__(self, cfg: Config) -> None:
@@ -35,13 +39,21 @@ class GenAI:
             return genai.Client(api_key=cfg.google_genai_api_key, http_options=opts)
 
         log.info(
-            "building GenAI clients (Vertex AI=%s, metadata_timeout=%dms, embedding_timeout=%dms)",
+            "building GenAI clients (Vertex AI=%s, metadata_timeout=%dms, embedding_timeout=%dms, translate_timeout=%dms, search_timeout=%dms)",
             cfg.google_genai_use_vertexai,
             _METADATA_TIMEOUT_MS,
             _EMBEDDING_TIMEOUT_MS,
+            _TRANSLATE_TIMEOUT_MS,
+            _SEARCH_TIMEOUT_MS,
         )
+
+        if not cfg.google_genai_api_key and not cfg.google_genai_use_vertexai:
+            raise ValueError("No API key provided and Vertex AI is disabled")
+
         self._metadata_client = _build(_METADATA_TIMEOUT_MS)
         self._embedding_client = _build(_EMBEDDING_TIMEOUT_MS)
+        self._translate_client = _build(_TRANSLATE_TIMEOUT_MS)
+        self._search_client = _build(_SEARCH_TIMEOUT_MS)
 
     @property
     def metadata_client(self) -> genai.Client:
@@ -50,3 +62,11 @@ class GenAI:
     @property
     def embedding_client(self) -> genai.Client:
         return self._embedding_client
+
+    @property
+    def translate_client(self) -> genai.Client:
+        return self._translate_client
+
+    @property
+    def search_client(self) -> genai.Client:
+        return self._search_client
