@@ -96,6 +96,7 @@ func (deps *RouterDeps) registerUserRoutes(group *gin.RouterGroup) {
 	protected.Use(middleware.CheckJWT(&deps.Config.JWT))
 	{
 		protected.POST("/upload_avatar", deps.UserHandler.UploadAvatar)
+		protected.POST("/change_password", deps.UserHandler.ChangePassword)
 		protected.PUT("/profile", deps.UserHandler.UpdateProfile)
 		protected.GET("/avatar/:user_id", deps.UserHandler.GetAvatar)
 		protected.GET("/profile/:user_id", deps.UserHandler.GetProfile)
@@ -153,6 +154,7 @@ func (deps *RouterDeps) registerLabRoutes(group *gin.RouterGroup) {
 		labWithID.DELETE("/members/me", deps.LabHandler.LeaveLab)         // Step 2: confirm with email code
 
 		// Owner only operations
+		labWithID.PATCH("", deps.LabHandler.UpdateLabInfo)
 		labWithID.DELETE("/members/:user_id", deps.LabHandler.KickMember)
 		labWithID.POST("/transfer", deps.LabHandler.TransferOwnership)
 		labWithID.POST("/delete-request", deps.LabHandler.RequestDeleteLab) // Step 1: send email confirmation code

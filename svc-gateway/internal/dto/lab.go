@@ -5,6 +5,11 @@ type CreateLabRequest struct {
 	Description *string `json:"description" binding:"omitempty,max=500"`
 }
 
+type UpdateLabInfoRequest struct {
+	Name        string  `json:"name" binding:"required,min=1,max=100"`
+	Description *string `json:"description" binding:"omitempty,max=500"`
+}
+
 type JoinLabByCodeRequest struct {
 	InviteCode string `json:"invite_code" binding:"required"`
 }

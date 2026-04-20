@@ -390,6 +390,46 @@ func (s *LabService) DeleteLab(ctx context.Context, labID, requesterID uint, con
 	return s.repo.DeleteLab(ctx, labID)
 }
 
+func (s *LabService) UpdateLabInfo(ctx context.Context, labID, requesterID uint, req dto.UpdateLabInfoRequest) (*dto.LabDetailResponse, error) {
+	requester, err := s.repo.FindMember(ctx, labID, requesterID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, app_error.ErrNotMember
+		}
+		return nil, err
+	}
+	if requester.Role != model.LabRoleOwner {
+		return nil, app_error.ErrNotOwner
+	}
+
+	if err := s.repo.UpdateLabInfo(ctx, labID, req.Name, req.Description); err != nil {
+		return nil, err
+	}
+
+	lab, err := s.repo.FindByID(ctx, labID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, app_error.ErrLabNotFound
+		}
+		return nil, err
+	}
+
+	count, err := s.repo.CountMembers(ctx, labID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.LabDetailResponse{
+		ID:          lab.ID,
+		Name:        lab.Name,
+		Description: lab.Description,
+		InviteCode:  lab.InviteCode,
+		OwnerID:     lab.OwnerID,
+		MemberCount: count,
+		MyRole:      requester.Role,
+	}, nil
+}
+
 func (s *LabService) ResetInviteCode(ctx context.Context, labID, requesterID uint) (string, error) {
 	requester, err := s.repo.FindMember(ctx, labID, requesterID)
 	if err != nil {

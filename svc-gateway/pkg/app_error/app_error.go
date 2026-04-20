@@ -5,10 +5,12 @@ package app_error
 import "errors"
 
 var (
-	ErrEmailCodeExpired  = errors.New("email code expired or invalid")
-	ErrEmailCodeMismatch = errors.New("email code mismatch")
-	ErrAvatarTooLarge    = errors.New("avatar file too large")
-	ErrAvatarInvalidType = errors.New("unsupported avatar image type")
+	ErrEmailCodeExpired     = errors.New("email code expired or invalid")
+	ErrEmailCodeMismatch    = errors.New("email code mismatch")
+	ErrCurrentPasswordWrong = errors.New("current password is incorrect")
+	ErrSamePassword         = errors.New("new password must be different from current password")
+	ErrAvatarTooLarge       = errors.New("avatar file too large")
+	ErrAvatarInvalidType    = errors.New("unsupported avatar image type")
 
 	ErrDocumentTooLarge      = errors.New("document file too large")
 	ErrDocumentInvalidType   = errors.New("unsupported document type; only PDF is accepted")

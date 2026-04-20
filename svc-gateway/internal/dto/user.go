@@ -45,6 +45,12 @@ type ResetPasswordRequest struct {
 	ConfirmedPassword string `json:"confirmed_password" binding:"required,eqfield=Password"`
 }
 
+type ChangePasswordRequest struct {
+	CurrentPassword   string `json:"current_password" binding:"required,min=6,max=50,custom_password_validator"`
+	NewPassword       string `json:"new_password" binding:"required,min=6,max=50,custom_password_validator"`
+	ConfirmedPassword string `json:"confirmed_password" binding:"required,eqfield=NewPassword"`
+}
+
 // UploadAvatarForm validates that the multipart form contains the avatar file field.
 type UploadAvatarForm struct {
 	Avatar *multipart.FileHeader `form:"avatar" binding:"required"`
