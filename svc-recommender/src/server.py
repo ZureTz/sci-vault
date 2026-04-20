@@ -45,10 +45,10 @@ class RecommenderServer:
         doc_genai = DocumentGenAI(
             self._genai.metadata_client, self._genai.embedding_client
         )
-        translate_genai = TranslateGenAI(self._genai.metadata_client)
+        translate_genai = TranslateGenAI(self._genai.translate_client)
 
         search_repo = SearchRepository(self._db.pool)
-        search_genai = SearchGenAI(self._genai.embedding_client)
+        search_genai = SearchGenAI(self._genai.search_client)
         search_cache = SearchCache(self._cache.client)
 
         _document = DocumentServicer(enrich_cache, doc_repo, doc_storage, doc_genai)
