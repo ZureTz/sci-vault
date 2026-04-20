@@ -344,6 +344,7 @@
 			"too_large": "Document exceeds the maximum size limit",
 			"unsupported_type": "Unsupported file type, please upload a PDF or supported document",
 			"duplicate": "You have already uploaded this file as a private document",
+			"duplicate_in_lab": "An identical document already exists in this lab",
 			"lab_required": "A lab must be selected when sharing with a lab",
 			"invalid_visibility": "Invalid visibility option",
 			"not_lab_member": "You are not a member of the selected lab",

@@ -13,14 +13,19 @@ var (
 	ErrAvatarInvalidType    = errors.New("unsupported avatar image type")
 	ErrProfileNotFound      = errors.New("user profile not found")
 
-	ErrDocumentTooLarge      = errors.New("document file too large")
-	ErrDocumentInvalidType   = errors.New("unsupported document type; only PDF is accepted")
-	ErrDocumentNotFound      = errors.New("document not found")
-	ErrDocumentDuplicate     = errors.New("an identical private document already exists for this user")
-	ErrNotDocumentOwner      = errors.New("only the document uploader can perform this action")
-	ErrInvalidVisibility     = errors.New("invalid visibility value; must be 'private' or 'lab'")
-	ErrLabRequiredForLabVis  = errors.New("lab_id is required when visibility is 'lab'")
-	ErrSomeDocsNotAccessible = errors.New("one or more documents are not accessible")
+	ErrDocumentTooLarge    = errors.New("document file too large")
+	ErrDocumentInvalidType = errors.New("unsupported document type; only PDF is accepted")
+	ErrDocumentNotFound    = errors.New("document not found")
+	// ErrDocumentDuplicate is returned when an upload's content matches an existing
+	// private document owned by the same user.
+	ErrDocumentDuplicate = errors.New("an identical private document already exists for this user")
+	// ErrDocumentDuplicateInLab is returned when an upload's content matches an
+	// existing document (uploaded by anyone) in the target lab.
+	ErrDocumentDuplicateInLab = errors.New("an identical document already exists in this lab")
+	ErrNotDocumentOwner       = errors.New("only the document uploader can perform this action")
+	ErrInvalidVisibility      = errors.New("invalid visibility value; must be 'private' or 'lab'")
+	ErrLabRequiredForLabVis   = errors.New("lab_id is required when visibility is 'lab'")
+	ErrSomeDocsNotAccessible  = errors.New("one or more documents are not accessible")
 
 	ErrLabNotFound       = errors.New("lab not found")
 	ErrInvalidInviteCode = errors.New("invalid invite code")
