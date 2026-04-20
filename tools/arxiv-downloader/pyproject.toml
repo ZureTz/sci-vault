@@ -1,0 +1,9 @@
+[project]
+name = "arxiv-downloader"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.14"
+dependencies = [
+    "feedparser>=6.0.12",
+    "httpx>=0.28.1",
+]

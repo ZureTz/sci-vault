@@ -16,5 +16,9 @@
       "name": "svc-recommender",
       "path": "svc-recommender",
     },
+    {
+      "name": "arxiv-downloader",
+      "path": "tools/arxiv-downloader",
+    }
   ],
 }
