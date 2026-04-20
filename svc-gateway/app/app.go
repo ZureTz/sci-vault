@@ -88,11 +88,17 @@ func New(configPath string) (*App, error) {
 	}
 
 	// Dedup guard: a user cannot upload the same bytes twice as a private document.
-	// Lab/public copies are intentionally allowed (different context of ownership).
 	if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_documents_private_user_sha
 		ON documents (uploaded_by_user_id, content_sha256)
 		WHERE visibility = 'private' AND deleted_at IS NULL AND content_sha256 <> ''`).Error; err != nil {
 		return nil, fmt.Errorf("failed to create private dedup index: %w", err)
+	}
+
+	// Dedup guard: a lab cannot contain two copies of the same bytes, regardless of uploader.
+	if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_documents_lab_sha
+		ON documents (lab_id, content_sha256)
+		WHERE visibility = 'lab' AND lab_id IS NOT NULL AND deleted_at IS NULL AND content_sha256 <> ''`).Error; err != nil {
+		return nil, fmt.Errorf("failed to create lab dedup index: %w", err)
 	}
 
 	storageClient := storage.NewClient(cfg.Storage.Endpoint, cfg.Storage.PresignEndpoint, cfg.Storage.AccessKey, cfg.Storage.SecretKey, cfg.Storage.PrivateBucket, cfg.Storage.PublicBucket, cfg.Storage.PublicProxyPath, cfg.Storage.PrivateProxyPath, cfg.Storage.UseSSL)
