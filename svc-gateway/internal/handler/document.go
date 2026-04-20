@@ -68,6 +68,8 @@ func (h *DocumentHandler) UploadDocument(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.upload_document.unsupported_type")))
 		case errors.Is(err, app_error.ErrDocumentDuplicate):
 			c.JSON(http.StatusConflict, utils.ErrorResponse(fmt.Errorf("service.upload_document.duplicate")))
+		case errors.Is(err, app_error.ErrDocumentDuplicateInLab):
+			c.JSON(http.StatusConflict, utils.ErrorResponse(fmt.Errorf("service.upload_document.duplicate_in_lab")))
 		case errors.Is(err, app_error.ErrLabRequiredForLabVis):
 			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.upload_document.lab_required")))
 		case errors.Is(err, app_error.ErrInvalidVisibility):
@@ -94,6 +96,8 @@ func batchUploadItemErrorCode(msg string) string {
 		return "service.upload_document.unsupported_type"
 	case app_error.ErrDocumentDuplicate.Error():
 		return "service.upload_document.duplicate"
+	case app_error.ErrDocumentDuplicateInLab.Error():
+		return "service.upload_document.duplicate_in_lab"
 	default:
 		return "service.upload_document.failed"
 	}

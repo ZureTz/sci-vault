@@ -58,16 +58,32 @@ func NewDocumentService(
 	}
 }
 
-// isDedupIndexViolation reports whether err is a unique-violation raised by one of
-// the dedup indexes (private-per-user or lab-wide). Used to detect a race where a
-// concurrent upload persisted the same content_sha256 first.
-func isDedupIndexViolation(err error) bool {
+// dedupViolation classifies a DB error as a unique-violation raised by one of
+// the dedup partial indexes (private-per-user or lab-wide). Returns the matching
+// sentinel (ErrDocumentDuplicate or ErrDocumentDuplicateInLab) or nil when err
+// is not a dedup-index violation. Used to detect a race where a concurrent
+// upload persisted the same content_sha256 first.
+func dedupViolation(err error) error {
 	if err == nil {
-		return false
+		return nil
 	}
 	msg := err.Error()
-	return strings.Contains(msg, "idx_documents_private_user_sha") ||
-		strings.Contains(msg, "idx_documents_lab_sha")
+	switch {
+	case strings.Contains(msg, "idx_documents_private_user_sha"):
+		return app_error.ErrDocumentDuplicate
+	case strings.Contains(msg, "idx_documents_lab_sha"):
+		return app_error.ErrDocumentDuplicateInLab
+	}
+	return nil
+}
+
+// duplicateErrorFor returns the appropriate duplicate sentinel for a given
+// destination visibility.
+func duplicateErrorFor(visibility string) error {
+	if visibility == model.DocVisibilityLab {
+		return app_error.ErrDocumentDuplicateInLab
+	}
+	return app_error.ErrDocumentDuplicate
 }
 
 // canAccessDocument reports whether userID is allowed to read doc.
@@ -146,7 +162,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 	// - private → the same user's private library
 	// - lab → the selected lab (regardless of uploader)
 	if _, err := s.repo.FindExistingByHash(ctx, resolvedVis, userID, resolvedLabID, contentSHA); err == nil {
-		return nil, app_error.ErrDocumentDuplicate
+		return nil, duplicateErrorFor(resolvedVis)
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("failed to check for duplicate: %w", err)
 	}
@@ -174,8 +190,8 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 	}
 	if err := s.repo.Create(ctx, doc); err != nil {
 		// Race with a partial unique index — another concurrent upload won.
-		if isDedupIndexViolation(err) {
-			return nil, app_error.ErrDocumentDuplicate
+		if dupErr := dedupViolation(err); dupErr != nil {
+			return nil, dupErr
 		}
 		return nil, fmt.Errorf("failed to save document: %w", err)
 	}
@@ -303,7 +319,7 @@ func (s *DocumentService) BatchUploadDocuments(ctx context.Context, userID uint,
 			continue
 		}
 		if existingHashes[p.hash] || seenInBatch[p.hash] {
-			results[i].Error = app_error.ErrDocumentDuplicate.Error()
+			results[i].Error = duplicateErrorFor(resolvedVis).Error()
 			continue
 		}
 		seenInBatch[p.hash] = true
@@ -332,11 +348,11 @@ func (s *DocumentService) BatchUploadDocuments(ctx context.Context, userID uint,
 		if err := s.repo.CreateBatch(ctx, toInsert); err != nil {
 			// Unique-index race: another concurrent request persisted the same hash.
 			// Fall back to per-row inserts so one colliding file doesn't fail the batch.
-			if isDedupIndexViolation(err) {
+			if dedupViolation(err) != nil {
 				for n, doc := range toInsert {
 					if createErr := s.repo.Create(ctx, doc); createErr != nil {
-						if isDedupIndexViolation(createErr) {
-							results[insertIdx[n]].Error = app_error.ErrDocumentDuplicate.Error()
+						if dupErr := dedupViolation(createErr); dupErr != nil {
+							results[insertIdx[n]].Error = dupErr.Error()
 							continue
 						}
 						results[insertIdx[n]].Error = createErr.Error()
