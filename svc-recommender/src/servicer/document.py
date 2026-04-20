@@ -102,11 +102,6 @@ class DocumentServicer:
                 log.info("enrichment done: doc_id=%d", doc_id)
                 return
 
-            except RuntimeError as exc:
-                # Catch intentional disable exception (no API key)
-                log.warning("enrichment skipped: doc_id=%d: %s", doc_id, exc)
-                self._cache.set_done(doc_id)
-                return
             except Exception as exc:
                 last_exc = exc
                 if attempt < _ENRICH_MAX_ATTEMPTS:
