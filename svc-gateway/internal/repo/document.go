@@ -15,8 +15,8 @@ type DocumentRepository interface {
 	FindByID(ctx context.Context, id uint) (model.Document, error)
 	FindByUserID(ctx context.Context, userID uint, offset, limit int) ([]model.Document, int64, error)
 	FindByUserIDAndStatus(ctx context.Context, userID uint, status string, offset, limit int) ([]model.Document, int64, error)
-	FindPrivateByUserIDAndHash(ctx context.Context, userID uint, sha256 string) (model.Document, error)
-	FindPrivateHashesInSet(ctx context.Context, userID uint, hashes []string) ([]string, error)
+	FindExistingByHash(ctx context.Context, visibility string, userID uint, labID *uint, sha256 string) (model.Document, error)
+	FindExistingHashesInSet(ctx context.Context, visibility string, userID uint, labID *uint, hashes []string) ([]string, error)
 	FindStaleNotStarted(ctx context.Context, olderThan time.Time, limit int) ([]model.Document, error)
 	IncrementViewCount(ctx context.Context, id uint) error
 	IncrementLikeCount(ctx context.Context, id uint) error
@@ -66,27 +66,49 @@ func (r *documentRepo) CreateBatch(ctx context.Context, docs []*model.Document) 
 	return r.db.WithContext(ctx).Create(&docs).Error
 }
 
-// FindPrivateByUserIDAndHash looks up an existing private document owned by userID
-// with the given sha256. Returns gorm.ErrRecordNotFound when none exists.
-func (r *documentRepo) FindPrivateByUserIDAndHash(ctx context.Context, userID uint, sha256 string) (model.Document, error) {
+// FindExistingByHash looks up an existing document within the same dedup scope
+// (user's private docs when visibility=private; the lab's docs when visibility=lab).
+// Returns gorm.ErrRecordNotFound when none exists.
+func (r *documentRepo) FindExistingByHash(ctx context.Context, visibility string, userID uint, labID *uint, sha256 string) (model.Document, error) {
 	var doc model.Document
-	err := r.db.WithContext(ctx).
-		Where("uploaded_by_user_id = ? AND content_sha256 = ? AND visibility = ?", userID, sha256, model.DocVisibilityPrivate).
-		First(&doc).Error
+	tx := r.db.WithContext(ctx).Where("content_sha256 = ? AND visibility = ?", sha256, visibility)
+	switch visibility {
+	case model.DocVisibilityPrivate:
+		tx = tx.Where("uploaded_by_user_id = ?", userID)
+	case model.DocVisibilityLab:
+		if labID == nil {
+			return doc, gorm.ErrRecordNotFound
+		}
+		tx = tx.Where("lab_id = ?", *labID)
+	default:
+		return doc, gorm.ErrRecordNotFound
+	}
+	err := tx.First(&doc).Error
 	return doc, err
 }
 
-// FindPrivateHashesInSet returns the subset of the given hashes that already
-// exist as private documents for this user. Used for batch dedup pre-check.
-func (r *documentRepo) FindPrivateHashesInSet(ctx context.Context, userID uint, hashes []string) ([]string, error) {
+// FindExistingHashesInSet returns the subset of the given hashes that already
+// exist within the same dedup scope (see FindExistingByHash). Used for batch dedup pre-check.
+func (r *documentRepo) FindExistingHashesInSet(ctx context.Context, visibility string, userID uint, labID *uint, hashes []string) ([]string, error) {
 	if len(hashes) == 0 {
 		return nil, nil
 	}
-	var existing []string
-	err := r.db.WithContext(ctx).
+	tx := r.db.WithContext(ctx).
 		Model(&model.Document{}).
-		Where("uploaded_by_user_id = ? AND visibility = ? AND content_sha256 IN ?", userID, model.DocVisibilityPrivate, hashes).
-		Pluck("content_sha256", &existing).Error
+		Where("visibility = ? AND content_sha256 IN ?", visibility, hashes)
+	switch visibility {
+	case model.DocVisibilityPrivate:
+		tx = tx.Where("uploaded_by_user_id = ?", userID)
+	case model.DocVisibilityLab:
+		if labID == nil {
+			return nil, nil
+		}
+		tx = tx.Where("lab_id = ?", *labID)
+	default:
+		return nil, nil
+	}
+	var existing []string
+	err := tx.Pluck("content_sha256", &existing).Error
 	return existing, err
 }
 

@@ -58,6 +58,18 @@ func NewDocumentService(
 	}
 }
 
+// isDedupIndexViolation reports whether err is a unique-violation raised by one of
+// the dedup indexes (private-per-user or lab-wide). Used to detect a race where a
+// concurrent upload persisted the same content_sha256 first.
+func isDedupIndexViolation(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "idx_documents_private_user_sha") ||
+		strings.Contains(msg, "idx_documents_lab_sha")
+}
+
 // canAccessDocument reports whether userID is allowed to read doc.
 // Access is granted when the user is the uploader, or when the document
 // is lab-visible and the user is a member of that lab.
@@ -130,13 +142,13 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 	contentHash := sha256.Sum256(buf)
 	contentSHA := hex.EncodeToString(contentHash[:])
 
-	// Duplicate guard: only enforced for private uploads per product requirement.
-	if resolvedVis == model.DocVisibilityPrivate {
-		if _, err := s.repo.FindPrivateByUserIDAndHash(ctx, userID, contentSHA); err == nil {
-			return nil, app_error.ErrDocumentDuplicate
-		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("failed to check for duplicate: %w", err)
-		}
+	// Duplicate guard: scoped to the destination context.
+	// - private → the same user's private library
+	// - lab → the selected lab (regardless of uploader)
+	if _, err := s.repo.FindExistingByHash(ctx, resolvedVis, userID, resolvedLabID, contentSHA); err == nil {
+		return nil, app_error.ErrDocumentDuplicate
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("failed to check for duplicate: %w", err)
 	}
 
 	ts := time.Now().UTC()
@@ -161,8 +173,8 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 		LabID:            resolvedLabID,
 	}
 	if err := s.repo.Create(ctx, doc); err != nil {
-		// Race with the partial unique index — another concurrent upload won.
-		if strings.Contains(err.Error(), "idx_documents_private_user_sha") {
+		// Race with a partial unique index — another concurrent upload won.
+		if isDedupIndexViolation(err) {
 			return nil, app_error.ErrDocumentDuplicate
 		}
 		return nil, fmt.Errorf("failed to save document: %w", err)
@@ -260,11 +272,11 @@ func (s *DocumentService) BatchUploadDocuments(ctx context.Context, userID uint,
 		hashesToCheck = append(hashesToCheck, p.hash)
 	}
 
-	// Phase 2 — single-query dedup check against the user's existing private docs.
-	// Only relevant for private uploads per product rule.
+	// Phase 2 — single-query dedup check scoped to the destination (user's private
+	// library or the target lab).
 	existingHashes := map[string]bool{}
-	if resolvedVis == model.DocVisibilityPrivate && len(hashesToCheck) > 0 {
-		found, err := s.repo.FindPrivateHashesInSet(ctx, userID, hashesToCheck)
+	if len(hashesToCheck) > 0 {
+		found, err := s.repo.FindExistingHashesInSet(ctx, resolvedVis, userID, resolvedLabID, hashesToCheck)
 		if err != nil {
 			return nil, fmt.Errorf("failed to batch check duplicates: %w", err)
 		}
@@ -290,7 +302,7 @@ func (s *DocumentService) BatchUploadDocuments(ctx context.Context, userID uint,
 			results[i].Error = p.err
 			continue
 		}
-		if resolvedVis == model.DocVisibilityPrivate && (existingHashes[p.hash] || seenInBatch[p.hash]) {
+		if existingHashes[p.hash] || seenInBatch[p.hash] {
 			results[i].Error = app_error.ErrDocumentDuplicate.Error()
 			continue
 		}
@@ -320,10 +332,10 @@ func (s *DocumentService) BatchUploadDocuments(ctx context.Context, userID uint,
 		if err := s.repo.CreateBatch(ctx, toInsert); err != nil {
 			// Unique-index race: another concurrent request persisted the same hash.
 			// Fall back to per-row inserts so one colliding file doesn't fail the batch.
-			if strings.Contains(err.Error(), "idx_documents_private_user_sha") {
+			if isDedupIndexViolation(err) {
 				for n, doc := range toInsert {
 					if createErr := s.repo.Create(ctx, doc); createErr != nil {
-						if strings.Contains(createErr.Error(), "idx_documents_private_user_sha") {
+						if isDedupIndexViolation(createErr) {
 							results[insertIdx[n]].Error = app_error.ErrDocumentDuplicate.Error()
 							continue
 						}
