@@ -218,6 +218,7 @@
 			"error": {
 				"file_required": "请选择要上传的文件",
 				"invalid_type": "仅支持 PDF 文件",
+				"too_many_files": "一次最多上传 {max} 个文件",
 				"lab_required": "请选择一个实验室",
 				"failed": "文献上传失败，请稍后重试"
 			}
@@ -461,6 +462,11 @@
 		},
 		"invite_code": {
 			"required": "邀请码不能为空"
+		},
+		"files": {
+			"required": "请至少选择一个文件",
+			"min": "请至少选择一个文件",
+			"max": "一次最多上传 20 个文件"
 		}
 	},
 	"lab_dashboard": {

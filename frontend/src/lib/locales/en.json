@@ -219,6 +219,7 @@
 			"error": {
 				"file_required": "Please select a file to upload",
 				"invalid_type": "Only PDF files are supported",
+				"too_many_files": "You can upload at most {max} files at a time",
 				"lab_required": "Please select a lab",
 				"failed": "Failed to upload document, please try again"
 			}
@@ -462,6 +463,11 @@
 		},
 		"invite_code": {
 			"required": "Invite code is required"
+		},
+		"files": {
+			"required": "Please select at least one file",
+			"min": "Please select at least one file",
+			"max": "You can upload at most 20 files at a time"
 		}
 	},
 	"lab_dashboard": {
