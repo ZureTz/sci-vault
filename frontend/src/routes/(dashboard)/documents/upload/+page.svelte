@@ -24,6 +24,8 @@
 	import { getActiveLab } from '$lib/stores/lab.svelte';
 	import { showApiErrors } from '$lib/utils/api-error';
 
+	const MAX_BATCH_FILES = 20;
+
 	let fileInput = $state<HTMLInputElement | undefined>(undefined);
 	let selectedFiles = $state<File[]>([]);
 	let selectedFile = $derived(selectedFiles[0] ?? null);
@@ -111,6 +113,11 @@
 			return;
 		}
 		const list = Array.from(files);
+		if (list.length > MAX_BATCH_FILES) {
+			toast.error($_('document.upload.error.too_many_files', { values: { max: MAX_BATCH_FILES } }));
+			if (fileInput) fileInput.value = '';
+			return;
+		}
 		const invalid = list.find((f) => !f.name.toLowerCase().endsWith('.pdf'));
 		if (invalid) {
 			toast.error($_('document.upload.error.invalid_type'));
@@ -148,6 +155,10 @@
 		event.preventDefault();
 		if (selectedFiles.length === 0) {
 			toast.error($_('document.upload.error.file_required'));
+			return;
+		}
+		if (selectedFiles.length > MAX_BATCH_FILES) {
+			toast.error($_('document.upload.error.too_many_files', { values: { max: MAX_BATCH_FILES } }));
 			return;
 		}
 		if (visibility === 'lab' && !selectedLabId) {

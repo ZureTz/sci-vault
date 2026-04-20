@@ -34,6 +34,8 @@ func fieldToKey(field string) string {
 		return "user_id"
 	case "File":
 		return "file"
+	case "Files":
+		return "files"
 	case "Title":
 		return "title"
 	case "Year":
