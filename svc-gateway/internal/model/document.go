@@ -58,3 +58,25 @@ type Document struct {
 	ViewCount uint `gorm:"default:0;not null"`
 	LikeCount uint `gorm:"default:0;not null"`
 }
+
+// CustomIndexes returns raw-SQL index definitions for the documents table that
+// AutoMigrate cannot express (pgvector HNSW, partial unique indexes). The
+// database package discovers this via the HasCustomIndexes interface and runs
+// each statement after AutoMigrate. Statements must be idempotent.
+func (*Document) CustomIndexes() []string {
+	return []string{
+		// Vector similarity search over enrichment embeddings.
+		`CREATE INDEX IF NOT EXISTS idx_documents_embedding_hnsw
+			ON documents USING hnsw (embedding vector_cosine_ops)`,
+
+		// Dedup guard: a user cannot upload the same bytes twice as a private document.
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_documents_private_user_sha
+			ON documents (uploaded_by_user_id, content_sha256)
+			WHERE visibility = 'private' AND deleted_at IS NULL AND content_sha256 <> ''`,
+
+		// Dedup guard: a lab cannot contain two copies of the same bytes, regardless of uploader.
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_documents_lab_sha
+			ON documents (lab_id, content_sha256)
+			WHERE visibility = 'lab' AND lab_id IS NOT NULL AND deleted_at IS NULL AND content_sha256 <> ''`,
+	}
+}
