@@ -122,6 +122,13 @@
 									onclick={() => goto(resolve(`/profile/${member.user_id}`))}
 								>
 									<Avatar.Root class="size-10">
+										{#if member.avatar_url}
+											<Avatar.Image
+												src={member.avatar_url}
+												alt={member.username}
+												class="object-cover"
+											/>
+										{/if}
 										<Avatar.Fallback>
 											{member.username.substring(0, 2).toUpperCase()}
 										</Avatar.Fallback>

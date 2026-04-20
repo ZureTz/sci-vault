@@ -288,9 +288,11 @@
 			"failed": "Failed to update profile, please try again"
 		},
 		"get_avatar": {
+			"not_found": "Avatar not set",
 			"failed": "Failed to load avatar"
 		},
 		"get_profile": {
+			"not_found": "Profile not found",
 			"failed": "Failed to load profile"
 		},
 		"get_document": {

@@ -43,10 +43,11 @@ type LabDetailResponse struct {
 }
 
 type LabMemberInfo struct {
-	UserID   uint   `json:"user_id"`
-	Username string `json:"username"`
-	Role     string `json:"role"`
-	JoinedAt string `json:"joined_at"`
+	UserID    uint    `json:"user_id"`
+	Username  string  `json:"username"`
+	Role      string  `json:"role"`
+	JoinedAt  string  `json:"joined_at"`
+	AvatarURL *string `json:"avatar_url,omitempty"`
 }
 
 type LeaveLabRequest struct {

@@ -11,6 +11,7 @@ var (
 	ErrSamePassword         = errors.New("new password must be different from current password")
 	ErrAvatarTooLarge       = errors.New("avatar file too large")
 	ErrAvatarInvalidType    = errors.New("unsupported avatar image type")
+	ErrProfileNotFound      = errors.New("user profile not found")
 
 	ErrDocumentTooLarge      = errors.New("document file too large")
 	ErrDocumentInvalidType   = errors.New("unsupported document type; only PDF is accepted")
