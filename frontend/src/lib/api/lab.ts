@@ -43,6 +43,7 @@ export interface LabMemberInfo {
 	username: string;
 	role: 'owner' | 'member';
 	joined_at: string;
+	avatar_url?: string | null;
 }
 
 export interface TransferOwnershipRequest {

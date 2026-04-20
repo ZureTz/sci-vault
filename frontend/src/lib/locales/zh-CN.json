@@ -287,9 +287,11 @@
 			"failed": "更新资料失败，请稍后重试"
 		},
 		"get_avatar": {
+			"not_found": "尚未设置头像",
 			"failed": "获取头像失败"
 		},
 		"get_profile": {
+			"not_found": "未找到个人资料",
 			"failed": "获取资料失败"
 		},
 		"get_document": {

@@ -9,12 +9,13 @@ import (
 	"gateway/internal/model"
 )
 
-// MemberInfo carries member fields joined from the users table.
+// MemberInfo carries member fields joined from the users and user_profiles tables.
 type MemberInfo struct {
-	UserID   uint
-	Username string
-	Role     string
-	JoinedAt time.Time
+	UserID    uint
+	Username  string
+	Role      string
+	JoinedAt  time.Time
+	AvatarKey *string
 }
 
 // LabWithRole carries lab fields alongside the requesting user's membership role and total member count.
@@ -87,27 +88,20 @@ func (r *labRepo) FindByID(ctx context.Context, labID uint) (model.Lab, error) {
 }
 
 func (r *labRepo) FindMembersByLabID(ctx context.Context, labID uint) ([]MemberInfo, error) {
-	var lab model.Lab
-	err := r.db.WithContext(ctx).
-		Preload("Members", func(db *gorm.DB) *gorm.DB {
-			return db.Order("created_at ASC")
-		}).
-		Preload("Members.User").
-		First(&lab, labID).Error
-	if err != nil {
-		return nil, err
-	}
-
-	results := make([]MemberInfo, len(lab.Members))
-	for i, m := range lab.Members {
-		results[i] = MemberInfo{
-			UserID:   m.UserID,
-			Username: m.User.Username,
-			Role:     m.Role,
-			JoinedAt: m.CreatedAt,
-		}
-	}
-	return results, nil
+	var results []MemberInfo
+	err := r.db.WithContext(ctx).Raw(`
+		SELECT lm.user_id AS user_id,
+		       u.username AS username,
+		       lm.role AS role,
+		       lm.created_at AS joined_at,
+		       up.avatar_key AS avatar_key
+		FROM lab_members lm
+		JOIN users u ON u.id = lm.user_id AND u.deleted_at IS NULL
+		LEFT JOIN user_profiles up ON up.user_id = lm.user_id AND up.deleted_at IS NULL
+		WHERE lm.lab_id = ? AND lm.deleted_at IS NULL
+		ORDER BY lm.created_at ASC
+	`, labID).Scan(&results).Error
+	return results, err
 }
 
 func (r *labRepo) RemoveMember(ctx context.Context, labID, userID uint) error {

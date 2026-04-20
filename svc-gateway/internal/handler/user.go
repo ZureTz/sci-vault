@@ -206,6 +206,11 @@ func (h *UserHandler) GetAvatar(c *gin.Context) {
 
 	resp, err := h.userService.GetAvatar(c.Request.Context(), uri.UserID)
 	if err != nil {
+		if errors.Is(err, app_error.ErrProfileNotFound) {
+			slog.Warn("GetAvatar: profile not found", "user_id", uri.UserID)
+			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.get_avatar.not_found")))
+			return
+		}
 		slog.Error("GetAvatar service error", "err", err)
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.get_avatar.failed")))
 		return
@@ -222,6 +227,11 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 
 	resp, err := h.userService.GetProfile(c.Request.Context(), uri.UserID)
 	if err != nil {
+		if errors.Is(err, app_error.ErrProfileNotFound) {
+			slog.Warn("GetProfile: profile not found", "user_id", uri.UserID)
+			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.get_profile.not_found")))
+			return
+		}
 		slog.Error("GetProfile service error", "err", err)
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.get_profile.failed")))
 		return

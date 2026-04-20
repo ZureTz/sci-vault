@@ -2,11 +2,14 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 
 	"gateway/internal/dto"
 	"gateway/internal/model"
@@ -265,6 +268,9 @@ func (s *UserService) UpdateProfile(ctx context.Context, userID uint, req dto.Up
 func (s *UserService) GetAvatar(ctx context.Context, userID uint) (*dto.AvatarResponse, error) {
 	profile, err := s.profileRepo.FindByUserID(ctx, userID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, app_error.ErrProfileNotFound
+		}
 		return nil, err
 	}
 	var avatarURL string
@@ -277,6 +283,9 @@ func (s *UserService) GetAvatar(ctx context.Context, userID uint) (*dto.AvatarRe
 func (s *UserService) GetProfile(ctx context.Context, userID uint) (*dto.ProfileResponse, error) {
 	profile, err := s.profileRepo.FindByUserID(ctx, userID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, app_error.ErrProfileNotFound
+		}
 		return nil, err
 	}
 	var avatarURL *string

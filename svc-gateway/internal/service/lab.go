@@ -15,21 +15,24 @@ import (
 	"gateway/pkg/cache"
 	"gateway/pkg/codegen"
 	"gateway/pkg/mailer"
+	"gateway/pkg/storage"
 )
 
 type LabService struct {
-	repo      repo.LabRepository
-	userRepo  repo.UserRepository
-	cacheConn *cache.CacheConnector
-	mailer    *mailer.Mailer
+	repo          repo.LabRepository
+	userRepo      repo.UserRepository
+	cacheConn     *cache.CacheConnector
+	mailer        *mailer.Mailer
+	storageClient *storage.Client
 }
 
-func NewLabService(labRepo repo.LabRepository, userRepo repo.UserRepository, cacheConn *cache.CacheConnector, mailer *mailer.Mailer) *LabService {
+func NewLabService(labRepo repo.LabRepository, userRepo repo.UserRepository, cacheConn *cache.CacheConnector, mailer *mailer.Mailer, storageClient *storage.Client) *LabService {
 	return &LabService{
-		repo:      labRepo,
-		userRepo:  userRepo,
-		cacheConn: cacheConn,
-		mailer:    mailer,
+		repo:          labRepo,
+		userRepo:      userRepo,
+		cacheConn:     cacheConn,
+		mailer:        mailer,
+		storageClient: storageClient,
 	}
 }
 
@@ -148,11 +151,17 @@ func (s *LabService) GetMembers(ctx context.Context, labID, userID uint) ([]dto.
 
 	items := make([]dto.LabMemberInfo, len(members))
 	for i, m := range members {
+		var avatarURL *string
+		if m.AvatarKey != nil {
+			url := s.storageClient.PublicObjectURL(*m.AvatarKey)
+			avatarURL = &url
+		}
 		items[i] = dto.LabMemberInfo{
-			UserID:   m.UserID,
-			Username: m.Username,
-			Role:     m.Role,
-			JoinedAt: m.JoinedAt.UTC().Format("2006-01-02T15:04:05Z"),
+			UserID:    m.UserID,
+			Username:  m.Username,
+			Role:      m.Role,
+			JoinedAt:  m.JoinedAt.UTC().Format("2006-01-02T15:04:05Z"),
+			AvatarURL: avatarURL,
 		}
 	}
 	return items, nil
