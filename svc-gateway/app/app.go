@@ -83,24 +83,6 @@ func New(configPath string) (*App, error) {
 		return nil, err
 	}
 
-	if err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_documents_embedding_hnsw ON documents USING hnsw (embedding vector_cosine_ops)`).Error; err != nil {
-		return nil, fmt.Errorf("failed to create embedding hnsw index: %w", err)
-	}
-
-	// Dedup guard: a user cannot upload the same bytes twice as a private document.
-	if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_documents_private_user_sha
-		ON documents (uploaded_by_user_id, content_sha256)
-		WHERE visibility = 'private' AND deleted_at IS NULL AND content_sha256 <> ''`).Error; err != nil {
-		return nil, fmt.Errorf("failed to create private dedup index: %w", err)
-	}
-
-	// Dedup guard: a lab cannot contain two copies of the same bytes, regardless of uploader.
-	if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_documents_lab_sha
-		ON documents (lab_id, content_sha256)
-		WHERE visibility = 'lab' AND lab_id IS NOT NULL AND deleted_at IS NULL AND content_sha256 <> ''`).Error; err != nil {
-		return nil, fmt.Errorf("failed to create lab dedup index: %w", err)
-	}
-
 	storageClient := storage.NewClient(cfg.Storage.Endpoint, cfg.Storage.PresignEndpoint, cfg.Storage.AccessKey, cfg.Storage.SecretKey, cfg.Storage.PrivateBucket, cfg.Storage.PublicBucket, cfg.Storage.PublicProxyPath, cfg.Storage.PrivateProxyPath, cfg.Storage.UseSSL)
 	if err := storageClient.EnsureBuckets(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to ensure storage buckets: %w", err)

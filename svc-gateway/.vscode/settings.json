@@ -3,6 +3,7 @@
     "codegen",
     "dedup",
     "gonic",
+    "hnsw",
     "pgvector",
     "Presign",
     "reenrich",
