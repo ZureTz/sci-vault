@@ -9,11 +9,25 @@ import (
 	"gorm.io/gorm"
 )
 
+// ListMyDocumentsFilter drives the filter/sort/pagination behaviour of
+// DocumentRepository.FindByUserID. All fields are optional; empty values mean
+// "no filter" (and for sort fields, use the default: created_at DESC).
+type ListMyDocumentsFilter struct {
+	Search     string // case-insensitive substring match against title / original_file_name
+	Status     string // exact enrich_status match
+	Visibility string // exact visibility match
+	LabID      *uint  // only meaningful when Visibility == "lab"
+	SortBy     string // one of: created_at, title, file_size, view_count
+	SortOrder  string // asc | desc (default desc)
+	Offset     int
+	Limit      int
+}
+
 type DocumentRepository interface {
 	Create(ctx context.Context, doc *model.Document) error
 	CreateBatch(ctx context.Context, docs []*model.Document) error
 	FindByID(ctx context.Context, id uint) (model.Document, error)
-	FindByUserID(ctx context.Context, userID uint, offset, limit int) ([]model.Document, int64, error)
+	FindByUserID(ctx context.Context, userID uint, filter ListMyDocumentsFilter) ([]model.Document, int64, error)
 	FindByUserIDAndStatus(ctx context.Context, userID uint, status string, offset, limit int) ([]model.Document, int64, error)
 	FindExistingByHash(ctx context.Context, visibility string, userID uint, labID *uint, sha256 string) (model.Document, error)
 	FindExistingHashesInSet(ctx context.Context, visibility string, userID uint, labID *uint, hashes []string) ([]string, error)
@@ -22,6 +36,8 @@ type DocumentRepository interface {
 	IncrementLikeCount(ctx context.Context, id uint) error
 	UpdateVisibility(ctx context.Context, docID, ownerID uint, visibility string, labID *uint) error
 	BatchUpdateVisibility(ctx context.Context, docIDs []uint, ownerID uint, visibility string, labID *uint) (int64, error)
+	UpdateMetadata(ctx context.Context, docID, ownerID uint, fields map[string]any) error
+	DeleteByID(ctx context.Context, docID, ownerID uint) (model.Document, error)
 }
 
 type documentRepo struct {
@@ -42,15 +58,41 @@ func (r *documentRepo) FindByID(ctx context.Context, id uint) (model.Document, e
 	return doc, err
 }
 
-func (r *documentRepo) FindByUserID(ctx context.Context, userID uint, offset, limit int) ([]model.Document, int64, error) {
+func (r *documentRepo) FindByUserID(ctx context.Context, userID uint, filter ListMyDocumentsFilter) ([]model.Document, int64, error) {
 	var docs []model.Document
 	var count int64
 
 	tx := r.db.WithContext(ctx).Model(&model.Document{}).Where("uploaded_by_user_id = ?", userID)
+	if filter.Search != "" {
+		pattern := "%" + filter.Search + "%"
+		tx = tx.Where("(title ILIKE ? OR original_file_name ILIKE ?)", pattern, pattern)
+	}
+	if filter.Status != "" {
+		tx = tx.Where("enrich_status = ?", filter.Status)
+	}
+	if filter.Visibility != "" {
+		tx = tx.Where("visibility = ?", filter.Visibility)
+		if filter.Visibility == model.DocVisibilityLab && filter.LabID != nil {
+			tx = tx.Where("lab_id = ?", *filter.LabID)
+		}
+	}
 	if err := tx.Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
-	err := tx.Preload("Lab").Order("created_at DESC, id DESC").Offset(offset).Limit(limit).Find(&docs).Error
+
+	orderBy := "created_at DESC, id DESC"
+	if filter.SortBy != "" {
+		dir := "DESC"
+		if filter.SortOrder == "asc" {
+			dir = "ASC"
+		}
+		switch filter.SortBy {
+		case "title", "file_size", "view_count", "created_at":
+			orderBy = filter.SortBy + " " + dir + ", id " + dir
+		}
+	}
+
+	err := tx.Preload("Lab").Order(orderBy).Offset(filter.Offset).Limit(filter.Limit).Find(&docs).Error
 	if err != nil {
 		return nil, 0, err
 	}
@@ -166,6 +208,42 @@ func (r *documentRepo) UpdateVisibility(ctx context.Context, docID, ownerID uint
 		return gorm.ErrRecordNotFound
 	}
 	return nil
+}
+
+// UpdateMetadata patches user-editable metadata fields (title, year, doi) on a
+// document the caller owns. The fields map contains only the keys that should
+// change — callers must restrict it to safe columns.
+func (r *documentRepo) UpdateMetadata(ctx context.Context, docID, ownerID uint, fields map[string]any) error {
+	if len(fields) == 0 {
+		return nil
+	}
+	res := r.db.WithContext(ctx).Model(&model.Document{}).
+		Where("id = ? AND uploaded_by_user_id = ?", docID, ownerID).
+		Updates(fields)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+// DeleteByID soft-deletes a document the caller owns and returns the deleted
+// row so callers can clean up side effects (e.g. remove the S3 object).
+// Returns gorm.ErrRecordNotFound when the caller does not own the document
+// or it does not exist.
+func (r *documentRepo) DeleteByID(ctx context.Context, docID, ownerID uint) (model.Document, error) {
+	var doc model.Document
+	if err := r.db.WithContext(ctx).
+		Where("id = ? AND uploaded_by_user_id = ?", docID, ownerID).
+		First(&doc).Error; err != nil {
+		return doc, err
+	}
+	if err := r.db.WithContext(ctx).Delete(&doc).Error; err != nil {
+		return doc, err
+	}
+	return doc, nil
 }
 
 // BatchUpdateVisibility atomically updates multiple documents' visibility and lab_id.

@@ -146,7 +146,16 @@
 			"description": "View and manage documents you have uploaded.",
 			"empty": "You haven't uploaded any documents yet.",
 			"empty_hint": "Upload your first document to get started.",
+			"empty_filtered": "No documents match your filters.",
+			"empty_filtered_hint": "Try adjusting your search or filters.",
 			"go_upload": "Upload Document",
+			"search_placeholder": "Search by title or filename...",
+			"columns": "Columns",
+			"filter": {
+				"status_all": "All statuses",
+				"visibility_all": "All visibility",
+				"reset": "Reset"
+			},
 			"table": {
 				"title": "Title",
 				"file_name": "File Name",
@@ -171,6 +180,31 @@
 				"success": "{count} document(s) updated",
 				"failed": "Failed to update visibility"
 			},
+			"actions": {
+				"open_menu": "Open menu",
+				"view": "View",
+				"edit": "Edit metadata",
+				"restart": "Restart enrichment",
+				"delete": "Delete"
+			},
+			"edit_dialog": {
+				"title": "Edit metadata",
+				"description": "Update the title, publication year and DOI for this document.",
+				"title_label": "Title",
+				"year_label": "Year",
+				"doi_label": "DOI",
+				"save": "Save",
+				"success": "Document updated",
+				"failed": "Failed to update document",
+				"year_invalid": "Year must be a 4-digit number"
+			},
+			"delete": {
+				"title": "Delete document?",
+				"description": "\"{name}\" will be permanently removed. This action cannot be undone.",
+				"confirm": "Delete",
+				"success": "Document deleted",
+				"failed": "Failed to delete document"
+			},
 			"status": {
 				"not_started": "Pending",
 				"pending": "Queued",
@@ -184,8 +218,13 @@
 			"loading": "Loading documents...",
 			"error": "Failed to load documents",
 			"pagination": {
-				"prev": "Previous",
-				"next": "Next"
+				"prev": "Previous page",
+				"next": "Next page",
+				"first": "First page",
+				"last": "Last page",
+				"per_page": "Rows per page",
+				"page_info": "Page {current} of {total}",
+				"info": "{selected} of {total} row(s) selected."
 			}
 		},
 		"upload": {

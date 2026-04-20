@@ -20,11 +20,13 @@ type DocumentService interface {
 	BatchUploadDocuments(ctx context.Context, userID uint, form dto.BatchUploadDocumentForm) (*dto.BatchUploadDocumentResponse, error)
 	GetDocument(ctx context.Context, userID, docID uint) (*dto.DocumentResponse, error)
 	GetEnrichStatus(ctx context.Context, userID, docID uint) (string, error)
-	ListMyDocuments(ctx context.Context, userID uint, page, pageSize int) (*dto.ListDocumentsResponse, error)
-	ListPendingDocuments(ctx context.Context, userID uint) (*dto.ListDocumentsResponse, error)
+	ListMyDocuments(ctx context.Context, userID uint, query dto.ListMyDocumentsQuery) (*dto.ListMyDocumentsResponse, error)
+	ListPendingDocuments(ctx context.Context, userID uint) (*dto.ListMyDocumentsResponse, error)
 	RestartEnrichment(ctx context.Context, userID, docID uint) error
 	UpdateVisibility(ctx context.Context, docID, userID uint, req dto.UpdateVisibilityRequest) error
 	BatchUpdateVisibility(ctx context.Context, userID uint, req dto.BatchUpdateVisibilityRequest) (int64, error)
+	UpdateMetadata(ctx context.Context, userID, docID uint, req dto.UpdateDocumentMetadataRequest) error
+	DeleteDocument(ctx context.Context, userID, docID uint) error
 }
 
 type DocumentHandler struct {
@@ -246,14 +248,8 @@ func (h *DocumentHandler) ListMyDocuments(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
 		return
 	}
-	if query.Page == 0 {
-		query.Page = 1
-	}
-	if query.PageSize == 0 {
-		query.PageSize = 20
-	}
 
-	resp, err := h.documentService.ListMyDocuments(c.Request.Context(), userID, query.Page, query.PageSize)
+	resp, err := h.documentService.ListMyDocuments(c.Request.Context(), userID, query)
 	if err != nil {
 		slog.Error("ListMyDocuments service error", "err", err)
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.list_documents.failed")))
@@ -332,4 +328,60 @@ func (h *DocumentHandler) RestartEnrichment(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, utils.MessageResponse("service.restart_enrichment.success"))
+}
+
+func (h *DocumentHandler) UpdateMetadata(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
+		return
+	}
+
+	var uri dto.DocumentIDUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	var req dto.UpdateDocumentMetadataRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	if err := h.documentService.UpdateMetadata(c.Request.Context(), userID, uri.DocID, req); err != nil {
+		if errors.Is(err, app_error.ErrNotDocumentOwner) {
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.update_document.forbidden")))
+			return
+		}
+		slog.Error("UpdateMetadata service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.update_document.failed")))
+		return
+	}
+	c.JSON(http.StatusOK, utils.MessageResponse("service.update_document.success"))
+}
+
+func (h *DocumentHandler) DeleteDocument(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
+		return
+	}
+
+	var uri dto.DocumentIDUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	if err := h.documentService.DeleteDocument(c.Request.Context(), userID, uri.DocID); err != nil {
+		if errors.Is(err, app_error.ErrNotDocumentOwner) {
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.delete_document.forbidden")))
+			return
+		}
+		slog.Error("DeleteDocument service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.delete_document.failed")))
+		return
+	}
+	c.JSON(http.StatusOK, utils.MessageResponse("service.delete_document.success"))
 }
