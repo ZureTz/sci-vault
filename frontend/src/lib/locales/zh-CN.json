@@ -90,7 +90,21 @@
 		}
 	},
 	"settings": {
-		"title": "设置"
+		"title": "设置",
+		"description": "管理您的账户安全与偏好设置。",
+		"change_password": {
+			"title": "修改密码",
+			"description": "更新您的登录密码，需输入当前密码进行确认。",
+			"current": "当前密码",
+			"new": "新密码",
+			"confirm": "确认新密码",
+			"submit": "修改密码",
+			"submitting": "修改中...",
+			"show_password": "显示密码",
+			"hide_password": "隐藏密码",
+			"success": "密码修改成功",
+			"failed": "修改密码失败，请稍后重试"
+		}
 	},
 	"common": {
 		"unauthorized": "登录已过期，请重新登录",
@@ -258,6 +272,11 @@
 		"reset_password": {
 			"failed": "密码重置失败，请稍后重试"
 		},
+		"change_password": {
+			"current_wrong": "当前密码不正确",
+			"same_password": "新密码不能与当前密码相同",
+			"failed": "修改密码失败，请稍后重试"
+		},
 		"upload_avatar": {
 			"read_failed": "读取文件失败，请重试",
 			"too_large": "头像不能超过 5MB",
@@ -371,6 +390,12 @@
 			"forbidden": "只有实验室创建者才能重置邀请码",
 			"failed": "重置邀请码失败",
 			"success": "邀请码已重置"
+		},
+		"update_lab_info": {
+			"forbidden": "只有实验室创建者才能编辑实验室信息",
+			"not_found": "未找到实验室",
+			"failed": "更新实验室信息失败，请稍后重试",
+			"success": "实验室信息已更新"
 		},
 		"request_leave_lab": {
 			"failed": "发送确认码失败",
@@ -489,6 +514,18 @@
 		"settings": {
 			"title": "实验室设置",
 			"description": "管理实验室配置。仅实验室创建者可执行以下操作。",
+			"edit_info": {
+				"title": "实验室信息",
+				"description": "修改实验室的名称和简介。",
+				"name_label": "实验室名称",
+				"name_placeholder": "例如 量子生物实验室",
+				"description_label": "简介",
+				"description_placeholder": "这个实验室研究什么方向？",
+				"save": "保存修改",
+				"saving": "保存中...",
+				"revert": "撤销修改",
+				"name_required": "实验室名称不能为空"
+			},
 			"invite_code_section": "邀请码",
 			"invite_code_desc": "将此邀请码分享给他人以加入您的实验室。",
 			"reset_invite_code": "重置邀请码",

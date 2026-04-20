@@ -91,7 +91,21 @@
 		}
 	},
 	"settings": {
-		"title": "Settings"
+		"title": "Settings",
+		"description": "Manage your account security and preferences.",
+		"change_password": {
+			"title": "Change Password",
+			"description": "Update your password. You'll need to enter your current password to confirm.",
+			"current": "Current Password",
+			"new": "New Password",
+			"confirm": "Confirm New Password",
+			"submit": "Change Password",
+			"submitting": "Changing...",
+			"show_password": "Show password",
+			"hide_password": "Hide password",
+			"success": "Password changed successfully",
+			"failed": "Failed to change password, please try again"
+		}
 	},
 	"common": {
 		"unauthorized": "Your session has expired, please log in again",
@@ -259,6 +273,11 @@
 		"reset_password": {
 			"failed": "Failed to reset password, please try again"
 		},
+		"change_password": {
+			"current_wrong": "Current password is incorrect",
+			"same_password": "New password must be different from your current password",
+			"failed": "Failed to change password, please try again"
+		},
 		"upload_avatar": {
 			"read_failed": "Failed to read file, please try again",
 			"too_large": "Avatar must be smaller than 5 MB",
@@ -372,6 +391,12 @@
 			"forbidden": "Only the lab owner can reset the invite code",
 			"failed": "Failed to reset invite code",
 			"success": "Invite code has been reset"
+		},
+		"update_lab_info": {
+			"forbidden": "Only the lab owner can edit lab info",
+			"not_found": "Lab not found",
+			"failed": "Failed to update lab info, please try again",
+			"success": "Lab info updated successfully"
 		},
 		"request_leave_lab": {
 			"failed": "Failed to send confirmation code",
@@ -490,6 +515,18 @@
 		"settings": {
 			"title": "Lab Settings",
 			"description": "Manage lab configuration. Only the lab owner can perform these actions.",
+			"edit_info": {
+				"title": "Lab Info",
+				"description": "Update the lab's display name and description.",
+				"name_label": "Lab Name",
+				"name_placeholder": "e.g. Quantum Biology Lab",
+				"description_label": "Description",
+				"description_placeholder": "What does this lab work on?",
+				"save": "Save Changes",
+				"saving": "Saving...",
+				"revert": "Revert",
+				"name_required": "Lab name cannot be empty"
+			},
 			"invite_code_section": "Invite Code",
 			"invite_code_desc": "Share this code with others so they can join your lab.",
 			"reset_invite_code": "Reset Invite Code",

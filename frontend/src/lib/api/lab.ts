@@ -62,6 +62,11 @@ export interface ResetInviteCodeResponse {
 	invite_code: string;
 }
 
+export interface UpdateLabInfoRequest {
+	name: string;
+	description?: string | null;
+}
+
 const labApi = {
 	createLab(data: CreateLabRequest): Promise<JoinLabResponse> {
 		return request.post('/labs', data) as unknown as Promise<JoinLabResponse>;
@@ -117,6 +122,10 @@ const labApi = {
 		return request.post(
 			`/labs/${labId}/invite-code/reset`
 		) as unknown as Promise<ResetInviteCodeResponse>;
+	},
+
+	updateLabInfo(labId: number, data: UpdateLabInfoRequest): Promise<LabDetailResponse> {
+		return request.patch(`/labs/${labId}`, data) as unknown as Promise<LabDetailResponse>;
 	}
 };
 
