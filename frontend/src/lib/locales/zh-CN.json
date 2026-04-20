@@ -145,7 +145,16 @@
 			"description": "查看和管理您已上传的文献。",
 			"empty": "您还没有上传任何文献。",
 			"empty_hint": "上传您的第一篇文献以开始使用。",
+			"empty_filtered": "没有文献符合当前筛选条件。",
+			"empty_filtered_hint": "请尝试调整搜索或筛选条件。",
 			"go_upload": "上传文献",
+			"search_placeholder": "按标题或文件名搜索...",
+			"columns": "列",
+			"filter": {
+				"status_all": "全部状态",
+				"visibility_all": "全部可见范围",
+				"reset": "重置"
+			},
 			"table": {
 				"title": "标题",
 				"file_name": "文件名",
@@ -170,6 +179,31 @@
 				"success": "已更新 {count} 篇文献",
 				"failed": "更新可见范围失败"
 			},
+			"actions": {
+				"open_menu": "打开菜单",
+				"view": "查看",
+				"edit": "编辑元数据",
+				"restart": "重新处理",
+				"delete": "删除"
+			},
+			"edit_dialog": {
+				"title": "编辑元数据",
+				"description": "更新此文献的标题、出版年份和 DOI。",
+				"title_label": "标题",
+				"year_label": "年份",
+				"doi_label": "DOI",
+				"save": "保存",
+				"success": "文献已更新",
+				"failed": "更新文献失败",
+				"year_invalid": "年份必须是 4 位数"
+			},
+			"delete": {
+				"title": "删除文献？",
+				"description": "“{name}”将被永久删除，此操作无法撤销。",
+				"confirm": "删除",
+				"success": "文献已删除",
+				"failed": "删除文献失败"
+			},
 			"status": {
 				"not_started": "待处理",
 				"pending": "排队中",
@@ -184,7 +218,12 @@
 			"error": "加载文献失败",
 			"pagination": {
 				"prev": "上一页",
-				"next": "下一页"
+				"next": "下一页",
+				"first": "第一页",
+				"last": "最后一页",
+				"per_page": "每页行数",
+				"page_info": "第 {current} 页，共 {total} 页",
+				"info": "已选择 {selected} / {total} 行"
 			}
 		},
 		"upload": {
@@ -332,6 +371,16 @@
 			"forbidden": "仅文档上传者可以重新开始处理",
 			"failed": "重新处理失败，请稍后重试",
 			"success": "已成功重新开始处理"
+		},
+		"update_document": {
+			"forbidden": "仅文档上传者可以编辑此文档",
+			"failed": "更新文档失败",
+			"success": "文档已更新"
+		},
+		"delete_document": {
+			"forbidden": "仅文档上传者可以删除此文档",
+			"failed": "删除文档失败",
+			"success": "文档已删除"
 		},
 		"get_enrich_status": {
 			"not_found": "未找到该文档",

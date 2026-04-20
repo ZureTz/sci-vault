@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { SvelteSet } from 'svelte/reactivity';
 	import { _ } from 'svelte-i18n';
+	import {
+		type ColumnDef,
+		type SortingState,
+		type VisibilityState,
+		type RowSelectionState,
+		getCoreRowModel
+	} from '@tanstack/table-core';
 	import {
 		FileText,
 		Upload,
@@ -14,7 +20,18 @@
 		Lock,
 		FlaskConical,
 		Pencil,
-		X
+		X,
+		Search,
+		ChevronDown,
+		ChevronUp,
+		ChevronsUpDown,
+		ChevronLeft,
+		ChevronRight,
+		ChevronsLeft,
+		ChevronsRight,
+		Ellipsis,
+		SlidersHorizontal,
+		Trash2
 	} from 'lucide-svelte';
 
 	import { goto } from '$app/navigation';
@@ -24,53 +41,150 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Select from '$lib/components/ui/select';
 	import * as Table from '$lib/components/ui/table';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import documentApi, { type DocumentListItem, type DocumentVisibility } from '$lib/api/document';
+	import { createSvelteTable, FlexRender } from '$lib/components/ui/data-table';
+	import documentApi, {
+		type DocumentListItem,
+		type DocumentVisibility,
+		type ListMyDocumentsParams
+	} from '$lib/api/document';
 	import labApi, { type LabListItem } from '$lib/api/lab';
 	import { getActiveLab } from '$lib/stores/lab.svelte';
 	import { showApiErrors } from '$lib/utils/api-error';
 
-	const PAGE_SIZE = 10;
+	type StatusFilter = 'all' | 'not_started' | 'pending' | 'processing' | 'done' | 'failed';
+	type VisibilityFilter = 'all' | 'private' | 'lab';
+	type SortKey = 'created_at' | 'title' | 'file_size' | 'view_count';
 
+	// ===== Data + server state =====
 	let documents = $state<DocumentListItem[]>([]);
 	let total = $state(0);
-	let currentPage = $state(1);
 	let isLoading = $state(true);
 	let pollTimer = $state<ReturnType<typeof setInterval> | null>(null);
 
-	let totalPages = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
+	// ===== Query controls (server-side) =====
+	let pageIndex = $state(0); // zero-based internally; server is 1-based
+	let pageSize = $state(10);
+	let search = $state('');
+	let debouncedSearch = $state('');
+	let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+	let statusFilter = $state<StatusFilter>('all');
+	let visibilityFilter = $state<VisibilityFilter>('all');
 
-	// Selection state for batch edit (SvelteSet is reactive on its own)
-	const selectedIds = new SvelteSet<number>();
-	let selectedCount = $derived(selectedIds.size);
-	let allOnPageSelected = $derived(
-		documents.length > 0 && documents.every((d) => selectedIds.has(d.id))
-	);
+	// TanStack-backed sorting. We mirror one active sort for server use.
+	let sorting = $state<SortingState>([{ id: 'created_at', desc: true }]);
 
-	// Batch edit dialog state
+	// ===== TanStack table UI-only state =====
+	let columnVisibility = $state<VisibilityState>({});
+	let rowSelection = $state<RowSelectionState>({});
+
+	// ===== Batch visibility dialog state =====
 	let batchDialogOpen = $state(false);
 	let batchVisibility = $state<DocumentVisibility>('private');
 	let batchLabId = $state<string>('');
 	let batchSubmitting = $state(false);
 	let myLabs = $state<LabListItem[]>([]);
 
+	// ===== Edit metadata dialog state =====
+	let editDialogOpen = $state(false);
+	let editTarget = $state<DocumentListItem | null>(null);
+	let editTitle = $state('');
+	let editYear = $state<string>('');
+	let editDoi = $state('');
+	let editSubmitting = $state(false);
+
+	// ===== Delete confirmation state =====
+	let deleteDialogOpen = $state(false);
+	let deleteTarget = $state<DocumentListItem | null>(null);
+	let deleteSubmitting = $state(false);
+
+	// ===== Derived =====
+	const pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
+	const selectedIds = $derived.by(() => {
+		const ids: number[] = [];
+		for (const key of Object.keys(rowSelection)) {
+			if (rowSelection[key]) ids.push(Number(key));
+		}
+		return ids;
+	});
+	const selectedCount = $derived(selectedIds.length);
+
+	// ===== Debounced search =====
+	$effect(() => {
+		const s = search;
+		if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+		searchDebounceTimer = setTimeout(() => {
+			debouncedSearch = s;
+			pageIndex = 0;
+		}, 300);
+	});
+
+	// ===== Fetching =====
 	async function loadDocuments() {
 		isLoading = true;
 		try {
-			const res = await documentApi.listMyDocuments(currentPage, PAGE_SIZE);
+			const sortEntry = sorting[0];
+			const sortBy = (sortEntry?.id as SortKey | undefined) ?? 'created_at';
+			const sortOrder = sortEntry?.desc ? 'desc' : 'asc';
+
+			const params: ListMyDocumentsParams = {
+				page: pageIndex + 1,
+				page_size: pageSize,
+				sort_by: sortBy,
+				sort_order: sortOrder
+			};
+			if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+			if (statusFilter !== 'all') params.status = statusFilter;
+			if (visibilityFilter !== 'all') params.visibility = visibilityFilter;
+
+			const res = await documentApi.listMyDocuments(params);
 			documents = res.documents;
 			total = res.total;
-
-			// Fetch real-time status immediately instead of waiting for the first poll tick
+			rowSelection = {};
 			pollEnrichStatus();
 		} catch (error: unknown) {
 			showApiErrors(error, $_('document.mine.error'));
 		} finally {
 			isLoading = false;
+		}
+	}
+
+	// Refetch whenever any server-affecting control changes.
+	$effect(() => {
+		// Track dependencies explicitly
+		void debouncedSearch;
+		void statusFilter;
+		void visibilityFilter;
+		void pageIndex;
+		void pageSize;
+		void sorting;
+		loadDocuments();
+	});
+
+	async function pollEnrichStatus() {
+		const pending = documents.filter(
+			(d) =>
+				d.enrich_status === 'not_started' ||
+				d.enrich_status === 'pending' ||
+				d.enrich_status === 'processing'
+		);
+		if (pending.length === 0) return;
+		for (const doc of pending) {
+			try {
+				const res = await documentApi.getEnrichStatus(doc.id);
+				const idx = documents.findIndex((d) => d.id === doc.id);
+				if (idx !== -1 && documents[idx].enrich_status !== res.status) {
+					documents[idx].enrich_status = res.status;
+				}
+			} catch {
+				// silently ignore
+			}
 		}
 	}
 
@@ -82,63 +196,83 @@
 		}
 	}
 
+	// ===== Row actions =====
 	async function restartEnrichment(docId: number) {
 		try {
 			await documentApi.restartEnrichment(docId);
 			toast.success($_('service.restart_enrichment.success'));
 			const idx = documents.findIndex((d) => d.id === docId);
-			if (idx !== -1) {
-				documents[idx].enrich_status = 'pending';
-			}
+			if (idx !== -1) documents[idx].enrich_status = 'pending';
 		} catch (error: unknown) {
 			showApiErrors(error, $_('service.restart_enrichment.failed'));
 		}
 	}
 
-	async function pollEnrichStatus() {
-		const pending = documents.filter(
-			(d) =>
-				d.enrich_status === 'not_started' ||
-				d.enrich_status === 'pending' ||
-				d.enrich_status === 'processing'
-		);
-		if (pending.length === 0) return;
-
-		for (const doc of pending) {
+	function openEditDialog(doc: DocumentListItem) {
+		editTarget = doc;
+		editTitle = doc.title ?? '';
+		editYear = '';
+		editDoi = '';
+		(async () => {
 			try {
-				const res = await documentApi.getEnrichStatus(doc.id);
-				const idx = documents.findIndex((d) => d.id === doc.id);
-				if (idx !== -1 && documents[idx].enrich_status !== res.status) {
-					documents[idx].enrich_status = res.status;
-				}
+				const full = await documentApi.getDocument(doc.id);
+				editTitle = full.title ?? '';
+				editYear = full.year != null ? String(full.year) : '';
+				editDoi = full.doi ?? '';
 			} catch {
-				// silently ignore polling errors
+				// best effort — fall back to list-level fields
 			}
+		})();
+		editDialogOpen = true;
+	}
+
+	async function handleEditSubmit() {
+		if (!editTarget) return;
+		editSubmitting = true;
+		try {
+			const yearNum = editYear.trim() ? Number(editYear.trim()) : null;
+			if (yearNum !== null && (Number.isNaN(yearNum) || yearNum < 1000 || yearNum > 9999)) {
+				toast.error($_('document.mine.edit_dialog.year_invalid'));
+				editSubmitting = false;
+				return;
+			}
+			await documentApi.updateMetadata(editTarget.id, {
+				title: editTitle.trim() ? editTitle.trim() : '',
+				year: yearNum,
+				doi: editDoi.trim() ? editDoi.trim() : ''
+			});
+			toast.success($_('document.mine.edit_dialog.success'));
+			editDialogOpen = false;
+			loadDocuments();
+		} catch (error: unknown) {
+			showApiErrors(error, $_('document.mine.edit_dialog.failed'));
+		} finally {
+			editSubmitting = false;
 		}
 	}
 
-	function toggleSelected(id: number) {
-		if (selectedIds.has(id)) {
-			selectedIds.delete(id);
-		} else {
-			selectedIds.add(id);
+	function openDeleteDialog(doc: DocumentListItem) {
+		deleteTarget = doc;
+		deleteDialogOpen = true;
+	}
+
+	async function handleDeleteSubmit() {
+		if (!deleteTarget) return;
+		deleteSubmitting = true;
+		try {
+			await documentApi.deleteDocument(deleteTarget.id);
+			toast.success($_('document.mine.delete.success'));
+			deleteDialogOpen = false;
+			loadDocuments();
+		} catch (error: unknown) {
+			showApiErrors(error, $_('document.mine.delete.failed'));
+		} finally {
+			deleteSubmitting = false;
 		}
 	}
 
-	function toggleSelectAllOnPage() {
-		if (allOnPageSelected) {
-			for (const d of documents) selectedIds.delete(d.id);
-		} else {
-			for (const d of documents) selectedIds.add(d.id);
-		}
-	}
-
-	function clearSelection() {
-		selectedIds.clear();
-	}
-
+	// ===== Batch visibility =====
 	function openBatchDialog() {
-		// Default to the lab currently active in the sidebar, if any.
 		const active = getActiveLab();
 		if (active) {
 			batchVisibility = 'lab';
@@ -151,7 +285,7 @@
 	}
 
 	async function handleBatchSubmit() {
-		if (selectedIds.size === 0) return;
+		if (selectedIds.length === 0) return;
 		if (batchVisibility === 'lab' && !batchLabId) {
 			toast.error($_('document.mine.batch.lab_required'));
 			return;
@@ -159,13 +293,13 @@
 		batchSubmitting = true;
 		try {
 			const res = await documentApi.batchUpdateVisibility({
-				doc_ids: Array.from(selectedIds),
+				doc_ids: selectedIds,
 				visibility: batchVisibility,
 				lab_id: batchVisibility === 'lab' ? Number(batchLabId) : null
 			});
 			toast.success($_('document.mine.batch.success', { values: { count: res.updated } }));
 			batchDialogOpen = false;
-			clearSelection();
+			rowSelection = {};
 			loadDocuments();
 		} catch (error: unknown) {
 			showApiErrors(error, $_('document.mine.batch.failed'));
@@ -174,6 +308,7 @@
 		}
 	}
 
+	// ===== Formatting helpers =====
 	function formatFileSize(bytes: number): string {
 		if (bytes < 1024) return `${bytes} B`;
 		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -188,14 +323,160 @@
 		});
 	}
 
+	// ===== Column definitions =====
+	// We only use TanStack Table for state management (sorting flag, column visibility,
+	// row selection). Actual cell rendering is done manually in the template so we can
+	// keep all cell JSX in one file without a proliferation of tiny components.
+	const columns: ColumnDef<DocumentListItem>[] = [
+		{ id: 'select', enableHiding: false, enableSorting: false, header: '', size: 40 },
+		{
+			id: 'title',
+			accessorKey: 'title',
+			header: () => $_('document.mine.table.title'),
+			enableSorting: true,
+			enableHiding: false
+		},
+		{
+			id: 'visibility',
+			accessorKey: 'visibility',
+			header: () => $_('document.mine.table.visibility'),
+			enableSorting: false
+		},
+		{
+			id: 'file_size',
+			accessorKey: 'file_size',
+			header: () => $_('document.mine.table.file_size'),
+			enableSorting: true
+		},
+		{
+			id: 'enrich_status',
+			accessorKey: 'enrich_status',
+			header: () => $_('document.mine.table.status'),
+			enableSorting: false
+		},
+		{
+			id: 'created_at',
+			accessorKey: 'created_at',
+			header: () => $_('document.mine.table.created_at'),
+			enableSorting: true
+		},
+		{
+			id: 'actions',
+			header: () => $_('document.mine.table.actions'),
+			enableSorting: false,
+			enableHiding: false
+		}
+	];
+
+	const table = createSvelteTable<DocumentListItem>({
+		get data() {
+			return documents;
+		},
+		columns,
+		manualPagination: true,
+		manualSorting: true,
+		manualFiltering: true,
+		get pageCount() {
+			return pageCount;
+		},
+		getRowId: (row) => String(row.id),
+		state: {
+			get sorting() {
+				return sorting;
+			},
+			get columnVisibility() {
+				return columnVisibility;
+			},
+			get rowSelection() {
+				return rowSelection;
+			},
+			get pagination() {
+				return { pageIndex, pageSize };
+			}
+		},
+		onSortingChange: (updater) => {
+			sorting = typeof updater === 'function' ? updater(sorting) : updater;
+		},
+		onColumnVisibilityChange: (updater) => {
+			columnVisibility = typeof updater === 'function' ? updater(columnVisibility) : updater;
+		},
+		onRowSelectionChange: (updater) => {
+			rowSelection = typeof updater === 'function' ? updater(rowSelection) : updater;
+		},
+		onPaginationChange: (updater) => {
+			const prev = { pageIndex, pageSize };
+			const next = typeof updater === 'function' ? updater(prev) : updater;
+			pageIndex = next.pageIndex;
+			pageSize = next.pageSize;
+		},
+		getCoreRowModel: getCoreRowModel()
+	});
+
+	// ===== Select-all-on-page state =====
+	const allOnPageSelected = $derived(
+		documents.length > 0 && documents.every((_, i) => rowSelection[String(documents[i].id)])
+	);
+	const somePageSelected = $derived(
+		documents.some((d) => rowSelection[String(d.id)]) && !allOnPageSelected
+	);
+
+	function toggleAllOnPage() {
+		if (allOnPageSelected) {
+			for (const d of documents) delete rowSelection[String(d.id)];
+			rowSelection = { ...rowSelection };
+		} else {
+			const next = { ...rowSelection };
+			for (const d of documents) next[String(d.id)] = true;
+			rowSelection = next;
+		}
+	}
+
+	function toggleRow(doc: DocumentListItem) {
+		const key = String(doc.id);
+		if (rowSelection[key]) {
+			const next = { ...rowSelection };
+			delete next[key];
+			rowSelection = next;
+		} else {
+			rowSelection = { ...rowSelection, [key]: true };
+		}
+	}
+
+	function clearSelection() {
+		rowSelection = {};
+	}
+
+	// ===== Sort header helper =====
+	function cycleSort(columnId: string) {
+		const current = sorting[0];
+		if (!current || current.id !== columnId) {
+			sorting = [{ id: columnId, desc: true }];
+			return;
+		}
+		if (current.desc) {
+			sorting = [{ id: columnId, desc: false }];
+		} else {
+			sorting = [{ id: 'created_at', desc: true }];
+		}
+	}
+
+	// ===== Column visibility labels =====
+	const columnLabels: Record<string, string> = $derived({
+		title: $_('document.mine.table.title'),
+		visibility: $_('document.mine.table.visibility'),
+		file_size: $_('document.mine.table.file_size'),
+		enrich_status: $_('document.mine.table.status'),
+		created_at: $_('document.mine.table.created_at')
+	});
+
 	onMount(() => {
-		loadDocuments();
 		loadLabs();
 		pollTimer = setInterval(pollEnrichStatus, 3000);
 	});
 
 	onDestroy(() => {
 		if (pollTimer) clearInterval(pollTimer);
+		if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
 	});
 </script>
 
@@ -232,6 +513,93 @@
 		</div>
 	</div>
 
+	<!-- Toolbar: search + filters + column visibility -->
+	<div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+		<div class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+			<div class="relative w-full sm:max-w-xs">
+				<Search
+					class="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+				/>
+				<Input
+					type="search"
+					placeholder={$_('document.mine.search_placeholder')}
+					bind:value={search}
+					class="pl-8"
+				/>
+			</div>
+
+			<Select.Root type="single" bind:value={statusFilter}>
+				<Select.Trigger class="w-full sm:w-45">
+					{statusFilter === 'all'
+						? $_('document.mine.filter.status_all')
+						: $_(`document.mine.status.${statusFilter}`)}
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Item value="all">{$_('document.mine.filter.status_all')}</Select.Item>
+					<Select.Item value="not_started">{$_('document.mine.status.not_started')}</Select.Item>
+					<Select.Item value="pending">{$_('document.mine.status.pending')}</Select.Item>
+					<Select.Item value="processing">{$_('document.mine.status.processing')}</Select.Item>
+					<Select.Item value="done">{$_('document.mine.status.done')}</Select.Item>
+					<Select.Item value="failed">{$_('document.mine.status.failed')}</Select.Item>
+				</Select.Content>
+			</Select.Root>
+
+			<Select.Root type="single" bind:value={visibilityFilter}>
+				<Select.Trigger class="w-full sm:w-45">
+					{visibilityFilter === 'all'
+						? $_('document.mine.filter.visibility_all')
+						: $_(`document.mine.visibility.${visibilityFilter}`)}
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Item value="all">{$_('document.mine.filter.visibility_all')}</Select.Item>
+					<Select.Item value="private">{$_('document.mine.visibility.private')}</Select.Item>
+					<Select.Item value="lab">{$_('document.mine.visibility.lab')}</Select.Item>
+				</Select.Content>
+			</Select.Root>
+
+			{#if statusFilter !== 'all' || visibilityFilter !== 'all' || debouncedSearch}
+				<Button
+					variant="ghost"
+					size="sm"
+					onclick={() => {
+						statusFilter = 'all';
+						visibilityFilter = 'all';
+						search = '';
+					}}
+				>
+					<X class="mr-1 h-4 w-4" />
+					{$_('document.mine.filter.reset')}
+				</Button>
+			{/if}
+		</div>
+
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger>
+				{#snippet child({ props })}
+					<Button {...props} variant="outline" size="sm">
+						<SlidersHorizontal class="mr-2 h-4 w-4" />
+						{$_('document.mine.columns')}
+						<ChevronDown class="ml-2 h-4 w-4" />
+					</Button>
+				{/snippet}
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="end" class="w-44">
+				<DropdownMenu.Label>{$_('document.mine.columns')}</DropdownMenu.Label>
+				<DropdownMenu.Separator />
+				{#each table
+					.getAllColumns()
+					.filter((c) => c.getCanHide() && columnLabels[c.id]) as column (column.id)}
+					<DropdownMenu.CheckboxItem
+						checked={column.getIsVisible()}
+						onCheckedChange={(v) => column.toggleVisibility(!!v)}
+					>
+						{columnLabels[column.id]}
+					</DropdownMenu.CheckboxItem>
+				{/each}
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
+	</div>
+
 	<!-- Bulk action bar -->
 	{#if selectedCount > 0}
 		<div
@@ -254,210 +622,336 @@
 
 	<Card.Root class="shadow-sm">
 		<Card.Content class="p-0">
-			{#if isLoading}
-				<div class="divide-y">
-					{#each Array.from({ length: 4 }, (_, i) => i) as i (i)}
-						<div class="flex items-center gap-4 px-6 py-4">
-							<div class="flex flex-1 flex-col gap-1.5">
-								<Skeleton class="h-4 w-48" />
-								<Skeleton class="h-3 w-32" />
-							</div>
-							<Skeleton class="h-4 w-12" />
-							<Skeleton class="h-5 w-20 rounded-full" />
-							<Skeleton class="h-4 w-20" />
-						</div>
-					{/each}
-				</div>
-			{:else if documents.length === 0}
-				<div class="flex flex-col items-center gap-4 py-16">
-					<div class="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-						<FileText class="h-8 w-8 text-muted-foreground" />
-					</div>
-					<div class="text-center">
-						<p class="font-medium">{$_('document.mine.empty')}</p>
-						<p class="mt-1 text-sm text-muted-foreground">{$_('document.mine.empty_hint')}</p>
-					</div>
-					<Button onclick={() => goto(resolve('/documents/upload'))}>
-						<Upload class="h-4 w-4" />
-						{$_('document.mine.go_upload')}
-					</Button>
-				</div>
-			{:else}
-				<div class="overflow-x-auto">
-					<Table.Root>
-						<Table.Header>
+			<div class="overflow-x-auto">
+				<Table.Root>
+					<Table.Header>
+						{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
 							<Table.Row>
-								<Table.Head class="w-10">
-									<Checkbox
-										checked={allOnPageSelected}
-										onCheckedChange={toggleSelectAllOnPage}
-										aria-label={$_('document.mine.batch.select_all')}
-									/>
-								</Table.Head>
-								<Table.Head>{$_('document.mine.table.title')}</Table.Head>
-								<Table.Head class="hidden w-32 lg:table-cell"
-									>{$_('document.mine.table.visibility')}</Table.Head
-								>
-								<Table.Head class="hidden w-24 text-right md:table-cell"
-									>{$_('document.mine.table.file_size')}</Table.Head
-								>
-								<Table.Head class="w-28 sm:w-32">{$_('document.mine.table.status')}</Table.Head>
-								<Table.Head class="hidden w-32 sm:table-cell"
-									>{$_('document.mine.table.created_at')}</Table.Head
-								>
-								<Table.Head class="w-20 text-center">{$_('document.mine.table.actions')}</Table.Head
-								>
-							</Table.Row>
-						</Table.Header>
-						<Table.Body>
-							{#each documents as doc (doc.id)}
-								<Table.Row class="group transition-colors hover:bg-muted/50 hover:shadow-sm">
-									<Table.Cell>
-										<Checkbox
-											checked={selectedIds.has(doc.id)}
-											onCheckedChange={() => toggleSelected(doc.id)}
-											aria-label={`Select ${doc.title ?? doc.original_file_name}`}
-										/>
-									</Table.Cell>
-									<Table.Cell class="max-w-48 font-medium sm:max-w-[16rem] md:max-w-[24rem]">
-										<a
-											href={resolve(`/documents/${doc.id}`)}
-											class="flex items-center gap-3 rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-primary"
-										>
-											<FileText
-												class="h-4 w-4 shrink-0 text-muted-foreground/70 transition-colors group-hover:text-primary"
-											/>
-											<div class="min-w-0 flex-1">
-												<span
-													class="block truncate font-medium transition-colors group-hover:text-primary"
-													title={doc.title ?? doc.original_file_name}
-													>{doc.title ?? doc.original_file_name}</span
-												>
-												{#if doc.title}
-													<span
-														class="mt-0.5 block truncate text-xs font-normal text-muted-foreground/80 group-hover:text-muted-foreground"
-														title={doc.original_file_name}>{doc.original_file_name}</span
-													>
-												{/if}
+								{#each headerGroup.headers as header (header.id)}
+									{@const col = header.column}
+									<Table.Head
+										class={col.id === 'select'
+											? 'w-10 text-center'
+											: col.id === 'actions'
+												? 'w-20 text-center'
+												: col.id === 'file_size'
+													? 'w-28 text-right'
+													: col.id === 'created_at'
+														? 'w-32'
+														: col.id === 'visibility'
+															? 'w-36'
+															: col.id === 'enrich_status'
+																? 'w-32'
+																: ''}
+									>
+										{#if col.id === 'select'}
+											<div class="flex items-center justify-center">
+												<Checkbox
+													checked={allOnPageSelected}
+													indeterminate={somePageSelected}
+													onCheckedChange={toggleAllOnPage}
+													aria-label={$_('document.mine.batch.select_all')}
+												/>
 											</div>
-										</a>
-									</Table.Cell>
-									<Table.Cell class="hidden lg:table-cell">
-										{#if doc.visibility === 'lab' && doc.lab_name}
-											<Badge
-												variant="outline"
-												class="max-w-32 gap-1 border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400"
+										{:else if col.getCanSort()}
+											<button
+												type="button"
+												class="-ml-2 inline-flex h-8 items-center gap-1 rounded px-2 font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+												onclick={() => cycleSort(col.id)}
 											>
-												<FlaskConical class="size-3 shrink-0" />
-												<span class="truncate" title={doc.lab_name}>{doc.lab_name}</span>
-											</Badge>
+												<FlexRender content={col.columnDef.header} context={header.getContext()} />
+												{#if sorting[0]?.id === col.id && !sorting[0].desc}
+													<ChevronUp class="h-3.5 w-3.5" />
+												{:else if sorting[0]?.id === col.id && sorting[0].desc}
+													<ChevronDown class="h-3.5 w-3.5" />
+												{:else}
+													<ChevronsUpDown class="h-3.5 w-3.5 opacity-50" />
+												{/if}
+											</button>
 										{:else}
-											<Badge variant="secondary" class="gap-1">
-												<Lock class="size-3" />
-												{$_('document.mine.visibility.private')}
-											</Badge>
+											<FlexRender content={col.columnDef.header} context={header.getContext()} />
 										{/if}
-									</Table.Cell>
-									<Table.Cell class="hidden text-right text-xs text-muted-foreground md:table-cell">
-										{formatFileSize(doc.file_size)}
-									</Table.Cell>
-									<Table.Cell>
-										{#if doc.enrich_status === 'done'}
-											<Badge
-												variant="outline"
-												class="border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400"
-											>
-												<CircleCheck />
-												{$_('document.mine.status.done')}
-											</Badge>
-										{:else if doc.enrich_status === 'failed'}
-											<Badge variant="destructive">
-												<CircleAlert />
-												{$_('document.mine.status.failed')}
-											</Badge>
-										{:else if doc.enrich_status === 'processing'}
-											<Badge
-												variant="outline"
-												class="border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400"
-											>
-												<LoaderCircle class="animate-spin" />
-												{$_('document.mine.status.processing')}
-											</Badge>
-										{:else}
-											<Badge
-												variant="outline"
-												class="border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400"
-											>
-												<Clock />
-												{$_(`document.mine.status.${doc.enrich_status}`)}
-											</Badge>
-										{/if}
-									</Table.Cell>
-									<Table.Cell class="hidden text-xs text-muted-foreground sm:table-cell">
-										{formatDate(doc.created_at)}
-									</Table.Cell>
-									<Table.Cell class="text-center">
-										<div class="flex justify-center gap-1">
-											{#if doc.enrich_status === 'failed' || doc.enrich_status === 'not_started'}
-												<Button
-													variant="ghost"
-													size="icon"
-													class="h-8 w-8 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-													onclick={() => restartEnrichment(doc.id)}
-												>
-													<RefreshCw strokeWidth={2.5} class="h-4 w-4" />
-												</Button>
-											{/if}
-											<Button
-												variant="ghost"
-												size="icon"
-												href={resolve(`/documents/${doc.id}`)}
-												class="h-8 w-8 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-											>
-												<Eye strokeWidth={2.5} class="h-4 w-4" />
-											</Button>
-										</div>
-									</Table.Cell>
+									</Table.Head>
+								{/each}
+							</Table.Row>
+						{/each}
+					</Table.Header>
+					<Table.Body>
+						{#if isLoading}
+							{#each Array.from({ length: Math.min(pageSize, 10) }, (_, i) => i) as i (i)}
+								<Table.Row>
+									{#each table.getVisibleLeafColumns() as col (col.id)}
+										<Table.Cell>
+											<Skeleton class="h-4 w-full max-w-50" />
+										</Table.Cell>
+									{/each}
 								</Table.Row>
 							{/each}
-						</Table.Body>
-					</Table.Root>
-				</div>
+						{:else if documents.length === 0}
+							<Table.Row>
+								<Table.Cell colspan={table.getVisibleLeafColumns().length} class="h-60 text-center">
+									<div class="flex flex-col items-center gap-4 py-8">
+										<div class="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+											<FileText class="h-8 w-8 text-muted-foreground" />
+										</div>
+										<div class="text-center">
+											<p class="font-medium">
+												{debouncedSearch || statusFilter !== 'all' || visibilityFilter !== 'all'
+													? $_('document.mine.empty_filtered')
+													: $_('document.mine.empty')}
+											</p>
+											<p class="mt-1 text-sm text-muted-foreground">
+												{debouncedSearch || statusFilter !== 'all' || visibilityFilter !== 'all'
+													? $_('document.mine.empty_filtered_hint')
+													: $_('document.mine.empty_hint')}
+											</p>
+										</div>
+										{#if !debouncedSearch && statusFilter === 'all' && visibilityFilter === 'all'}
+											<Button onclick={() => goto(resolve('/documents/upload'))}>
+												<Upload class="h-4 w-4" />
+												{$_('document.mine.go_upload')}
+											</Button>
+										{/if}
+									</div>
+								</Table.Cell>
+							</Table.Row>
+						{:else}
+							{#each table.getRowModel().rows as row (row.id)}
+								{@const doc = row.original}
+								{@const isSelected = !!rowSelection[row.id]}
+								<Table.Row
+									data-state={isSelected ? 'selected' : undefined}
+									class="group transition-colors hover:bg-muted/50"
+								>
+									{#each row.getVisibleCells() as cell (cell.id)}
+										{@const colId = cell.column.id}
+										<Table.Cell
+											class={colId === 'select'
+												? 'text-center'
+												: colId === 'actions'
+													? 'text-center'
+													: colId === 'file_size'
+														? 'text-right text-xs text-muted-foreground'
+														: colId === 'created_at'
+															? 'text-xs text-muted-foreground'
+															: colId === 'title'
+																? 'max-w-48 font-medium sm:max-w-[16rem] md:max-w-[24rem]'
+																: ''}
+										>
+											{#if colId === 'select'}
+												<div class="flex items-center justify-center">
+													<Checkbox
+														checked={isSelected}
+														onCheckedChange={() => toggleRow(doc)}
+														aria-label={`Select ${doc.title ?? doc.original_file_name}`}
+													/>
+												</div>
+											{:else if colId === 'title'}
+												<a
+													href={resolve(`/documents/${doc.id}`)}
+													class="flex items-center gap-3 rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-primary"
+												>
+													<FileText
+														class="h-4 w-4 shrink-0 text-muted-foreground/70 transition-colors group-hover:text-primary"
+													/>
+													<div class="min-w-0 flex-1">
+														<span
+															class="block truncate font-medium transition-colors group-hover:text-primary"
+															title={doc.title ?? doc.original_file_name}
+															>{doc.title ?? doc.original_file_name}</span
+														>
+														{#if doc.title}
+															<span
+																class="mt-0.5 block truncate text-xs font-normal text-muted-foreground/80 group-hover:text-muted-foreground"
+																title={doc.original_file_name}>{doc.original_file_name}</span
+															>
+														{/if}
+													</div>
+												</a>
+											{:else if colId === 'visibility'}
+												{#if doc.visibility === 'lab' && doc.lab_name}
+													<Badge
+														variant="outline"
+														class="max-w-32 gap-1 border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400"
+													>
+														<FlaskConical class="size-3 shrink-0" />
+														<span class="truncate" title={doc.lab_name}>{doc.lab_name}</span>
+													</Badge>
+												{:else}
+													<Badge variant="secondary" class="gap-1">
+														<Lock class="size-3" />
+														{$_('document.mine.visibility.private')}
+													</Badge>
+												{/if}
+											{:else if colId === 'file_size'}
+												{formatFileSize(doc.file_size)}
+											{:else if colId === 'enrich_status'}
+												{#if doc.enrich_status === 'done'}
+													<Badge
+														variant="outline"
+														class="border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400"
+													>
+														<CircleCheck />
+														{$_('document.mine.status.done')}
+													</Badge>
+												{:else if doc.enrich_status === 'failed'}
+													<Badge variant="destructive">
+														<CircleAlert />
+														{$_('document.mine.status.failed')}
+													</Badge>
+												{:else if doc.enrich_status === 'processing'}
+													<Badge
+														variant="outline"
+														class="border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400"
+													>
+														<LoaderCircle class="animate-spin" />
+														{$_('document.mine.status.processing')}
+													</Badge>
+												{:else}
+													<Badge
+														variant="outline"
+														class="border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400"
+													>
+														<Clock />
+														{$_(`document.mine.status.${doc.enrich_status}`)}
+													</Badge>
+												{/if}
+											{:else if colId === 'created_at'}
+												{formatDate(doc.created_at)}
+											{:else if colId === 'actions'}
+												<DropdownMenu.Root>
+													<DropdownMenu.Trigger>
+														{#snippet child({ props })}
+															<Button
+																{...props}
+																variant="ghost"
+																size="icon"
+																class="h-8 w-8 data-[state=open]:bg-muted"
+																aria-label={$_('document.mine.actions.open_menu')}
+															>
+																<Ellipsis class="h-4 w-4" />
+															</Button>
+														{/snippet}
+													</DropdownMenu.Trigger>
+													<DropdownMenu.Content align="end" class="w-48">
+														<DropdownMenu.Item
+															onSelect={() => goto(resolve(`/documents/${doc.id}`))}
+														>
+															<Eye class="mr-2 h-4 w-4" />
+															{$_('document.mine.actions.view')}
+														</DropdownMenu.Item>
+														<DropdownMenu.Item onSelect={() => openEditDialog(doc)}>
+															<Pencil class="mr-2 h-4 w-4" />
+															{$_('document.mine.actions.edit')}
+														</DropdownMenu.Item>
+														{#if doc.enrich_status === 'failed' || doc.enrich_status === 'not_started'}
+															<DropdownMenu.Item onSelect={() => restartEnrichment(doc.id)}>
+																<RefreshCw class="mr-2 h-4 w-4" />
+																{$_('document.mine.actions.restart')}
+															</DropdownMenu.Item>
+														{/if}
+														<DropdownMenu.Separator />
+														<DropdownMenu.Item
+															class="text-destructive focus:text-destructive"
+															onSelect={() => openDeleteDialog(doc)}
+														>
+															<Trash2 class="mr-2 h-4 w-4" />
+															{$_('document.mine.actions.delete')}
+														</DropdownMenu.Item>
+													</DropdownMenu.Content>
+												</DropdownMenu.Root>
+											{/if}
+										</Table.Cell>
+									{/each}
+								</Table.Row>
+							{/each}
+						{/if}
+					</Table.Body>
+				</Table.Root>
+			</div>
 
-				<!-- Pagination -->
-				{#if totalPages > 1}
-					<div class="flex items-center justify-between border-t px-6 py-3">
-						<p class="text-sm text-muted-foreground">
-							{(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, total)} / {total}
-						</p>
-						<div class="flex items-center gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={currentPage <= 1}
-								onclick={() => {
-									currentPage -= 1;
-									loadDocuments();
-								}}
-							>
-								{$_('document.mine.pagination.prev')}
-							</Button>
-							<span class="text-sm text-muted-foreground">{currentPage} / {totalPages}</span>
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={currentPage >= totalPages}
-								onclick={() => {
-									currentPage += 1;
-									loadDocuments();
-								}}
-							>
-								{$_('document.mine.pagination.next')}
-							</Button>
-						</div>
+			<!-- Pagination -->
+			<div class="flex flex-col items-center justify-between gap-3 border-t px-4 py-3 sm:flex-row">
+				<div class="text-sm text-muted-foreground">
+					{$_('document.mine.pagination.info', {
+						values: {
+							selected: selectedCount,
+							total
+						}
+					})}
+				</div>
+				<div class="flex flex-col items-center gap-3 sm:flex-row sm:gap-6">
+					<div class="flex items-center gap-2">
+						<Label for="page-size" class="text-sm text-muted-foreground">
+							{$_('document.mine.pagination.per_page')}
+						</Label>
+						<Select.Root
+							type="single"
+							value={String(pageSize)}
+							onValueChange={(v) => {
+								pageSize = Number(v);
+								pageIndex = 0;
+							}}
+						>
+							<Select.Trigger id="page-size" class="h-8 w-18">
+								{pageSize}
+							</Select.Trigger>
+							<Select.Content>
+								{#each [10, 20, 30, 50, 100] as n (n)}
+									<Select.Item value={String(n)}>{n}</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
 					</div>
-				{/if}
-			{/if}
+					<div class="text-sm text-muted-foreground">
+						{$_('document.mine.pagination.page_info', {
+							values: { current: pageIndex + 1, total: pageCount }
+						})}
+					</div>
+					<div class="flex items-center gap-1">
+						<Button
+							variant="outline"
+							size="icon"
+							class="h-8 w-8"
+							disabled={pageIndex === 0}
+							onclick={() => (pageIndex = 0)}
+							aria-label={$_('document.mine.pagination.first')}
+						>
+							<ChevronsLeft class="h-4 w-4" />
+						</Button>
+						<Button
+							variant="outline"
+							size="icon"
+							class="h-8 w-8"
+							disabled={pageIndex === 0}
+							onclick={() => (pageIndex = Math.max(0, pageIndex - 1))}
+							aria-label={$_('document.mine.pagination.prev')}
+						>
+							<ChevronLeft class="h-4 w-4" />
+						</Button>
+						<Button
+							variant="outline"
+							size="icon"
+							class="h-8 w-8"
+							disabled={pageIndex >= pageCount - 1}
+							onclick={() => (pageIndex = Math.min(pageCount - 1, pageIndex + 1))}
+							aria-label={$_('document.mine.pagination.next')}
+						>
+							<ChevronRight class="h-4 w-4" />
+						</Button>
+						<Button
+							variant="outline"
+							size="icon"
+							class="h-8 w-8"
+							disabled={pageIndex >= pageCount - 1}
+							onclick={() => (pageIndex = pageCount - 1)}
+							aria-label={$_('document.mine.pagination.last')}
+						>
+							<ChevronsRight class="h-4 w-4" />
+						</Button>
+					</div>
+				</div>
+			</div>
 		</Card.Content>
 	</Card.Root>
 </div>
@@ -542,6 +1036,94 @@
 			>
 				<Pencil class="size-3.5" />
 				{$_('document.mine.batch.apply')}
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
+
+<!-- Edit metadata dialog -->
+<AlertDialog.Root bind:open={editDialogOpen}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>{$_('document.mine.edit_dialog.title')}</AlertDialog.Title>
+			<AlertDialog.Description>
+				{$_('document.mine.edit_dialog.description')}
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+
+		<div class="space-y-4 px-6">
+			<div class="space-y-1.5">
+				<Label for="edit-title">{$_('document.mine.edit_dialog.title_label')}</Label>
+				<Input
+					id="edit-title"
+					bind:value={editTitle}
+					placeholder={editTarget?.original_file_name ?? ''}
+					maxlength={255}
+				/>
+			</div>
+			<div class="grid grid-cols-2 gap-3">
+				<div class="space-y-1.5">
+					<Label for="edit-year">{$_('document.mine.edit_dialog.year_label')}</Label>
+					<Input
+						id="edit-year"
+						type="number"
+						inputmode="numeric"
+						min="1000"
+						max="9999"
+						bind:value={editYear}
+						placeholder="2024"
+					/>
+				</div>
+				<div class="space-y-1.5">
+					<Label for="edit-doi">{$_('document.mine.edit_dialog.doi_label')}</Label>
+					<Input id="edit-doi" bind:value={editDoi} placeholder="10.xxxx/..." maxlength={255} />
+				</div>
+			</div>
+		</div>
+
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel disabled={editSubmitting}>
+				{$_('profile.btn.cancel')}
+			</AlertDialog.Cancel>
+			<AlertDialog.Action
+				disabled={editSubmitting}
+				onclick={(e: MouseEvent) => {
+					e.preventDefault();
+					handleEditSubmit();
+				}}
+			>
+				<Pencil class="size-3.5" />
+				{$_('document.mine.edit_dialog.save')}
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
+
+<!-- Delete confirmation -->
+<AlertDialog.Root bind:open={deleteDialogOpen}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>{$_('document.mine.delete.title')}</AlertDialog.Title>
+			<AlertDialog.Description>
+				{$_('document.mine.delete.description', {
+					values: { name: deleteTarget?.title ?? deleteTarget?.original_file_name ?? '' }
+				})}
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel disabled={deleteSubmitting}>
+				{$_('profile.btn.cancel')}
+			</AlertDialog.Cancel>
+			<AlertDialog.Action
+				disabled={deleteSubmitting}
+				class="text-destructive-foreground bg-destructive hover:bg-destructive/90"
+				onclick={(e: MouseEvent) => {
+					e.preventDefault();
+					handleDeleteSubmit();
+				}}
+			>
+				<Trash2 class="size-3.5" />
+				{$_('document.mine.delete.confirm')}
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>

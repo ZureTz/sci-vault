@@ -119,6 +119,8 @@ func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 	group.GET("/:doc_id/enrich_status", deps.DocumentHandler.GetEnrichStatus)
 	group.POST("/:doc_id/restart_enrichment", deps.DocumentHandler.RestartEnrichment)
 	group.PATCH("/:doc_id/visibility", deps.DocumentHandler.UpdateVisibility)
+	group.PATCH("/:doc_id", deps.DocumentHandler.UpdateMetadata)
+	group.DELETE("/:doc_id", deps.DocumentHandler.DeleteDocument)
 }
 
 // Search routes (/api/v1/search/...)

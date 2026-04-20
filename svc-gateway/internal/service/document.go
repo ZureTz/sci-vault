@@ -458,9 +458,26 @@ func (s *DocumentService) RestartEnrichment(ctx context.Context, userID, docID u
 	return nil
 }
 
-func (s *DocumentService) ListMyDocuments(ctx context.Context, userID uint, page, pageSize int) (*dto.ListDocumentsResponse, error) {
-	offset := (page - 1) * pageSize
-	docs, total, err := s.repo.FindByUserID(ctx, userID, offset, pageSize)
+func (s *DocumentService) ListMyDocuments(ctx context.Context, userID uint, query dto.ListMyDocumentsQuery) (*dto.ListMyDocumentsResponse, error) {
+	page := query.Page
+	if page == 0 {
+		page = 1
+	}
+	pageSize := query.PageSize
+	if pageSize == 0 {
+		pageSize = 20
+	}
+	filter := repo.ListMyDocumentsFilter{
+		Search:     strings.TrimSpace(query.Search),
+		Status:     query.Status,
+		Visibility: query.Visibility,
+		LabID:      query.LabID,
+		SortBy:     query.SortBy,
+		SortOrder:  query.SortOrder,
+		Offset:     (page - 1) * pageSize,
+		Limit:      pageSize,
+	}
+	docs, total, err := s.repo.FindByUserID(ctx, userID, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list documents: %w", err)
 	}
@@ -470,7 +487,7 @@ func (s *DocumentService) ListMyDocuments(ctx context.Context, userID uint, page
 		items = append(items, toDocumentListItem(&docs[i]))
 	}
 
-	return &dto.ListDocumentsResponse{
+	return &dto.ListMyDocumentsResponse{
 		Documents: items,
 		Total:     total,
 		Page:      page,
@@ -478,7 +495,7 @@ func (s *DocumentService) ListMyDocuments(ctx context.Context, userID uint, page
 	}, nil
 }
 
-func (s *DocumentService) ListPendingDocuments(ctx context.Context, userID uint) (*dto.ListDocumentsResponse, error) {
+func (s *DocumentService) ListPendingDocuments(ctx context.Context, userID uint) (*dto.ListMyDocumentsResponse, error) {
 	docs, total, err := s.repo.FindByUserIDAndStatus(ctx, userID, model.EnrichStatusNotStarted, 0, 50)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pending documents: %w", err)
@@ -489,7 +506,7 @@ func (s *DocumentService) ListPendingDocuments(ctx context.Context, userID uint)
 		items = append(items, toDocumentListItem(&docs[i]))
 	}
 
-	return &dto.ListDocumentsResponse{
+	return &dto.ListMyDocumentsResponse{
 		Documents: items,
 		Total:     total,
 		Page:      1,
@@ -526,6 +543,59 @@ func (s *DocumentService) BatchUpdateVisibility(ctx context.Context, userID uint
 		return updated, app_error.ErrSomeDocsNotAccessible
 	}
 	return updated, nil
+}
+
+// UpdateMetadata patches user-editable metadata on a document the caller owns.
+// Only non-nil fields on the request are applied; a nil field means "leave as-is".
+// The three fields are nullable columns, so clients can clear them by sending
+// an explicit empty string / zero — callers send `null` via JSON to mean "no change".
+func (s *DocumentService) UpdateMetadata(ctx context.Context, userID, docID uint, req dto.UpdateDocumentMetadataRequest) error {
+	fields := map[string]any{}
+	if req.Title != nil {
+		fields["title"] = *req.Title
+	}
+	if req.Year != nil {
+		fields["year"] = *req.Year
+	}
+	if req.DOI != nil {
+		fields["doi"] = *req.DOI
+	}
+	if len(fields) == 0 {
+		return nil
+	}
+	if err := s.repo.UpdateMetadata(ctx, docID, userID, fields); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrNotDocumentOwner
+		}
+		return err
+	}
+	return nil
+}
+
+// DeleteDocument soft-deletes a document owned by the caller and best-effort
+// removes the S3 object. Dashboard stats are invalidated so the breakdown
+// refreshes.
+func (s *DocumentService) DeleteDocument(ctx context.Context, userID, docID uint) error {
+	doc, err := s.repo.DeleteByID(ctx, docID, userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrNotDocumentOwner
+		}
+		return fmt.Errorf("failed to delete document: %w", err)
+	}
+
+	// Best effort: remove the S3 object and any cached enrich status.
+	// Failures here don't roll back the DB delete — the row is already gone.
+	if err := s.storageClient.DeleteObject(ctx, doc.FileKey, true); err != nil {
+		slog.Warn("Failed to delete S3 object for document", "docID", docID, "key", doc.FileKey, "err", err)
+	}
+	if _, err := s.cacheConn.Del(ctx, enrichStatusKey(docID)); err != nil {
+		slog.Warn("Failed to clear enrich status cache", "docID", docID, "err", err)
+	}
+	if _, err := s.cacheConn.Del(ctx, dashboardStatsKey(userID)); err != nil {
+		slog.Warn("Failed to invalidate dashboard stats cache", "userID", userID, "err", err)
+	}
+	return nil
 }
 
 // downloadFilename ensures the filename ends with ".pdf".

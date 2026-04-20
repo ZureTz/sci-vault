@@ -41,8 +41,20 @@ type DocumentIDUri struct {
 }
 
 type ListMyDocumentsQuery struct {
-	Page     int `form:"page" binding:"omitempty,min=1"`
-	PageSize int `form:"page_size" binding:"omitempty,min=1,max=100"`
+	Page       int    `form:"page" binding:"omitempty,min=1"`
+	PageSize   int    `form:"page_size" binding:"omitempty,min=1,max=100"`
+	Search     string `form:"search" binding:"omitempty,max=255"`
+	Status     string `form:"status" binding:"omitempty,oneof=not_started pending processing done failed"`
+	Visibility string `form:"visibility" binding:"omitempty,oneof=private lab"`
+	LabID      *uint  `form:"lab_id" binding:"omitempty"`
+	SortBy     string `form:"sort_by" binding:"omitempty,oneof=created_at title file_size view_count"`
+	SortOrder  string `form:"sort_order" binding:"omitempty,oneof=asc desc"`
+}
+
+type UpdateDocumentMetadataRequest struct {
+	Title *string `json:"title" binding:"omitempty,max=255"`
+	Year  *int    `json:"year" binding:"omitempty,min=1000,max=9999"`
+	DOI   *string `json:"doi" binding:"omitempty,max=255"`
 }
 
 type UpdateVisibilityRequest struct {
@@ -74,7 +86,7 @@ type DocumentListItem struct {
 	CreatedAt        time.Time `json:"created_at"`
 }
 
-type ListDocumentsResponse struct {
+type ListMyDocumentsResponse struct {
 	Documents []DocumentListItem `json:"documents"`
 	Total     int64              `json:"total"`
 	Page      int                `json:"page"`

@@ -90,10 +90,37 @@ export interface BatchUpdateVisibilityResponse {
 	updated: number;
 }
 
+export interface UpdateMetadataRequest {
+	title?: string | null;
+	year?: number | null;
+	doi?: string | null;
+}
+
+export interface ListMyDocumentsParams {
+	page?: number;
+	page_size?: number;
+	search?: string;
+	status?: 'not_started' | 'pending' | 'processing' | 'done' | 'failed';
+	visibility?: DocumentVisibility;
+	lab_id?: number;
+	sort_by?: 'created_at' | 'title' | 'file_size' | 'view_count';
+	sort_order?: 'asc' | 'desc';
+}
+
 const documentApi = {
-	listMyDocuments(page = 1, pageSize = 20): Promise<ListDocumentsResponse> {
+	listMyDocuments(params: ListMyDocumentsParams = {}): Promise<ListDocumentsResponse> {
+		const query: Record<string, string | number> = {
+			page: params.page ?? 1,
+			page_size: params.page_size ?? 20
+		};
+		if (params.search) query.search = params.search;
+		if (params.status) query.status = params.status;
+		if (params.visibility) query.visibility = params.visibility;
+		if (params.lab_id != null) query.lab_id = params.lab_id;
+		if (params.sort_by) query.sort_by = params.sort_by;
+		if (params.sort_order) query.sort_order = params.sort_order;
 		return request.get<ListDocumentsResponse>('/docs/mine', {
-			params: { page, page_size: pageSize }
+			params: query
 		}) as unknown as Promise<ListDocumentsResponse>;
 	},
 
@@ -174,6 +201,17 @@ const documentApi = {
 			'/docs/visibility/batch',
 			data
 		) as unknown as Promise<BatchUpdateVisibilityResponse>;
+	},
+
+	updateMetadata(docId: number, data: UpdateMetadataRequest): Promise<DefaultResponse> {
+		return request.patch<UpdateMetadataRequest, DefaultResponse>(
+			`/docs/${docId}`,
+			data
+		) as unknown as Promise<DefaultResponse>;
+	},
+
+	deleteDocument(docId: number): Promise<DefaultResponse> {
+		return request.delete<DefaultResponse>(`/docs/${docId}`) as unknown as Promise<DefaultResponse>;
 	}
 };
 
