@@ -21,24 +21,19 @@ AI-powered collaborative platform for research data management and discovery. Bu
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    Browser                          │
-└──────────────────────┬──────────────────────────────┘
-                       │ REST/HTTP
-                       ▼
-┌─────────────────────────────────────────────────────┐
-│              svc-gateway (Go/Gin)                   │
-└──────────────────────┬──────────────────────────────┘
-                       │ gRPC
-                       ▼
-┌─────────────────────────────────────────────────────┐
-│           svc-recommender (Python)                  │
-└──────────────────────┬──────────────────────────────┘
-                       │
-       ┌───────────────┼───────────────┐
-       ▼               ▼               ▼
-   PostgreSQL 18    Redis 8.6    RustFS S3
-   (+pgvector)      (Cache)      (Storage)
+┌─────────────┐
+│   Browser   │
+└──────┬──────┘
+       │ REST/HTTP
+       ▼
+┌──────────────────┐            ┌──────────────────┐
+│  svc-gateway     │──gRPC────▶│ svc-recommender   │
+│   (Go/Gin)       │            │   (Python)       │
+└──────────────────┘            └──────────────────┘
+       │                         　   │
+       ├─ PostgreSQL 18 ◀─────┬──────┤
+       ├─ Redis 8.6 ◀────┬────┤
+       └─ RustFS S3 ◀────┴────┘
 ```
 
 ## Tech Stack
@@ -211,9 +206,9 @@ bun run lint         # Format check
 
 4. **Production deployment** — Copy configs to hardened versions:
    ```bash
-   cp docker-compose.yaml docker-compose-production.yaml
+   cp docker-compose.yaml docker-compose-prod.yaml
    # Update all secrets in config files
-   docker compose -f docker-compose-production.yaml up -d --build
+   docker compose -f docker-compose-prod.yaml up -d --build
    ```
 
 ## Documentation
