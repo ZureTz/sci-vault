@@ -157,6 +157,32 @@ func (s *UserService) ResetPassword(ctx context.Context, req dto.ResetPasswordRe
 	return nil
 }
 
+func (s *UserService) ChangePassword(ctx context.Context, userID uint, req dto.ChangePasswordRequest) error {
+	user, err := s.repo.FindByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("user not found: %w", err)
+	}
+
+	if err := password.Verify(user.PasswordHash, req.CurrentPassword); err != nil {
+		return app_error.ErrCurrentPasswordWrong
+	}
+
+	if req.CurrentPassword == req.NewPassword {
+		return app_error.ErrSamePassword
+	}
+
+	hashedPassword, err := password.Hash(req.NewPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	if err := s.repo.UpdatePasswordByUserID(ctx, userID, hashedPassword); err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	return nil
+}
+
 func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) (*dto.RegisterResponse, error) {
 	// Verify email code from Redis
 	if err := s.verifyEmailCode(ctx, req.Email, req.EmailCode); err != nil {

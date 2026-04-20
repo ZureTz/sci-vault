@@ -12,6 +12,7 @@ type UserRepository interface {
 	FindByID(ctx context.Context, id uint) (model.User, error)
 	FindByUsernameOrEmail(ctx context.Context, usernameOrEmail string) (model.User, error)
 	UpdatePasswordByEmail(ctx context.Context, email string, passwordHash string) error
+	UpdatePasswordByUserID(ctx context.Context, id uint, passwordHash string) error
 }
 
 type userRepo struct {
@@ -36,5 +37,10 @@ func (r *userRepo) FindByUsernameOrEmail(ctx context.Context, usernameOrEmail st
 
 func (r *userRepo) UpdatePasswordByEmail(ctx context.Context, email string, passwordHash string) error {
 	_, err := gorm.G[model.User](r.db).Where("email = ?", email).Update(ctx, "password_hash", passwordHash)
+	return err
+}
+
+func (r *userRepo) UpdatePasswordByUserID(ctx context.Context, id uint, passwordHash string) error {
+	_, err := gorm.G[model.User](r.db).Where("id = ?", id).Update(ctx, "password_hash", passwordHash)
 	return err
 }

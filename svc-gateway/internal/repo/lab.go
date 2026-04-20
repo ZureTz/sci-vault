@@ -41,6 +41,7 @@ type LabRepository interface {
 	TransferOwnership(ctx context.Context, labID, oldOwnerID, newOwnerID uint) error
 	DeleteLab(ctx context.Context, labID uint) error
 	UpdateInviteCode(ctx context.Context, labID uint, newCode string) error
+	UpdateLabInfo(ctx context.Context, labID uint, name string, description *string) error
 }
 
 type labRepo struct {
@@ -150,6 +151,13 @@ func (r *labRepo) DeleteLab(ctx context.Context, labID uint) error {
 
 func (r *labRepo) UpdateInviteCode(ctx context.Context, labID uint, newCode string) error {
 	return r.db.WithContext(ctx).Model(&model.Lab{}).Where("id = ?", labID).Update("invite_code", newCode).Error
+}
+
+func (r *labRepo) UpdateLabInfo(ctx context.Context, labID uint, name string, description *string) error {
+	return r.db.WithContext(ctx).Model(&model.Lab{}).Where("id = ?", labID).Updates(map[string]any{
+		"name":        name,
+		"description": description,
+	}).Error
 }
 
 func (r *labRepo) FindLabsByUserID(ctx context.Context, userID uint) ([]LabWithRole, error) {

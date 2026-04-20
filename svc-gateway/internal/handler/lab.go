@@ -29,6 +29,7 @@ type LabService interface {
 	RequestDeleteLab(ctx context.Context, labID, requesterID uint) error
 	DeleteLab(ctx context.Context, labID, requesterID uint, confirmName, emailCode string) error
 	ResetInviteCode(ctx context.Context, labID, requesterID uint) (string, error)
+	UpdateLabInfo(ctx context.Context, labID, requesterID uint, req dto.UpdateLabInfoRequest) (*dto.LabDetailResponse, error)
 }
 
 type LabHandler struct {
@@ -344,6 +345,37 @@ func (h *LabHandler) DeleteLab(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, utils.MessageResponse("lab deleted successfully"))
+}
+
+func (h *LabHandler) UpdateLabInfo(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("unauthorized")))
+		return
+	}
+	labID := c.GetUint("lab_id")
+
+	var req dto.UpdateLabInfoRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	resp, err := h.labService.UpdateLabInfo(c.Request.Context(), labID, userID, req)
+	if err != nil {
+		if errors.Is(err, app_error.ErrNotOwner) {
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.update_lab_info.forbidden")))
+			return
+		}
+		if errors.Is(err, app_error.ErrNotMember) || errors.Is(err, app_error.ErrLabNotFound) {
+			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.update_lab_info.not_found")))
+			return
+		}
+		slog.Error("UpdateLabInfo service error", "err", err)
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.update_lab_info.failed")))
+		return
+	}
+	c.JSON(http.StatusOK, resp)
 }
 
 func (h *LabHandler) ResetInviteCode(c *gin.Context) {

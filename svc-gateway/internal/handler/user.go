@@ -21,6 +21,7 @@ type UserService interface {
 	Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error)
 	Register(ctx context.Context, req dto.RegisterRequest) (*dto.RegisterResponse, error)
 	ResetPassword(ctx context.Context, req dto.ResetPasswordRequest) error
+	ChangePassword(ctx context.Context, userID uint, req dto.ChangePasswordRequest) error
 	UploadAvatar(ctx context.Context, userID uint, file io.Reader, contentType, filename string, size int64) (*dto.UploadAvatarResponse, error)
 	UpdateProfile(ctx context.Context, userID uint, req dto.UpdateProfileRequest) error
 	GetAvatar(ctx context.Context, userID uint) (*dto.AvatarResponse, error)
@@ -103,6 +104,35 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, utils.MessageResponse("password reset successfully"))
+}
+
+func (h *UserHandler) ChangePassword(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		slog.Warn("ChangePassword: missing user ID in context")
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
+		return
+	}
+
+	var req dto.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	if err := h.userService.ChangePassword(c.Request.Context(), userID, req); err != nil {
+		switch {
+		case errors.Is(err, app_error.ErrCurrentPasswordWrong):
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.change_password.current_wrong")))
+		case errors.Is(err, app_error.ErrSamePassword):
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.change_password.same_password")))
+		default:
+			slog.Error("ChangePassword service error", "err", err)
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.change_password.failed")))
+		}
+		return
+	}
+	c.JSON(http.StatusOK, utils.MessageResponse("password changed successfully"))
 }
 
 func (h *UserHandler) UploadAvatar(c *gin.Context) {
