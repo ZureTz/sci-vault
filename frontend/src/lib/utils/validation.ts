@@ -104,6 +104,30 @@ export function validateRegisterForm(form: {
 	return Object.keys(errors).length ? errors : null;
 }
 
+export interface ChangePasswordFormErrors {
+	current_password?: string;
+	new_password?: string;
+	confirmed_password?: string;
+}
+
+export function validateChangePasswordForm(form: {
+	current_password: string;
+	new_password: string;
+	confirmed_password: string;
+}): ChangePasswordFormErrors | null {
+	const errors: ChangePasswordFormErrors = {};
+	const currentErr = validatePassword(form.current_password);
+	if (currentErr) errors.current_password = currentErr;
+	const newErr = validatePassword(form.new_password);
+	if (newErr) errors.new_password = newErr;
+	if (!form.confirmed_password) {
+		errors.confirmed_password = 'validation.confirmed_password.required';
+	} else if (form.confirmed_password !== form.new_password) {
+		errors.confirmed_password = 'validation.confirmed_password.mismatch';
+	}
+	return Object.keys(errors).length ? errors : null;
+}
+
 export function validateResetForm(form: {
 	email: string;
 	email_code: string;

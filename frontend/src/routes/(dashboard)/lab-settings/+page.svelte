@@ -7,7 +7,9 @@
 		Trash2,
 		ShieldAlert,
 		FlaskConical,
-		Mail
+		Mail,
+		SquarePen,
+		Save
 	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
@@ -30,6 +32,11 @@
 	let labDetail = $state<LabDetailResponse | null>(null);
 	let members = $state<LabMemberInfo[]>([]);
 	let isLoading = $state(true);
+
+	// Edit lab info
+	let editName = $state('');
+	let editDescription = $state('');
+	let savingInfo = $state(false);
 
 	// Invite code
 	let inviteCodeCopied = $state(false);
@@ -56,6 +63,8 @@
 				.then(([labRes, memberList]) => {
 					labDetail = labRes;
 					members = memberList.filter((m) => m.role !== 'owner');
+					editName = labRes.name;
+					editDescription = labRes.description ?? '';
 					// Reset delete form state on lab switch
 					deleteStep = 1;
 					confirmName = '';
@@ -74,6 +83,42 @@
 			isLoading = false;
 		}
 	});
+
+	let infoDirty = $derived(
+		labDetail !== null &&
+			(editName.trim() !== labDetail.name ||
+				editDescription.trim() !== (labDetail.description ?? ''))
+	);
+
+	async function handleSaveInfo() {
+		if (!activeLab || !labDetail) return;
+		const trimmedName = editName.trim();
+		if (!trimmedName) {
+			toast.error($_('lab.settings.edit_info.name_required'));
+			return;
+		}
+
+		savingInfo = true;
+		try {
+			const trimmedDesc = editDescription.trim();
+			const updated = await labApi.updateLabInfo(activeLab.id, {
+				name: trimmedName,
+				description: trimmedDesc ? trimmedDesc : null
+			});
+			labDetail = updated;
+			editName = updated.name;
+			editDescription = updated.description ?? '';
+			if (activeLab.name !== updated.name) {
+				setActiveLab({ ...activeLab, name: updated.name });
+			}
+			invalidateLabs();
+			toast.success($_('service.update_lab_info.success'));
+		} catch (error: unknown) {
+			showApiErrors(error, $_('service.update_lab_info.failed'));
+		} finally {
+			savingInfo = false;
+		}
+	}
 
 	async function copyInviteCode() {
 		if (!labDetail) return;
@@ -212,6 +257,60 @@
 				<h2 class="text-3xl font-bold tracking-tight">{$_('lab.settings.title')}</h2>
 				<p class="text-muted-foreground">{$_('lab.settings.description')}</p>
 			</div>
+
+			<!-- Edit Info Section -->
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="flex items-center gap-2 text-base">
+						<SquarePen class="size-4" />
+						{$_('lab.settings.edit_info.title')}
+					</Card.Title>
+					<Card.Description>{$_('lab.settings.edit_info.description')}</Card.Description>
+				</Card.Header>
+				<Card.Content class="space-y-4">
+					<div class="space-y-1.5">
+						<Label for="lab-name">{$_('lab.settings.edit_info.name_label')}</Label>
+						<Input
+							id="lab-name"
+							bind:value={editName}
+							placeholder={$_('lab.settings.edit_info.name_placeholder')}
+							maxlength={100}
+						/>
+					</div>
+					<div class="space-y-1.5">
+						<Label for="lab-description">{$_('lab.settings.edit_info.description_label')}</Label>
+						<textarea
+							id="lab-description"
+							bind:value={editDescription}
+							placeholder={$_('lab.settings.edit_info.description_placeholder')}
+							maxlength={500}
+							rows={3}
+							class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+						></textarea>
+					</div>
+					<div class="flex justify-end gap-2">
+						<Button
+							variant="outline"
+							disabled={!infoDirty || savingInfo}
+							onclick={() => {
+								if (!labDetail) return;
+								editName = labDetail.name;
+								editDescription = labDetail.description ?? '';
+							}}
+						>
+							{$_('lab.settings.edit_info.revert')}
+						</Button>
+						<Button
+							class="gap-2"
+							disabled={!infoDirty || savingInfo || !editName.trim()}
+							onclick={handleSaveInfo}
+						>
+							<Save class="size-4" />
+							{savingInfo ? $_('lab.settings.edit_info.saving') : $_('lab.settings.edit_info.save')}
+						</Button>
+					</div>
+				</Card.Content>
+			</Card.Root>
 
 			<!-- Invite Code Section -->
 			<Card.Root>

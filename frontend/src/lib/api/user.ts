@@ -43,6 +43,12 @@ export interface ResetPasswordRequest {
 	confirmed_password: string;
 }
 
+export interface ChangePasswordRequest {
+	current_password: string;
+	new_password: string;
+	confirmed_password: string;
+}
+
 export interface AvatarResponse {
 	avatar_url: string;
 }
@@ -96,6 +102,13 @@ const userApi = {
 	 */
 	resetPassword(data: ResetPasswordRequest) {
 		return request.post<ResetPasswordRequest, DefaultResponse>('/user/reset_password', data);
+	},
+
+	/**
+	 * Change the current authenticated user's password
+	 */
+	changePassword(data: ChangePasswordRequest) {
+		return request.post<ChangePasswordRequest, DefaultResponse>('/user/change_password', data);
 	},
 
 	/**
