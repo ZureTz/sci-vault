@@ -36,7 +36,7 @@ type DocumentRepository interface {
 	IncrementLikeCount(ctx context.Context, id uint) error
 	UpdateVisibility(ctx context.Context, docID, ownerID uint, visibility string, labID *uint) error
 	BatchUpdateVisibility(ctx context.Context, docIDs []uint, ownerID uint, visibility string, labID *uint) (int64, error)
-	UpdateMetadata(ctx context.Context, docID, ownerID uint, fields map[string]any) error
+	UpdateMetadata(ctx context.Context, docID, ownerID uint, patch DocumentMetadataPatch) error
 	DeleteByID(ctx context.Context, docID, ownerID uint) (model.Document, error)
 }
 
@@ -81,14 +81,31 @@ func (r *documentRepo) FindByUserID(ctx context.Context, userID uint, filter Lis
 	}
 
 	orderBy := "created_at DESC, id DESC"
-	if filter.SortBy != "" {
-		dir := "DESC"
-		if filter.SortOrder == "asc" {
-			dir = "ASC"
+	ascending := filter.SortOrder == "asc"
+	switch filter.SortBy {
+	case "title":
+		if ascending {
+			orderBy = "title ASC, id ASC"
+		} else {
+			orderBy = "title DESC, id DESC"
 		}
-		switch filter.SortBy {
-		case "title", "file_size", "view_count", "created_at":
-			orderBy = filter.SortBy + " " + dir + ", id " + dir
+	case "file_size":
+		if ascending {
+			orderBy = "file_size ASC, id ASC"
+		} else {
+			orderBy = "file_size DESC, id DESC"
+		}
+	case "view_count":
+		if ascending {
+			orderBy = "view_count ASC, id ASC"
+		} else {
+			orderBy = "view_count DESC, id DESC"
+		}
+	case "created_at":
+		if ascending {
+			orderBy = "created_at ASC, id ASC"
+		} else {
+			orderBy = "created_at DESC, id DESC"
 		}
 	}
 
@@ -210,10 +227,30 @@ func (r *documentRepo) UpdateVisibility(ctx context.Context, docID, ownerID uint
 	return nil
 }
 
-// UpdateMetadata patches user-editable metadata fields (title, year, doi) on a
-// document the caller owns. The fields map contains only the keys that should
-// change — callers must restrict it to safe columns.
-func (r *documentRepo) UpdateMetadata(ctx context.Context, docID, ownerID uint, fields map[string]any) error {
+// DocumentMetadataPatch enumerates the columns UpdateMetadata is allowed to
+// touch. A nil pointer means "leave this column as-is"; a non-nil pointer
+// (including an empty string / zero) is applied as-is. Keeping this as a typed
+// struct owned by the repo means column names never cross the service ↔ repo
+// boundary as strings, which rules out column-name injection by construction.
+type DocumentMetadataPatch struct {
+	Title *string
+	Year  *int
+	DOI   *string
+}
+
+// UpdateMetadata patches user-editable metadata fields on a document the
+// caller owns. Only fields set on the patch are written.
+func (r *documentRepo) UpdateMetadata(ctx context.Context, docID, ownerID uint, patch DocumentMetadataPatch) error {
+	fields := map[string]any{}
+	if patch.Title != nil {
+		fields["title"] = *patch.Title
+	}
+	if patch.Year != nil {
+		fields["year"] = *patch.Year
+	}
+	if patch.DOI != nil {
+		fields["doi"] = *patch.DOI
+	}
 	if len(fields) == 0 {
 		return nil
 	}
