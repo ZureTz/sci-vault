@@ -28,7 +28,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import userApi from '$lib/api/user';
 	import labApi, { type LabListItem } from '$lib/api/lab';
-	import { getLabsVersion, getActiveLab, setActiveLab } from '$lib/stores/lab.svelte';
+	import { getLabsVersion, getActiveLab, setActiveLab, setMyLabs } from '$lib/stores/lab.svelte';
 	import { getUser, getAvatarUrl, setAvatarUrl, clearUser } from '$lib/stores/user.svelte';
 
 	let { ref = $bindable(null), ...restProps } = $props();
@@ -90,6 +90,9 @@
 		const result = await labApi.getMyLabs().catch(() => null);
 		if (result === null) return;
 		myLabs = result;
+		// Publish to the shared store so other pages can read labs without
+		// each firing their own getMyLabs request.
+		setMyLabs(result);
 		if (selectedLabId !== null && !myLabs.some((l) => l.id === selectedLabId)) {
 			selectLab(null);
 		}

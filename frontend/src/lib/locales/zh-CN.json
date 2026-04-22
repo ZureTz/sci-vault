@@ -138,6 +138,12 @@
 				"lab_required": "请选择一个实验室",
 				"success": "可见范围已更新",
 				"failed": "更新可见范围失败"
+			},
+			"similar": {
+				"title": "相似文献",
+				"description": "基于此文献内容向量的相似推荐。",
+				"empty": "在您的文献库中未找到相似文献。",
+				"unavailable": "文献处理完成后将显示推荐。"
 			}
 		},
 		"mine": {
@@ -390,6 +396,10 @@
 		"search_documents": {
 			"not_lab_member": "您不是所选实验室的成员",
 			"failed": "搜索文档失败，请稍后重试"
+		},
+		"recommend_similar": {
+			"not_lab_member": "您不是所选实验室的成员",
+			"failed": "加载相似文献失败"
 		},
 		"list_documents": {
 			"failed": "加载文档列表失败，请稍后重试"

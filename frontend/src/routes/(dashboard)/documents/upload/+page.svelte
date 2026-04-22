@@ -20,8 +20,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Progress } from '$lib/components/ui/progress';
 	import documentApi, { type DocumentListItem, type DocumentVisibility } from '$lib/api/document';
-	import labApi, { type LabListItem } from '$lib/api/lab';
-	import { getActiveLab } from '$lib/stores/lab.svelte';
+	import { getActiveLab, getMyLabs } from '$lib/stores/lab.svelte';
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	const MAX_BATCH_FILES = 20;
@@ -35,7 +34,8 @@
 	let doi = $state('');
 	let visibility = $state<DocumentVisibility>('private');
 	let selectedLabId = $state<string>('');
-	let myLabs = $state<LabListItem[]>([]);
+	// Labs come from the shared store (populated by AppSidebar's fetch).
+	let myLabs = $derived(getMyLabs());
 	let isSubmitting = $state(false);
 	let uploadPercent = $state(0);
 	let isDragging = $state(false);
@@ -75,15 +75,6 @@
 		}
 	}
 
-	// Load user's labs on mount (only once — labs rarely change during a session)
-	async function loadLabs() {
-		try {
-			myLabs = await labApi.getMyLabs();
-		} catch {
-			// ignore — user can still upload as private
-		}
-	}
-
 	// Reactively follow the active lab from the store: switching the lab in the sidebar
 	// auto-selects that lab as the upload target. Selecting "no lab" reverts to private.
 	$effect(() => {
@@ -99,7 +90,6 @@
 
 	onMount(() => {
 		fetchPendingDocuments();
-		loadLabs();
 		pollTimer = setInterval(pollEnrichStatus, 3000);
 	});
 

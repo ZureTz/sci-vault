@@ -27,7 +27,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import userApi, { type ProfileResponse, type UpdateProfileRequest } from '$lib/api/user';
 	import { setAvatarUrl } from '$lib/stores/user.svelte';
-	import labApi, { type LabListItem } from '$lib/api/lab';
+	import { getMyLabs } from '$lib/stores/lab.svelte';
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	let { data }: { data: PageData } = $props();
@@ -42,8 +42,9 @@
 		location: null
 	});
 	let fileInput = $state<HTMLInputElement | undefined>(undefined);
-	let myLabs = $state<LabListItem[]>([]);
-	let labsLoading = $state(false);
+	// Labs come from the shared store (populated by AppSidebar's fetch) — only
+	// shown when viewing your own profile, where the store value matches.
+	let myLabs = $derived(getMyLabs());
 
 	// Re-sync when SvelteKit updates data.profile on param change (e.g. /profile/9 → /profile/11)
 	$effect(() => {
@@ -53,7 +54,7 @@
 		});
 	});
 
-	onMount(async () => {
+	onMount(() => {
 		const token = localStorage.getItem('token');
 		if (token) {
 			try {
@@ -61,17 +62,6 @@
 				currentUserId = Number(decoded.user_id);
 			} catch {
 				// ignore invalid token
-			}
-		}
-
-		if (currentUserId !== null && currentUserId === Number(page.params.user_id)) {
-			labsLoading = true;
-			try {
-				myLabs = await labApi.getMyLabs();
-			} catch {
-				// silently ignore — labs section simply won't render
-			} finally {
-				labsLoading = false;
 			}
 		}
 	});
@@ -380,19 +370,7 @@
 				<Card.Description>{$_('profile.labs.description')}</Card.Description>
 			</Card.Header>
 			<Card.Content>
-				{#if labsLoading}
-					<div class="space-y-3">
-						{#each [1, 2] as i (i)}
-							<div class="flex items-center gap-3 rounded-lg border p-3">
-								<Skeleton class="h-9 w-9 rounded-lg" />
-								<div class="flex-1 space-y-1.5">
-									<Skeleton class="h-4 w-40" />
-									<Skeleton class="h-3 w-24" />
-								</div>
-							</div>
-						{/each}
-					</div>
-				{:else if myLabs.length === 0}
+				{#if myLabs.length === 0}
 					<p class="py-4 text-center text-sm text-muted-foreground">{$_('profile.labs.empty')}</p>
 				{:else}
 					<ul class="space-y-2">
