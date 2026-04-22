@@ -24,6 +24,13 @@ service RecommenderService {
   // Access control is enforced: only private docs owned by the user and
   // lab-visible docs in the given lab are considered.
   rpc SemanticSearch(SemanticSearchRequest) returns (SemanticSearchResponse);
+
+  // RecommendSimilar returns documents most similar to a source document,
+  // ranked by vector cosine similarity against the source's stored embedding.
+  // The source doc is always excluded from results. Access control mirrors
+  // SemanticSearch: only private docs owned by the caller and lab-visible
+  // docs in the given lab are candidates.
+  rpc RecommendSimilar(RecommendSimilarRequest) returns (RecommendSimilarResponse);
 }
 
 // HealthRequest is an empty message used for health check requests.
@@ -102,5 +109,22 @@ message SearchResult {
 
 // SemanticSearchResponse wraps the list of search results.
 message SemanticSearchResponse {
+  repeated SearchResult results = 1;
+}
+
+// RecommendSimilarRequest carries the source doc + access scope for the lookup.
+message RecommendSimilarRequest {
+  // doc_id is the source document whose embedding is used as the query vector.
+  uint64 doc_id = 1;
+  // user_id of the requesting user (for access control on private docs).
+  uint64 user_id = 2;
+  // lab_id to include lab-visible documents. 0 means private-only search.
+  uint64 lab_id = 3;
+  // limit is the maximum number of recommendations (default: 5, max: 20).
+  uint32 limit = 4;
+}
+
+// RecommendSimilarResponse wraps the list of similar documents.
+message RecommendSimilarResponse {
   repeated SearchResult results = 1;
 }

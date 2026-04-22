@@ -93,3 +93,21 @@ class SemanticSearchResponse(_message.Message):
     RESULTS_FIELD_NUMBER: _ClassVar[int]
     results: _containers.RepeatedCompositeFieldContainer[SearchResult]
     def __init__(self, results: _Optional[_Iterable[_Union[SearchResult, _Mapping]]] = ...) -> None: ...
+
+class RecommendSimilarRequest(_message.Message):
+    __slots__ = ("doc_id", "user_id", "lab_id", "limit")
+    DOC_ID_FIELD_NUMBER: _ClassVar[int]
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    LAB_ID_FIELD_NUMBER: _ClassVar[int]
+    LIMIT_FIELD_NUMBER: _ClassVar[int]
+    doc_id: int
+    user_id: int
+    lab_id: int
+    limit: int
+    def __init__(self, doc_id: _Optional[int] = ..., user_id: _Optional[int] = ..., lab_id: _Optional[int] = ..., limit: _Optional[int] = ...) -> None: ...
+
+class RecommendSimilarResponse(_message.Message):
+    __slots__ = ("results",)
+    RESULTS_FIELD_NUMBER: _ClassVar[int]
+    results: _containers.RepeatedCompositeFieldContainer[SearchResult]
+    def __init__(self, results: _Optional[_Iterable[_Union[SearchResult, _Mapping]]] = ...) -> None: ...
