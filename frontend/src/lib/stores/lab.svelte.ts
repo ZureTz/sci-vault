@@ -1,3 +1,5 @@
+import type { LabListItem } from '$lib/api/lab';
+
 /**
  * Shared reactive signal that triggers a lab list reload in any subscriber.
  * Pages that create or join a lab call `invalidateLabs()`;
@@ -11,6 +13,22 @@ export function invalidateLabs() {
 
 export function getLabsVersion() {
 	return labsVersion;
+}
+
+/**
+ * Cached copy of the caller's labs. The sidebar owns refresh — it fetches
+ * via `labApi.getMyLabs()` whenever `labsVersion` bumps and populates this
+ * signal. Other pages read it instead of each firing their own request.
+ * Empty on first render until the sidebar's fetch resolves.
+ */
+let _myLabs = $state<LabListItem[]>([]);
+
+export function getMyLabs(): LabListItem[] {
+	return _myLabs;
+}
+
+export function setMyLabs(labs: LabListItem[]) {
+	_myLabs = labs;
 }
 
 /**

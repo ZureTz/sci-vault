@@ -54,8 +54,7 @@
 		type DocumentVisibility,
 		type ListMyDocumentsParams
 	} from '$lib/api/document';
-	import labApi, { type LabListItem } from '$lib/api/lab';
-	import { getActiveLab } from '$lib/stores/lab.svelte';
+	import { getActiveLab, getMyLabs } from '$lib/stores/lab.svelte';
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	type StatusFilter = 'all' | 'not_started' | 'pending' | 'processing' | 'done' | 'failed';
@@ -89,7 +88,8 @@
 	let batchVisibility = $state<DocumentVisibility>('private');
 	let batchLabId = $state<string>('');
 	let batchSubmitting = $state(false);
-	let myLabs = $state<LabListItem[]>([]);
+	// Labs come from the shared store (populated by AppSidebar's fetch).
+	let myLabs = $derived(getMyLabs());
 
 	// ===== Edit metadata dialog state =====
 	let editDialogOpen = $state(false);
@@ -185,14 +185,6 @@
 			} catch {
 				// silently ignore
 			}
-		}
-	}
-
-	async function loadLabs() {
-		try {
-			myLabs = await labApi.getMyLabs();
-		} catch {
-			// ignore
 		}
 	}
 
@@ -470,7 +462,6 @@
 	});
 
 	onMount(() => {
-		loadLabs();
 		pollTimer = setInterval(pollEnrichStatus, 3000);
 	});
 

@@ -139,6 +139,12 @@
 				"lab_required": "Please select a lab",
 				"success": "Visibility updated",
 				"failed": "Failed to update visibility"
+			},
+			"similar": {
+				"title": "Similar Documents",
+				"description": "Recommendations based on this document's content embedding.",
+				"empty": "No similar documents found in your library.",
+				"unavailable": "Recommendations will appear once enrichment completes."
 			}
 		},
 		"mine": {
@@ -381,6 +387,10 @@
 		"search_documents": {
 			"not_lab_member": "You are not a member of the selected lab",
 			"failed": "Failed to search documents, please try again"
+		},
+		"recommend_similar": {
+			"not_lab_member": "You are not a member of the selected lab",
+			"failed": "Failed to load similar documents"
 		},
 		"list_documents": {
 			"failed": "Failed to load documents, please try again"

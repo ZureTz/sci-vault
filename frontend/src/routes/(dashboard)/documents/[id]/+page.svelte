@@ -18,7 +18,8 @@
 		Languages,
 		Lock,
 		FlaskConical,
-		Pencil
+		Pencil,
+		Sparkles
 	} from 'lucide-svelte';
 
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
@@ -30,8 +31,8 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { toast } from 'svelte-sonner';
 	import documentApi, { type DocumentResponse, type DocumentVisibility } from '$lib/api/document';
-	import labApi, { type LabListItem } from '$lib/api/lab';
-	import { getActiveLab } from '$lib/stores/lab.svelte';
+	import recommendApi, { type SimilarDocumentItem } from '$lib/api/recommend';
+	import { getActiveLab, getMyLabs } from '$lib/stores/lab.svelte';
 	import { getUser } from '$lib/stores/user.svelte';
 	import { translateSummary } from '$lib/api/translate';
 	import { showApiErrors } from '$lib/utils/api-error';
@@ -46,6 +47,11 @@
 	let isTranslating = $state(false);
 	let translatedSummary = $state('');
 	let showOriginal = $state(false);
+
+	// Similar-documents recommendations
+	let similarDocs = $state<SimilarDocumentItem[]>([]);
+	let isLoadingSimilar = $state(false);
+	let similarLoaded = $state(false);
 
 	let isEnglishLocale = $derived(($locale ?? 'en').startsWith('en'));
 	let currentUser = $derived(getUser());
@@ -71,20 +77,13 @@
 		}
 	}
 
-	// Visibility edit state
+	// Visibility edit state. Read labs from the shared store — the sidebar
+	// owns the getMyLabs fetch, so this page doesn't fire a duplicate request.
 	let visDialogOpen = $state(false);
 	let visEditValue = $state<DocumentVisibility>('private');
 	let visEditLabId = $state<string>('');
 	let visSubmitting = $state(false);
-	let myLabs = $state<LabListItem[]>([]);
-
-	async function loadLabs() {
-		try {
-			myLabs = await labApi.getMyLabs();
-		} catch {
-			// ignore
-		}
-	}
+	let myLabs = $derived(getMyLabs());
 
 	function openVisDialog() {
 		if (!document) return;
@@ -128,10 +127,33 @@
 
 			// Fetch real-time status immediately instead of waiting for the first poll tick
 			pollEnrichStatus();
+			// Recommendations depend on the source doc's embedding being ready.
+			if (document.enrich_status === 'done') {
+				loadSimilar();
+			}
 		} catch (error: unknown) {
 			showApiErrors(error, $_('document.detail.error'));
 		} finally {
 			if (showSpinner) isLoading = false;
+		}
+	}
+
+	async function loadSimilar() {
+		if (!document || document.enrich_status !== 'done') return;
+		isLoadingSimilar = true;
+		try {
+			const active = getActiveLab();
+			const res = await recommendApi.getSimilar(document.id, {
+				lab_id: active ? active.id : undefined,
+				limit: 10
+			});
+			similarDocs = res.results;
+		} catch {
+			// Fail silently — recommendations are non-critical UI.
+			similarDocs = [];
+		} finally {
+			isLoadingSimilar = false;
+			similarLoaded = true;
 		}
 	}
 
@@ -208,9 +230,21 @@
 		});
 	}
 
-	onMount(() => {
+	// Reactively (re)load whenever the route's :id changes — without this,
+	// clicking a similar-doc link inside this page just updates the URL but
+	// reuses the same component instance, so data.id changes but the body
+	// never refetches.
+	$effect(() => {
+		const id = data.id;
+		// Reset stale per-doc state so skeletons show during the refetch.
+		similarDocs = [];
+		similarLoaded = false;
 		loadDocument();
-		loadLabs();
+		// Note: `id` is read above purely to register the dependency.
+		void id;
+	});
+
+	onMount(() => {
 		pollTimer = setInterval(pollEnrichStatus, 3000);
 	});
 
@@ -496,6 +530,72 @@
 				</Card.Root>
 			</div>
 		</div>
+
+		<!-- Similar documents -->
+		{#if document.enrich_status === 'done'}
+			<Card.Root>
+				<Card.Header class="pb-3">
+					<Card.Title class="flex items-center gap-2 text-lg">
+						<Sparkles class="h-4 w-4 text-primary" />
+						{$_('document.detail.similar.title')}
+					</Card.Title>
+					<p class="text-sm text-muted-foreground">
+						{$_('document.detail.similar.description')}
+					</p>
+				</Card.Header>
+				<Card.Content>
+					{#if isLoadingSimilar}
+						<div class="grid gap-3 sm:grid-cols-2">
+							{#each Array.from({ length: 4 }, (_, i) => i) as i (i)}
+								<div class="space-y-2 rounded-lg border p-4">
+									<Skeleton class="h-4 w-3/4" />
+									<Skeleton class="h-3 w-full" />
+									<Skeleton class="h-3 w-5/6" />
+								</div>
+							{/each}
+						</div>
+					{:else if similarDocs.length === 0}
+						<p class="py-6 text-center text-sm text-muted-foreground">
+							{similarLoaded
+								? $_('document.detail.similar.empty')
+								: $_('document.detail.similar.unavailable')}
+						</p>
+					{:else}
+						<div class="grid gap-3 sm:grid-cols-2">
+							{#each similarDocs as item (item.doc_id)}
+								<a
+									href={resolve(`/documents/${item.doc_id}`)}
+									class="group flex flex-col gap-2 rounded-lg border bg-card p-4 transition-colors hover:border-primary/50 hover:bg-muted/40"
+								>
+									<div class="flex items-start justify-between gap-2">
+										<h4
+											class="line-clamp-2 text-sm leading-snug font-semibold group-hover:text-primary"
+										>
+											{item.title || item.original_file_name}
+										</h4>
+										<Badge variant="outline" class="shrink-0 gap-1 font-mono text-[10px]">
+											{Math.round(item.similarity * 100)}%
+										</Badge>
+									</div>
+									{#if item.summary}
+										<p class="line-clamp-3 text-xs text-muted-foreground">
+											{item.summary}
+										</p>
+									{/if}
+									{#if item.tags && item.tags.length > 0}
+										<div class="flex flex-wrap gap-1">
+											{#each item.tags.slice(0, 4) as tag (tag)}
+												<Badge variant="secondary" class="text-[10px] font-normal">{tag}</Badge>
+											{/each}
+										</div>
+									{/if}
+								</a>
+							{/each}
+						</div>
+					{/if}
+				</Card.Content>
+			</Card.Root>
+		{/if}
 	{/if}
 </div>
 
