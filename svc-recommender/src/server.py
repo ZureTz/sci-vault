@@ -21,11 +21,13 @@ from genai.translate import TranslateGenAI
 from genai.search import SearchGenAI
 from repository.document import DocumentRepository
 from repository.search import SearchRepository
+from repository.recommend import RecommendRepository
 from storage.document import DocumentStorage
 from servicer.document import DocumentServicer
 from servicer.health import HealthServicer
 from servicer.translate import TranslateServicer
 from servicer.search import SearchServicer
+from servicer.recommend import RecommendServicer
 
 log = logging.getLogger(__name__)
 
@@ -50,11 +52,13 @@ class RecommenderServer:
         search_repo = SearchRepository(self._db.pool)
         search_genai = SearchGenAI(self._genai.search_client)
         search_cache = SearchCache(self._cache.client)
+        recommend_repo = RecommendRepository(self._db.pool)
 
         _document = DocumentServicer(enrich_cache, doc_repo, doc_storage, doc_genai)
         _health = HealthServicer()
         _translate = TranslateServicer(translate_genai)
         _search = SearchServicer(search_repo, search_genai, search_cache)
+        _recommend = RecommendServicer(recommend_repo)
 
         class _Servicer(recommender_pb2_grpc.RecommenderServiceServicer):
             def Health(self, request, context):
@@ -68,6 +72,9 @@ class RecommenderServer:
 
             def SemanticSearch(self, request, context):
                 return _search.SemanticSearch(request, context)
+
+            def RecommendSimilar(self, request, context):
+                return _recommend.RecommendSimilar(request, context)
 
         self._server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=cfg.max_workers),
