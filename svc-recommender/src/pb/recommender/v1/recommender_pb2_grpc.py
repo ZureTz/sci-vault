@@ -35,6 +35,11 @@ class RecommenderServiceStub(object):
                 request_serializer=recommender_dot_v1_dot_recommender__pb2.SemanticSearchRequest.SerializeToString,
                 response_deserializer=recommender_dot_v1_dot_recommender__pb2.SemanticSearchResponse.FromString,
                 _registered_method=True)
+        self.RecommendSimilar = channel.unary_unary(
+                '/recommender.v1.RecommenderService/RecommendSimilar',
+                request_serializer=recommender_dot_v1_dot_recommender__pb2.RecommendSimilarRequest.SerializeToString,
+                response_deserializer=recommender_dot_v1_dot_recommender__pb2.RecommendSimilarResponse.FromString,
+                _registered_method=True)
 
 
 class RecommenderServiceServicer(object):
@@ -76,6 +81,17 @@ class RecommenderServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RecommendSimilar(self, request, context):
+        """RecommendSimilar returns documents most similar to a source document,
+        ranked by vector cosine similarity against the source's stored embedding.
+        The source doc is always excluded from results. Access control mirrors
+        SemanticSearch: only private docs owned by the caller and lab-visible
+        docs in the given lab are candidates.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_RecommenderServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -98,6 +114,11 @@ def add_RecommenderServiceServicer_to_server(servicer, server):
                     servicer.SemanticSearch,
                     request_deserializer=recommender_dot_v1_dot_recommender__pb2.SemanticSearchRequest.FromString,
                     response_serializer=recommender_dot_v1_dot_recommender__pb2.SemanticSearchResponse.SerializeToString,
+            ),
+            'RecommendSimilar': grpc.unary_unary_rpc_method_handler(
+                    servicer.RecommendSimilar,
+                    request_deserializer=recommender_dot_v1_dot_recommender__pb2.RecommendSimilarRequest.FromString,
+                    response_serializer=recommender_dot_v1_dot_recommender__pb2.RecommendSimilarResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -209,6 +230,33 @@ class RecommenderService(object):
             '/recommender.v1.RecommenderService/SemanticSearch',
             recommender_dot_v1_dot_recommender__pb2.SemanticSearchRequest.SerializeToString,
             recommender_dot_v1_dot_recommender__pb2.SemanticSearchResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RecommendSimilar(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/recommender.v1.RecommenderService/RecommendSimilar',
+            recommender_dot_v1_dot_recommender__pb2.RecommendSimilarRequest.SerializeToString,
+            recommender_dot_v1_dot_recommender__pb2.RecommendSimilarResponse.FromString,
             options,
             channel_credentials,
             insecure,

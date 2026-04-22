@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RecommenderService_Health_FullMethodName         = "/recommender.v1.RecommenderService/Health"
-	RecommenderService_EnrichDocument_FullMethodName = "/recommender.v1.RecommenderService/EnrichDocument"
-	RecommenderService_TranslateText_FullMethodName  = "/recommender.v1.RecommenderService/TranslateText"
-	RecommenderService_SemanticSearch_FullMethodName = "/recommender.v1.RecommenderService/SemanticSearch"
+	RecommenderService_Health_FullMethodName           = "/recommender.v1.RecommenderService/Health"
+	RecommenderService_EnrichDocument_FullMethodName   = "/recommender.v1.RecommenderService/EnrichDocument"
+	RecommenderService_TranslateText_FullMethodName    = "/recommender.v1.RecommenderService/TranslateText"
+	RecommenderService_SemanticSearch_FullMethodName   = "/recommender.v1.RecommenderService/SemanticSearch"
+	RecommenderService_RecommendSimilar_FullMethodName = "/recommender.v1.RecommenderService/RecommendSimilar"
 )
 
 // RecommenderServiceClient is the client API for RecommenderService service.
@@ -46,6 +47,12 @@ type RecommenderServiceClient interface {
 	// Access control is enforced: only private docs owned by the user and
 	// lab-visible docs in the given lab are considered.
 	SemanticSearch(ctx context.Context, in *SemanticSearchRequest, opts ...grpc.CallOption) (*SemanticSearchResponse, error)
+	// RecommendSimilar returns documents most similar to a source document,
+	// ranked by vector cosine similarity against the source's stored embedding.
+	// The source doc is always excluded from results. Access control mirrors
+	// SemanticSearch: only private docs owned by the caller and lab-visible
+	// docs in the given lab are candidates.
+	RecommendSimilar(ctx context.Context, in *RecommendSimilarRequest, opts ...grpc.CallOption) (*RecommendSimilarResponse, error)
 }
 
 type recommenderServiceClient struct {
@@ -105,6 +112,16 @@ func (c *recommenderServiceClient) SemanticSearch(ctx context.Context, in *Seman
 	return out, nil
 }
 
+func (c *recommenderServiceClient) RecommendSimilar(ctx context.Context, in *RecommendSimilarRequest, opts ...grpc.CallOption) (*RecommendSimilarResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecommendSimilarResponse)
+	err := c.cc.Invoke(ctx, RecommenderService_RecommendSimilar_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RecommenderServiceServer is the server API for RecommenderService service.
 // All implementations must embed UnimplementedRecommenderServiceServer
 // for forward compatibility.
@@ -126,6 +143,12 @@ type RecommenderServiceServer interface {
 	// Access control is enforced: only private docs owned by the user and
 	// lab-visible docs in the given lab are considered.
 	SemanticSearch(context.Context, *SemanticSearchRequest) (*SemanticSearchResponse, error)
+	// RecommendSimilar returns documents most similar to a source document,
+	// ranked by vector cosine similarity against the source's stored embedding.
+	// The source doc is always excluded from results. Access control mirrors
+	// SemanticSearch: only private docs owned by the caller and lab-visible
+	// docs in the given lab are candidates.
+	RecommendSimilar(context.Context, *RecommendSimilarRequest) (*RecommendSimilarResponse, error)
 	mustEmbedUnimplementedRecommenderServiceServer()
 }
 
@@ -147,6 +170,9 @@ func (UnimplementedRecommenderServiceServer) TranslateText(*TranslateTextRequest
 }
 func (UnimplementedRecommenderServiceServer) SemanticSearch(context.Context, *SemanticSearchRequest) (*SemanticSearchResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SemanticSearch not implemented")
+}
+func (UnimplementedRecommenderServiceServer) RecommendSimilar(context.Context, *RecommendSimilarRequest) (*RecommendSimilarResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecommendSimilar not implemented")
 }
 func (UnimplementedRecommenderServiceServer) mustEmbedUnimplementedRecommenderServiceServer() {}
 func (UnimplementedRecommenderServiceServer) testEmbeddedByValue()                            {}
@@ -234,6 +260,24 @@ func _RecommenderService_SemanticSearch_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RecommenderService_RecommendSimilar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecommendSimilarRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RecommenderServiceServer).RecommendSimilar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RecommenderService_RecommendSimilar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RecommenderServiceServer).RecommendSimilar(ctx, req.(*RecommendSimilarRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RecommenderService_ServiceDesc is the grpc.ServiceDesc for RecommenderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -252,6 +296,10 @@ var RecommenderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SemanticSearch",
 			Handler:    _RecommenderService_SemanticSearch_Handler,
+		},
+		{
+			MethodName: "RecommendSimilar",
+			Handler:    _RecommenderService_RecommendSimilar_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
