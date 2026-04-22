@@ -29,6 +29,11 @@
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	let activeLab = $derived(getActiveLab());
+	// Track only the lab ID so a same-ID object swap (e.g. sidebar's
+	// reloadLabs() replacing the active lab with a fresh copy on refresh) does
+	// not re-trigger the fetch. Svelte skips $derived notifications when the
+	// output is strictly equal to the previous value.
+	let activeLabId = $derived(activeLab?.id ?? null);
 	let labDetail = $state<LabDetailResponse | null>(null);
 	let members = $state<LabMemberInfo[]>([]);
 	let isLoading = $state(true);
@@ -56,10 +61,10 @@
 	let deleting = $state(false);
 
 	$effect(() => {
-		const lab = getActiveLab();
-		if (lab) {
+		const id = activeLabId;
+		if (id !== null) {
 			isLoading = true;
-			Promise.all([labApi.getLab(lab.id), labApi.getMembers(lab.id)])
+			Promise.all([labApi.getLab(id), labApi.getMembers(id)])
 				.then(([labRes, memberList]) => {
 					labDetail = labRes;
 					members = memberList.filter((m) => m.role !== 'owner');

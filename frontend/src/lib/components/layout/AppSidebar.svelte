@@ -41,10 +41,11 @@
 	let initDone = $state(false);
 	let avatarUrl = $derived(getAvatarUrl());
 
-	// Lab selector state
+	// Lab selector state. Restore persisted selection synchronously during init
+	// so the first reloadLabs() (fired by the $effect below) sees it immediately.
 	let myLabs = $state<LabListItem[]>([]);
 	let labsLoaded = $state(false);
-	let selectedLabId = $state<number | null>(null);
+	let selectedLabId = $state<number | null>(getActiveLab()?.id ?? null);
 	let selectedLab = $derived(myLabs.find((l) => l.id === selectedLabId) ?? null);
 
 	// Lab / workspace-level items
@@ -105,25 +106,21 @@
 		labsLoaded = true;
 	}
 
-	// Re-fetch labs whenever a page signals a change (join / create).
+	// Fetch labs once on mount and again whenever a page signals a change
+	// (join / create). The $effect tracks getLabsVersion() and fires on first
+	// run too, so there's no need for a separate reloadLabs() call in onMount.
 	$effect(() => {
 		getLabsVersion(); // tracked dependency
 		reloadLabs();
 	});
 
 	onMount(async () => {
-		// Restore persisted lab selection from store
-		const storedLab = getActiveLab();
-		if (storedLab) selectedLabId = storedLab.id;
-
-		await Promise.allSettled([
-			userApi
-				.getAvatar(currentUser.id)
-				.then((a) => setAvatarUrl(a.avatar_url))
-				.catch(() => {}),
-			reloadLabs()
-		]);
-
+		try {
+			const a = await userApi.getAvatar(currentUser.id);
+			setAvatarUrl(a.avatar_url);
+		} catch {
+			// ignore
+		}
 		initDone = true;
 	});
 

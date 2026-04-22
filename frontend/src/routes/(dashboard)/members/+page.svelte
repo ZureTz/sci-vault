@@ -16,6 +16,11 @@
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	let activeLab = $derived(getActiveLab());
+	// Track only the lab ID so a same-ID object swap (e.g. sidebar's
+	// reloadLabs() replacing the active lab with a fresh copy on refresh) does
+	// not re-trigger the fetch. Svelte skips $derived notifications when the
+	// output is strictly equal to the previous value.
+	let activeLabId = $derived(activeLab?.id ?? null);
 	let currentUser = $derived(getUser());
 	let members = $state<LabMemberInfo[]>([]);
 	let isLoading = $state(true);
@@ -23,11 +28,11 @@
 	let kickDialogOpen = $state(false);
 
 	$effect(() => {
-		const lab = getActiveLab();
-		if (lab) {
+		const id = activeLabId;
+		if (id !== null) {
 			isLoading = true;
 			labApi
-				.getMembers(lab.id)
+				.getMembers(id)
 				.then((result) => {
 					members = result;
 				})
