@@ -566,20 +566,12 @@ func (s *DocumentService) BatchUpdateVisibility(ctx context.Context, userID uint
 // The three fields are nullable columns, so clients can clear them by sending
 // an explicit empty string / zero — callers send `null` via JSON to mean "no change".
 func (s *DocumentService) UpdateMetadata(ctx context.Context, userID, docID uint, req dto.UpdateDocumentMetadataRequest) error {
-	fields := map[string]any{}
-	if req.Title != nil {
-		fields["title"] = *req.Title
+	patch := repo.DocumentMetadataPatch{
+		Title: req.Title,
+		Year:  req.Year,
+		DOI:   req.DOI,
 	}
-	if req.Year != nil {
-		fields["year"] = *req.Year
-	}
-	if req.DOI != nil {
-		fields["doi"] = *req.DOI
-	}
-	if len(fields) == 0 {
-		return nil
-	}
-	if err := s.repo.UpdateMetadata(ctx, docID, userID, fields); err != nil {
+	if err := s.repo.UpdateMetadata(ctx, docID, userID, patch); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return app_error.ErrNotDocumentOwner
 		}
