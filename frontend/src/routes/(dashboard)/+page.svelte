@@ -28,6 +28,11 @@
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	let activeLab = $derived(getActiveLab());
+	// Derive just the ID so the fetch effect doesn't re-fire when the sidebar
+	// replaces the active-lab object with a same-ID copy (e.g. after its own
+	// reloadLabs() call finishes). Svelte skips $derived notifications when the
+	// output is strictly equal to the previous value.
+	let activeLabId = $derived(activeLab?.id ?? null);
 	let labDetail = $state<LabDetailResponse | null>(null);
 	let isLoading = $state(true);
 	let copied = $state(false);
@@ -46,13 +51,13 @@
 	}
 
 	$effect(() => {
-		const lab = getActiveLab();
+		const id = activeLabId;
 		// Reset leave flow on lab switch
 		resetLeaveState();
-		if (lab) {
+		if (id !== null) {
 			isLoading = true;
 			labApi
-				.getLab(lab.id)
+				.getLab(id)
 				.then((detail) => {
 					labDetail = detail;
 				})
