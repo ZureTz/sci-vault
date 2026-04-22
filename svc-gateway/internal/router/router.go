@@ -116,13 +116,19 @@ func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 	group.GET("/mine", deps.DocumentHandler.ListMyDocuments)
 	group.GET("/pending", deps.DocumentHandler.ListPendingDocuments)
 	group.POST("/visibility/batch", deps.DocumentHandler.BatchUpdateVisibility)
-	group.GET("/:doc_id", deps.DocumentHandler.GetDocument)
-	group.GET("/:doc_id/enrich_status", deps.DocumentHandler.GetEnrichStatus)
-	group.POST("/:doc_id/restart_enrichment", deps.DocumentHandler.RestartEnrichment)
-	group.PATCH("/:doc_id/visibility", deps.DocumentHandler.UpdateVisibility)
-	group.PATCH("/:doc_id", deps.DocumentHandler.UpdateMetadata)
-	group.DELETE("/:doc_id", deps.DocumentHandler.DeleteDocument)
-	group.GET("/:doc_id/similar", deps.RecommendHandler.RecommendSimilar)
+
+	// ExtractDocID parses and validates the :doc_id param once for every
+	// document-scoped route below, so handlers just read c.GetUint("doc_id").
+	docWithID := group.Group("/:doc_id").Use(middleware.ExtractDocID())
+	{
+		docWithID.GET("", deps.DocumentHandler.GetDocument)
+		docWithID.GET("/enrich_status", deps.DocumentHandler.GetEnrichStatus)
+		docWithID.POST("/restart_enrichment", deps.DocumentHandler.RestartEnrichment)
+		docWithID.PATCH("/visibility", deps.DocumentHandler.UpdateVisibility)
+		docWithID.PATCH("", deps.DocumentHandler.UpdateMetadata)
+		docWithID.DELETE("", deps.DocumentHandler.DeleteDocument)
+		docWithID.GET("/similar", deps.RecommendHandler.RecommendSimilar)
+	}
 }
 
 // Search routes (/api/v1/search/...)

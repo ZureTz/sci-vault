@@ -33,11 +33,7 @@ func (h *RecommendHandler) RecommendSimilar(c *gin.Context) {
 		return
 	}
 
-	var uri dto.DocumentIDUri
-	if err := c.ShouldBindUri(&uri); err != nil {
-		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
-		return
-	}
+	docID := c.GetUint("doc_id")
 
 	var q dto.RecommendSimilarQuery
 	if err := c.ShouldBindQuery(&q); err != nil {
@@ -45,7 +41,7 @@ func (h *RecommendHandler) RecommendSimilar(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.recommendService.RecommendSimilar(c.Request.Context(), userID, uri.DocID, q)
+	resp, err := h.recommendService.RecommendSimilar(c.Request.Context(), userID, docID, q)
 	if err != nil {
 		switch {
 		case errors.Is(err, app_error.ErrNotMember):
