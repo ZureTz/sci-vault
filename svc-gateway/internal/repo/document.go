@@ -81,14 +81,31 @@ func (r *documentRepo) FindByUserID(ctx context.Context, userID uint, filter Lis
 	}
 
 	orderBy := "created_at DESC, id DESC"
-	if filter.SortBy != "" {
-		dir := "DESC"
-		if filter.SortOrder == "asc" {
-			dir = "ASC"
+	ascending := filter.SortOrder == "asc"
+	switch filter.SortBy {
+	case "title":
+		if ascending {
+			orderBy = "title ASC, id ASC"
+		} else {
+			orderBy = "title DESC, id DESC"
 		}
-		switch filter.SortBy {
-		case "title", "file_size", "view_count", "created_at":
-			orderBy = filter.SortBy + " " + dir + ", id " + dir
+	case "file_size":
+		if ascending {
+			orderBy = "file_size ASC, id ASC"
+		} else {
+			orderBy = "file_size DESC, id DESC"
+		}
+	case "view_count":
+		if ascending {
+			orderBy = "view_count ASC, id ASC"
+		} else {
+			orderBy = "view_count DESC, id DESC"
+		}
+	case "created_at":
+		if ascending {
+			orderBy = "created_at ASC, id ASC"
+		} else {
+			orderBy = "created_at DESC, id DESC"
 		}
 	}
 
