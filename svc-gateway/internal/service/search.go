@@ -39,11 +39,6 @@ func NewSearchService(
 }
 
 func (s *SearchService) SearchDocuments(ctx context.Context, userID uint, q dto.SearchDocumentsQuery) (*dto.SearchDocumentsResponse, error) {
-	limit := uint32(q.Limit)
-	if limit == 0 {
-		limit = defaultSearchLimit
-	}
-
 	// If a lab_id is provided, the caller must be a member of that lab;
 	// otherwise they could read any lab's shared documents by guessing IDs.
 	if q.LabID > 0 {
@@ -53,6 +48,11 @@ func (s *SearchService) SearchDocuments(ctx context.Context, userID uint, q dto.
 			}
 			return nil, fmt.Errorf("failed to check lab membership: %w", err)
 		}
+	}
+
+	limit := uint32(q.Limit)
+	if limit == 0 {
+		limit = defaultSearchLimit
 	}
 
 	resp, err := s.recommenderClient.SemanticSearch(ctx, q.Query, uint64(userID), uint64(q.LabID), limit)

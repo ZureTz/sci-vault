@@ -25,6 +25,7 @@ type RouterDeps struct {
 	StatsHandler     *handler.StatsHandler
 	TranslateHandler *handler.TranslateHandler
 	LabHandler       *handler.LabHandler
+	RecommendHandler *handler.RecommendHandler
 
 	// Cache connector
 	CacheConn *cache.CacheConnector
@@ -121,6 +122,7 @@ func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 	group.PATCH("/:doc_id/visibility", deps.DocumentHandler.UpdateVisibility)
 	group.PATCH("/:doc_id", deps.DocumentHandler.UpdateMetadata)
 	group.DELETE("/:doc_id", deps.DocumentHandler.DeleteDocument)
+	group.GET("/:doc_id/similar", deps.RecommendHandler.RecommendSimilar)
 }
 
 // Search routes (/api/v1/search/...)

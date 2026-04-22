@@ -82,6 +82,20 @@ func (r *RecommenderClient) SemanticSearch(ctx context.Context, query string, us
 	})
 }
 
+// RecommendSimilar asks the Python service for documents most similar to a
+// source doc. Unlike SemanticSearch this doesn't require an embedding call
+// (the source doc's stored embedding is reused), so a short timeout is fine.
+func (r *RecommenderClient) RecommendSimilar(ctx context.Context, docID, userID, labID uint64, limit uint32) (*pb.RecommendSimilarResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	return r.client.RecommendSimilar(ctx, &pb.RecommendSimilarRequest{
+		DocId:  docID,
+		UserId: userID,
+		LabId:  labID,
+		Limit:  limit,
+	})
+}
+
 // Close releases the underlying gRPC connection.
 func (r *RecommenderClient) Close() error {
 	return r.conn.Close()
