@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { _, locale } from 'svelte-i18n';
-	import { goto } from '$app/navigation';
+	import { goto, afterNavigate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import {
 		FileText,
@@ -53,11 +53,18 @@
 
 	// Back navigation: if the user arrived from inside the app, pop history;
 	// otherwise (direct link, refresh, external) fall back to a sensible default
-	// so the button is never a no-op.
+	// so the button is never a no-op. document.referrer is unreliable for this
+	// because SvelteKit's client-side navigation doesn't update it, so we track
+	// arrival via afterNavigate instead.
+	let arrivedInternally = $state(false);
+	afterNavigate((nav) => {
+		if (nav.from && nav.type !== 'enter') {
+			arrivedInternally = true;
+		}
+	});
+
 	function goBack() {
-		const referrer = window.document.referrer;
-		const fromSameOrigin = referrer.length > 0 && referrer.startsWith(window.location.origin);
-		if (fromSameOrigin && window.history.length > 1) {
+		if (arrivedInternally) {
 			window.history.back();
 		} else {
 			goto(resolve('/documents/mine'));
