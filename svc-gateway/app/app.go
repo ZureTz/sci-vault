@@ -110,6 +110,7 @@ func New(configPath string) (*App, error) {
 	healthService := service.NewHealthService(recommenderClient)
 	translateService := service.NewTranslateService(recommenderClient)
 	labService := service.NewLabService(labRepo, userRepo, cacheConn, mailSrv, storageClient)
+	recommendService := service.NewRecommendService(labRepo, recommenderClient)
 
 	// 4. Initialize handlers layer (HTTP/API)
 	healthHandler := handler.NewHealthHandler(healthService)
@@ -120,6 +121,7 @@ func New(configPath string) (*App, error) {
 	statsHandler := handler.NewStatsHandler(statsService)
 	translateHandler := handler.NewTranslateHandler(translateService)
 	labHandler := handler.NewLabHandler(labService)
+	recommendHandler := handler.NewRecommendHandler(recommendService)
 
 	// 5. Initialize router layer (routing and middleware mapping)
 	r := router.NewRouter(&router.RouterDeps{
@@ -131,6 +133,7 @@ func New(configPath string) (*App, error) {
 		StatsHandler:     statsHandler,
 		TranslateHandler: translateHandler,
 		LabHandler:       labHandler,
+		RecommendHandler: recommendHandler,
 
 		CacheConn: cacheConn,
 
