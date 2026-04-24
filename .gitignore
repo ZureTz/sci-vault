@@ -14,4 +14,4 @@ Icon
 .idea
 
 # Docker compose in production
-docker-compose-production.yaml
+docker-compose-prod*.yaml
