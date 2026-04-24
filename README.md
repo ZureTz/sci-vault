@@ -116,13 +116,16 @@ docker compose up -d --build
 
 **4. Access the application:**
 
-| Service        | Port       |
-| -------------- | ---------- |
-| Frontend       | `80`/`443` |
-| Gateway API    | `8080`     |
-| RustFS Console | `9001`     |
-| PostgreSQL     | `5432`     |
-| Redis          | `6379`     |
+| Service        | Address                  | Notes                                                     |
+| -------------- | ------------------------ | --------------------------------------------------------- |
+| Frontend       | `http://<host>:80`/`443` | Only public-facing service; bound to all interfaces       |
+| Gateway API    | `127.0.0.1:8080`         | Loopback-only; proxied by the frontend nginx              |
+| RustFS Console | `127.0.0.1:9001`         | Loopback-only; admin UI                                   |
+| RustFS S3 API  | `127.0.0.1:9000`         | Loopback-only; reached by services over compose network   |
+| PostgreSQL     | `127.0.0.1:5432`         | Loopback-only; use host tooling like `psql` from the host |
+| Redis          | `127.0.0.1:6379`         | Loopback-only                                             |
+
+All infra and backend ports are bound to the loopback interface — inter-service traffic flows over the compose network by service name, and host tools (`psql`, `redis-cli`, `curl localhost:8080`) still work. To reach them from another machine, either tunnel over SSH or widen the binding in `docker-compose.yaml`.
 
 **To stop:**
 ```bash
@@ -232,7 +235,7 @@ bun run lint         # Format check
 
 ## Production Deployment
 
-> **⚠️ Do not deploy the default compose file to production.** `docker-compose.yaml` and the `config.docker.example.yaml` templates ship with development defaults (weak passwords, exposed infrastructure ports, no TLS). Production deployments must use hardened copies with rotated secrets.
+> **⚠️ Do not deploy the default compose file to production.** `docker-compose.yaml` and the `config.docker.example.yaml` templates ship with development defaults (weak passwords, no TLS, unauthenticated Redis). Infrastructure and backend ports are already bound to loopback in the baseline compose, but the remaining hardening below is still required. Production deployments must use hardened copies with rotated secrets.
 
 **1. Create a hardened compose file:**
 
@@ -247,7 +250,10 @@ The pattern `docker-compose-prod*.yaml` is listed in [.gitignore](.gitignore), s
 - Replace every default credential in `docker-compose-prod.yaml` (`POSTGRES_PASSWORD`, `RUSTFS_ACCESS_KEY`, `RUSTFS_SECRET_KEY`, etc.) with strong, unique secrets — ideally injected from a secrets manager or `.env` file rather than committed inline.
 - Mirror the same secrets in `svc-gateway/config.docker.yaml` and `svc-recommender/config.docker.yaml` (both are gitignored per the service-level `.gitignore` files).
 - Rotate `jwt.secret` to a fresh high-entropy value.
-- Remove or firewall public port bindings for `postgres` (5432), `redis` (6379), and the RustFS console (9001) — only the frontend (80/443) and, if needed, the gateway API should be exposed.
+- Enable Redis authentication — add `--requirepass <strong-password>` to the `redis` service's `command`, and mirror the password in the gateway/recommender configs. The baseline compose leaves Redis unauthenticated (acceptable only because the port is loopback-only).
+- Tighten `RUSTFS_CORS_ALLOWED_ORIGINS` / `RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS` to your actual frontend origin (e.g. `https://your-domain.example`) instead of the loopback defaults.
+- Verify the loopback port bindings still match your topology. The baseline binds `postgres`, `redis`, `rustfs` (9000/9001), `recommender`, and `gateway` to `127.0.0.1` — appropriate when everything runs on one host behind the frontend nginx. If you split services across hosts, widen only the specific bindings needed and front them with a firewall or private network.
+- Consider disabling the RustFS console (`RUSTFS_CONSOLE_ENABLE=false`) unless you actively need it.
 - Configure TLS on the frontend: place certs at `frontend/ssl/cert.pem` / `frontend/ssl/key.pem` and enable the HTTPS server block in `nginx.conf`.
 
 **3. Launch:**
