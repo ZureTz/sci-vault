@@ -24,6 +24,10 @@ AI-powered collaborative platform for research data management and discovery. Bu
 flowchart TB
     Browser([Browser])
 
+    subgraph edge["Edge"]
+        Nginx["<b>nginx</b><br/>static assets · reverse proxy"]
+    end
+
     subgraph services["Application services"]
         direction LR
         Gateway["<b>svc-gateway</b><br/>Go · Gin"]
@@ -39,7 +43,11 @@ flowchart TB
 
     Gemini{{"Google Gemini API"}}
 
-    Browser -->|REST / HTTPS| Gateway
+    Browser -->|HTTPS| Nginx
+    Nginx -->|/ · SvelteKit build| Browser
+    Nginx -->|/api/ · REST| Gateway
+    Nginx -->|/assets/ · /private/| Storage
+
     Gateway <-->|gRPC| Recommender
 
     Gateway --> DB
@@ -55,11 +63,13 @@ flowchart TB
     classDef store fill:#0f172a,stroke:#34d399,stroke-width:1px,color:#f8fafc;
     classDef ext fill:#312e81,stroke:#a78bfa,stroke-width:1px,color:#f8fafc;
     classDef client fill:#111827,stroke:#f59e0b,stroke-width:1px,color:#f8fafc;
+    classDef proxy fill:#064e3b,stroke:#f472b6,stroke-width:1px,color:#f8fafc;
 
     class Gateway,Recommender svc;
     class DB,Cache,Storage store;
     class Gemini ext;
     class Browser client;
+    class Nginx proxy;
 ```
 
 ## Tech Stack
