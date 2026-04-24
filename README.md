@@ -20,33 +20,59 @@ AI-powered collaborative platform for research data management and discovery. Bu
 
 ## Architecture
 
-```
-┌─────────────┐
-│   Browser   │
-└──────┬──────┘
-       │ REST/HTTP
-       ▼
-┌──────────────────┐            ┌──────────────────┐
-│  svc-gateway     │──gRPC────▶│ svc-recommender   │
-│   (Go/Gin)       │            │   (Python)       │
-└──────────────────┘            └──────────────────┘
-       │                         　   │
-       ├─ PostgreSQL 18 ◀─────┬──────┤
-       ├─ Redis 8.6 ◀────┬────┤
-       └─ RustFS S3 ◀────┴────┘
+```mermaid
+flowchart TB
+    Browser([Browser])
+
+    subgraph services["Application services"]
+        direction LR
+        Gateway["<b>svc-gateway</b><br/>Go · Gin"]
+        Recommender["<b>svc-recommender</b><br/>Python · gRPC"]
+    end
+
+    subgraph infra["Shared infrastructure"]
+        direction LR
+        DB[("PostgreSQL 18<br/>+ pgvector")]
+        Cache[("Redis 8.6")]
+        Storage[("RustFS<br/>S3-compatible")]
+    end
+
+    Gemini{{"Google Gemini API"}}
+
+    Browser -->|REST / HTTPS| Gateway
+    Gateway <-->|gRPC| Recommender
+
+    Gateway --> DB
+    Gateway --> Cache
+    Gateway --> Storage
+
+    Recommender --> DB
+    Recommender --> Cache
+    Recommender --> Storage
+    Recommender -->|embeddings · metadata| Gemini
+
+    classDef svc fill:#1f2937,stroke:#60a5fa,stroke-width:1px,color:#f8fafc;
+    classDef store fill:#0f172a,stroke:#34d399,stroke-width:1px,color:#f8fafc;
+    classDef ext fill:#312e81,stroke:#a78bfa,stroke-width:1px,color:#f8fafc;
+    classDef client fill:#111827,stroke:#f59e0b,stroke-width:1px,color:#f8fafc;
+
+    class Gateway,Recommender svc;
+    class DB,Cache,Storage store;
+    class Gemini ext;
+    class Browser client;
 ```
 
 ## Tech Stack
 
-| Component   | Technology |
-|-------------|------------|
-| **API Gateway** | [Go 1.26](https://go.dev/) · [Gin](https://gin-gonic.com/) · [GORM](https://gorm.io/) |
-| **Recommender** | [Python 3.14](https://www.python.org/) · [gRPC](https://grpc.io/) · [Google Gemini API](https://ai.google.dev/) |
-| **Frontend** | [SvelteKit 2](https://kit.svelte.dev/) (Svelte 5) · [Tailwind CSS 4](https://tailwindcss.com/) · [Bits UI](https://bits-ui.com/) |
-| **Database** | [PostgreSQL 18](https://www.postgresql.org/) + [pgvector](https://github.com/pgvector/pgvector) |
-| **Cache** | [Redis 8.6](https://redis.io/) |
-| **Storage** | [RustFS](https://www.rustfs.io/) (S3-compatible) |
-| **Code Generation** | [Buf](https://buf.build/) (Protocol Buffers)
+| Component           | Technology                                                                                                                       |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **API Gateway**     | [Go 1.26](https://go.dev/) · [Gin](https://gin-gonic.com/) · [GORM](https://gorm.io/)                                            |
+| **Recommender**     | [Python 3.14](https://www.python.org/) · [gRPC](https://grpc.io/) · [Google Gemini API](https://ai.google.dev/)                  |
+| **Frontend**        | [SvelteKit 2](https://kit.svelte.dev/) (Svelte 5) · [Tailwind CSS 4](https://tailwindcss.com/) · [Bits UI](https://bits-ui.com/) |
+| **Database**        | [PostgreSQL 18](https://www.postgresql.org/) + [pgvector](https://github.com/pgvector/pgvector)                                  |
+| **Cache**           | [Redis 8.6](https://redis.io/)                                                                                                   |
+| **Storage**         | [RustFS](https://www.rustfs.io/) (S3-compatible)                                                                                 |
+| **Code Generation** | [Buf](https://buf.build/) (Protocol Buffers)                                                                                     |
 
 ## Getting Started
 
@@ -75,12 +101,12 @@ cp frontend/nginx.example.conf frontend/nginx.conf
 
 **2. Update secrets in `svc-gateway/config.docker.yaml`:**
 
-| Field | Source |
-|-------|--------|
-| `database.password` | Must match `POSTGRES_PASSWORD` in `docker-compose.yaml` |
+| Field                                       | Source                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------- |
+| `database.password`                         | Must match `POSTGRES_PASSWORD` in `docker-compose.yaml`             |
 | `storage.access_key` / `storage.secret_key` | Must match `RUSTFS_*` vars (default: `rustfsadmin` / `rustfsadmin`) |
-| `mailer.username` / `mailer.password` | Your SMTP credentials |
-| `jwt.secret` | Any strong random string |
+| `mailer.username` / `mailer.password`       | Your SMTP credentials                                               |
+| `jwt.secret`                                | Any strong random string                                            |
 
 **3. Launch the stack:**
 
@@ -90,13 +116,13 @@ docker compose up -d --build
 
 **4. Access the application:**
 
-| Service | Port |
-|---------|-----|
-| Frontend | 80/443 |
-| Gateway API | 8080 |
-| RustFS Console | 9001 |
-| PostgreSQL | `5432` |
-| Redis | `6379` |
+| Service        | Port       |
+| -------------- | ---------- |
+| Frontend       | `80`/`443` |
+| Gateway API    | `8080`     |
+| RustFS Console | `9001`     |
+| PostgreSQL     | `5432`     |
+| Redis          | `6379`     |
 
 **To stop:**
 ```bash
@@ -204,12 +230,39 @@ bun run lint         # Format check
 
 3. **HTTPS/TLS** — Place certs at `frontend/ssl/cert.pem` and `frontend/ssl/key.pem`, uncomment in `nginx.conf`, then restart.
 
-4. **Production deployment** — Copy configs to hardened versions:
-   ```bash
-   cp docker-compose.yaml docker-compose-prod.yaml
-   # Update all secrets in config files
-   docker compose -f docker-compose-prod.yaml up -d --build
-   ```
+## Production Deployment
+
+> **⚠️ Do not deploy the default compose file to production.** `docker-compose.yaml` and the `config.docker.example.yaml` templates ship with development defaults (weak passwords, exposed infrastructure ports, no TLS). Production deployments must use hardened copies with rotated secrets.
+
+**1. Create a hardened compose file:**
+
+```bash
+cp docker-compose.yaml docker-compose-prod.yaml
+```
+
+The pattern `docker-compose-prod*.yaml` is listed in [.gitignore](.gitignore), so your production compose file (and any variants like `docker-compose-production.yaml`) will not be committed. Verify with `git status` before your first commit after copying.
+
+**2. Harden the compose file and service configs:**
+
+- Replace every default credential in `docker-compose-prod.yaml` (`POSTGRES_PASSWORD`, `RUSTFS_ACCESS_KEY`, `RUSTFS_SECRET_KEY`, etc.) with strong, unique secrets — ideally injected from a secrets manager or `.env` file rather than committed inline.
+- Mirror the same secrets in `svc-gateway/config.docker.yaml` and `svc-recommender/config.docker.yaml` (both are gitignored per the service-level `.gitignore` files).
+- Rotate `jwt.secret` to a fresh high-entropy value.
+- Remove or firewall public port bindings for `postgres` (5432), `redis` (6379), and the RustFS console (9001) — only the frontend (80/443) and, if needed, the gateway API should be exposed.
+- Configure TLS on the frontend: place certs at `frontend/ssl/cert.pem` / `frontend/ssl/key.pem` and enable the HTTPS server block in `nginx.conf`.
+
+**3. Launch:**
+
+```bash
+docker compose -f docker-compose-prod.yaml up -d --build
+```
+
+**4. Verify nothing sensitive is tracked:**
+
+```bash
+git status --ignored
+```
+
+The hardened compose file and `config.docker.yaml` files should appear under *Ignored files*, never *Untracked* or *Changes*.
 
 ## Documentation
 
