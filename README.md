@@ -43,21 +43,22 @@ flowchart TB
 
     Gemini{{"Google Gemini API"}}
 
-    Browser -->|HTTPS| Nginx
-    Nginx -->|/ · SvelteKit build| Browser
-    Nginx -->|/api/ · REST| Gateway
-    Nginx -->|/assets/ · /private/| Storage
+    %% ── Main data path (user-facing request flow) ──
+    Browser <==>|HTTPS| Nginx
+    Nginx ==>|/api/| Gateway
+    Nginx ==>|/assets/ · /private/| Storage
+    Gateway <==>|gRPC| Recommender
 
-    Gateway <-->|gRPC| Recommender
+    %% ── Service ↔ infrastructure (internal) ──
+    Gateway -.-> DB
+    Gateway -.-> Cache
+    Gateway -.-> Storage
+    Recommender -.-> DB
+    Recommender -.-> Cache
+    Recommender -.-> Storage
 
-    Gateway --> DB
-    Gateway --> Cache
-    Gateway --> Storage
-
-    Recommender --> DB
-    Recommender --> Cache
-    Recommender --> Storage
-    Recommender -->|embeddings · metadata| Gemini
+    %% ── External dependency ──
+    Recommender -.->|embeddings · metadata| Gemini
 
     classDef svc fill:#1f2937,stroke:#60a5fa,stroke-width:1px,color:#f8fafc;
     classDef store fill:#0f172a,stroke:#34d399,stroke-width:1px,color:#f8fafc;
@@ -70,6 +71,10 @@ flowchart TB
     class Gemini ext;
     class Browser client;
     class Nginx proxy;
+
+    %% Highlight main data path edges in bold black, infra/external edges dimmed
+    linkStyle 0,1,2,3 stroke:#000000,stroke-width:3px;
+    linkStyle 4,5,6,7,8,9,10 stroke:#475569,stroke-width:1px,stroke-dasharray:4 3;
 ```
 
 ## Tech Stack
