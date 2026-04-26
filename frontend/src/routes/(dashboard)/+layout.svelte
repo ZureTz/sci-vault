@@ -10,6 +10,7 @@
 	import { page } from '$app/state';
 
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
+	import { getDocDetailOrigin } from '$lib/stores/nav.svelte';
 	import { clearUser } from '$lib/stores/user.svelte';
 	import ThemeToggle from '$lib/components/layout/ThemeToggle.svelte';
 	import LanguageToggle from '$lib/components/layout/LanguageToggle.svelte';
@@ -28,7 +29,13 @@
 	// Mobile: show only the current page; collapse ALL ancestors into the ellipsis.
 	const DESKTOP_MAX = 3;
 
-	type CrumbHref = '/' | '/mine/dashboard';
+	type CrumbHref =
+		| '/'
+		| '/mine/dashboard'
+		| '/search'
+		| '/mine/history'
+		| '/documents/mine'
+		| '/documents/upload';
 	type Crumb = { label: string; href?: CrumbHref };
 
 	const crumbs = $derived.by((): Crumb[] => {
@@ -70,8 +77,41 @@
 				return [personalBase, documentsCrumb, { label: $_('breadcrumb.my_documents') }];
 			case '/(dashboard)/documents/upload':
 				return [personalBase, documentsCrumb, { label: $_('breadcrumb.upload') }];
-			case '/(dashboard)/documents/[id]':
-				return [personalBase, documentsCrumb, { label: $_('breadcrumb.document_detail') }];
+			case '/(dashboard)/mine/history':
+				return [personalBase, { label: $_('breadcrumb.history') }];
+			case '/(dashboard)/documents/[id]': {
+				// The detail page is reachable from My Documents, Upload, Search,
+				// History, or directly. The trail leans on the captured origin
+				// (set by the sidebar's afterNavigate hook) so the breadcrumb
+				// reflects how the user actually got here.
+				const detail = { label: $_('breadcrumb.document_detail') };
+				switch (getDocDetailOrigin()) {
+					case '/search':
+						return [{ label: $_('breadcrumb.search'), href: '/search' }, detail];
+					case '/mine/history':
+						return [
+							personalBase,
+							{ label: $_('breadcrumb.history'), href: '/mine/history' },
+							detail
+						];
+					case '/documents/upload':
+						return [
+							personalBase,
+							documentsCrumb,
+							{ label: $_('breadcrumb.upload'), href: '/documents/upload' },
+							detail
+						];
+					case '/documents/mine':
+						return [
+							personalBase,
+							documentsCrumb,
+							{ label: $_('breadcrumb.my_documents'), href: '/documents/mine' },
+							detail
+						];
+					default:
+						return [personalBase, documentsCrumb, detail];
+				}
+			}
 			case '/(dashboard)/profile':
 			case '/(dashboard)/profile/[user_id]':
 				return [personalBase, accountCrumb, { label: $_('breadcrumb.profile') }];
