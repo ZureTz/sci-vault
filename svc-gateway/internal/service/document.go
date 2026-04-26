@@ -36,6 +36,7 @@ func enrichStatusKey(docID uint) string {
 
 type DocumentService struct {
 	repo              repo.DocumentRepository
+	interactionRepo   repo.DocumentInteractionRepository
 	labRepo           repo.LabRepository
 	storageClient     *storage.Client
 	recommenderClient *grpc_client.RecommenderClient
@@ -44,6 +45,7 @@ type DocumentService struct {
 
 func NewDocumentService(
 	repo repo.DocumentRepository,
+	interactionRepo repo.DocumentInteractionRepository,
 	labRepo repo.LabRepository,
 	storageClient *storage.Client,
 	recommenderClient *grpc_client.RecommenderClient,
@@ -51,6 +53,7 @@ func NewDocumentService(
 ) *DocumentService {
 	return &DocumentService{
 		repo:              repo,
+		interactionRepo:   interactionRepo,
 		labRepo:           labRepo,
 		storageClient:     storageClient,
 		recommenderClient: recommenderClient,
@@ -218,7 +221,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 		return nil, fmt.Errorf("failed to generate download URL: %w", err)
 	}
 
-	return toDocumentResponse(doc, downloadURL), nil
+	return toDocumentResponse(doc, downloadURL, false), nil
 }
 
 // BatchUploadDocuments uploads multiple files sharing one metadata envelope
@@ -412,17 +415,23 @@ func (s *DocumentService) GetDocument(ctx context.Context, userID, docID uint) (
 		return nil, app_error.ErrDocumentNotFound
 	}
 
-	if err := s.repo.IncrementViewCount(ctx, docID); err != nil {
-		return nil, fmt.Errorf("failed to increment view count: %w", err)
+	if inserted, err := s.interactionRepo.RecordView(ctx, userID, docID, model.ViewThrottleWindow); err != nil {
+		return nil, fmt.Errorf("failed to record view: %w", err)
+	} else if inserted {
+		doc.ViewCount++
 	}
-	doc.ViewCount++
+
+	likedByMe, err := s.interactionRepo.IsLikedBy(ctx, userID, docID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load like state: %w", err)
+	}
 
 	downloadURL, err := s.storageClient.PrivateObjectURL(ctx, doc.FileKey, downloadURLExpiry, downloadFilename(doc.OriginalFileName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate download URL: %w", err)
 	}
 
-	return toDocumentResponse(&doc, downloadURL), nil
+	return toDocumentResponse(&doc, downloadURL, likedByMe), nil
 }
 
 func (s *DocumentService) GetEnrichStatus(ctx context.Context, userID, docID uint) (string, error) {
@@ -614,7 +623,7 @@ func downloadFilename(original string) string {
 	return original + ".pdf"
 }
 
-func toDocumentResponse(doc *model.Document, downloadURL string) *dto.DocumentResponse {
+func toDocumentResponse(doc *model.Document, downloadURL string, likedByMe bool) *dto.DocumentResponse {
 	authors := []string(doc.Authors)
 	if authors == nil {
 		authors = []string{}
@@ -645,6 +654,7 @@ func toDocumentResponse(doc *model.Document, downloadURL string) *dto.DocumentRe
 		Tags:             tags,
 		ViewCount:        doc.ViewCount,
 		LikeCount:        doc.LikeCount,
+		LikedByMe:        likedByMe,
 		UploadedByUserID: doc.UploadedByUserID,
 		DownloadURL:      downloadURL,
 		CreatedAt:        doc.CreatedAt,

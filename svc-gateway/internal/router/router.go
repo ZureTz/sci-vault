@@ -17,15 +17,16 @@ import (
 
 type RouterDeps struct {
 	// Handlers
-	HealthHandler    *handler.HealthHandler
-	UserHandler      *handler.UserHandler
-	AuthHandler      *handler.AuthHandler
-	DocumentHandler  *handler.DocumentHandler
-	SearchHandler    *handler.SearchHandler
-	StatsHandler     *handler.StatsHandler
-	TranslateHandler *handler.TranslateHandler
-	LabHandler       *handler.LabHandler
-	RecommendHandler *handler.RecommendHandler
+	HealthHandler              *handler.HealthHandler
+	UserHandler                *handler.UserHandler
+	AuthHandler                *handler.AuthHandler
+	DocumentHandler            *handler.DocumentHandler
+	DocumentInteractionHandler *handler.DocumentInteractionHandler
+	SearchHandler              *handler.SearchHandler
+	StatsHandler               *handler.StatsHandler
+	TranslateHandler           *handler.TranslateHandler
+	LabHandler                 *handler.LabHandler
+	RecommendHandler           *handler.RecommendHandler
 
 	// Cache connector
 	CacheConn *cache.CacheConnector
@@ -58,6 +59,7 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 	{
 		deps.registerAuthenticatedRoutes(protected.Group("/auth"))
 		deps.registerDocumentRoutes(protected.Group("/docs"))
+		deps.registerHistoryRoutes(protected.Group("/mine/history"))
 		deps.registerSearchRoutes(protected.Group("/search"))
 		deps.registerStatsRoutes(protected.Group("/stats"))
 		deps.registerTranslateRoutes(protected.Group("/translate"))
@@ -128,7 +130,15 @@ func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 		docWithID.PATCH("", deps.DocumentHandler.UpdateMetadata)
 		docWithID.DELETE("", deps.DocumentHandler.DeleteDocument)
 		docWithID.GET("/similar", deps.RecommendHandler.RecommendSimilar)
+		docWithID.POST("/like", deps.DocumentInteractionHandler.Like)
+		docWithID.DELETE("/like", deps.DocumentInteractionHandler.Unlike)
 	}
+}
+
+// History routes (/api/v1/mine/history/...)
+func (deps *RouterDeps) registerHistoryRoutes(group *gin.RouterGroup) {
+	group.GET("/views", deps.DocumentInteractionHandler.ListViewHistory)
+	group.GET("/likes", deps.DocumentInteractionHandler.ListLikeHistory)
 }
 
 // Search routes (/api/v1/search/...)

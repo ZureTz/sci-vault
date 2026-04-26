@@ -79,6 +79,8 @@ func New(configPath string) (*App, error) {
 		&model.Lab{},
 		&model.LabMember{},
 		&model.SearchHistory{},
+		&model.DocumentView{},
+		&model.DocumentLike{},
 	); err != nil {
 		return nil, err
 	}
@@ -98,13 +100,15 @@ func New(configPath string) (*App, error) {
 	userRepo := repo.NewUserRepo(db)
 	userAvatarRepo := repo.NewUserProfileRepo(db)
 	documentRepo := repo.NewDocumentRepo(db)
+	documentInteractionRepo := repo.NewDocumentInteractionRepo(db)
 	searchRepo := repo.NewSearchRepo(db)
 	statsRepo := repo.NewStatsRepo(db)
 	labRepo := repo.NewLabRepo(db)
 
 	// 3. Initialize services layer (business logic)
 	userService := service.NewUserService(userRepo, userAvatarRepo, jwtGenerator, mailSrv, cacheConn, storageClient)
-	documentService := service.NewDocumentService(documentRepo, labRepo, storageClient, recommenderClient, cacheConn)
+	documentService := service.NewDocumentService(documentRepo, documentInteractionRepo, labRepo, storageClient, recommenderClient, cacheConn)
+	documentInteractionService := service.NewDocumentInteractionService(documentRepo, documentInteractionRepo, labRepo)
 	searchService := service.NewSearchService(searchRepo, labRepo, recommenderClient)
 	statsService := service.NewStatsService(statsRepo, cacheConn)
 	healthService := service.NewHealthService(recommenderClient)
@@ -117,6 +121,7 @@ func New(configPath string) (*App, error) {
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler()
 	documentHandler := handler.NewDocumentHandler(documentService)
+	documentInteractionHandler := handler.NewDocumentInteractionHandler(documentInteractionService)
 	searchHandler := handler.NewSearchHandler(searchService)
 	statsHandler := handler.NewStatsHandler(statsService)
 	translateHandler := handler.NewTranslateHandler(translateService)
@@ -125,15 +130,16 @@ func New(configPath string) (*App, error) {
 
 	// 5. Initialize router layer (routing and middleware mapping)
 	r := router.NewRouter(&router.RouterDeps{
-		HealthHandler:    healthHandler,
-		UserHandler:      userHandler,
-		AuthHandler:      authHandler,
-		DocumentHandler:  documentHandler,
-		SearchHandler:    searchHandler,
-		StatsHandler:     statsHandler,
-		TranslateHandler: translateHandler,
-		LabHandler:       labHandler,
-		RecommendHandler: recommendHandler,
+		HealthHandler:              healthHandler,
+		UserHandler:                userHandler,
+		AuthHandler:                authHandler,
+		DocumentHandler:            documentHandler,
+		DocumentInteractionHandler: documentInteractionHandler,
+		SearchHandler:              searchHandler,
+		StatsHandler:               statsHandler,
+		TranslateHandler:           translateHandler,
+		LabHandler:                 labHandler,
+		RecommendHandler:           recommendHandler,
 
 		CacheConn: cacheConn,
 
