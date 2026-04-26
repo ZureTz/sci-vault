@@ -36,7 +36,8 @@
 		"account": "账户",
 		"settings": "设置",
 		"profile": "个人资料",
-		"logout": "退出登录"
+		"logout": "退出登录",
+		"history": "活动记录"
 	},
 	"breadcrumb": {
 		"lab_dashboard": "实验室仪表盘",
@@ -87,6 +88,26 @@
 			"title": "快捷操作",
 			"upload": "上传文献",
 			"my_documents": "我的文献"
+		}
+	},
+	"history": {
+		"title": "活动记录",
+		"description": "您最近的浏览与点赞记录。",
+		"error": "加载活动记录失败",
+		"tab": {
+			"views": "最近浏览",
+			"likes": "已点赞"
+		},
+		"empty": {
+			"views": "暂无浏览记录。",
+			"likes": "暂无点赞记录。"
+		},
+		"last_viewed_at": "最近浏览于 {time}",
+		"liked_at": "点赞于 {time}",
+		"pagination": {
+			"summary": "第 {page} / {total} 页 · 共 {count} 项",
+			"prev": "上一页",
+			"next": "下一页"
 		}
 	},
 	"settings": {
@@ -144,6 +165,15 @@
 				"description": "基于此文献内容向量的相似推荐。",
 				"empty": "在您的文献库中未找到相似文献。",
 				"unavailable": "文献处理完成后将显示推荐。"
+			},
+			"engagement": {
+				"views": "次浏览",
+				"likes": "次点赞"
+			},
+			"like": {
+				"like": "点赞",
+				"liked": "已点赞",
+				"failed": "更新点赞失败"
 			}
 		},
 		"mine": {
@@ -396,6 +426,13 @@
 		"search_documents": {
 			"not_lab_member": "您不是所选实验室的成员",
 			"failed": "搜索文档失败，请稍后重试"
+		},
+		"like_document": {
+			"not_found": "文献不存在",
+			"failed": "更新点赞失败，请稍后重试"
+		},
+		"history": {
+			"list_failed": "加载活动记录失败"
 		},
 		"recommend_similar": {
 			"not_lab_member": "您不是所选实验室的成员",
