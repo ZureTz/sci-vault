@@ -19,7 +19,9 @@
 		Lock,
 		FlaskConical,
 		Pencil,
-		Sparkles
+		Sparkles,
+		Heart,
+		Eye
 	} from 'lucide-svelte';
 
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
@@ -31,6 +33,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { toast } from 'svelte-sonner';
 	import documentApi, { type DocumentResponse, type DocumentVisibility } from '$lib/api/document';
+	import interactionApi from '$lib/api/interaction';
 	import recommendApi, { type SimilarDocumentItem } from '$lib/api/recommend';
 	import { getActiveLab, getMyLabs } from '$lib/stores/lab.svelte';
 	import { getUser } from '$lib/stores/user.svelte';
@@ -43,6 +46,30 @@
 	let isLoading = $state(true);
 	let isRestarting = $state(false);
 	let pollTimer = $state<ReturnType<typeof setInterval> | null>(null);
+
+	// Like toggle. Optimistic: flip state immediately, roll back on failure.
+	let isLikePending = $state(false);
+
+	async function toggleLike() {
+		if (!document || isLikePending) return;
+		isLikePending = true;
+		const wasLiked = document.liked_by_me;
+		document.liked_by_me = !wasLiked;
+		document.like_count += wasLiked ? -1 : 1;
+		try {
+			const res = wasLiked
+				? await interactionApi.unlike(document.id)
+				: await interactionApi.like(document.id);
+			document.liked_by_me = res.liked;
+			document.like_count = res.like_count;
+		} catch (error: unknown) {
+			document.liked_by_me = wasLiked;
+			document.like_count += wasLiked ? 1 : -1;
+			showApiErrors(error, $_('document.detail.like.failed'));
+		} finally {
+			isLikePending = false;
+		}
+	}
 
 	let isTranslating = $state(false);
 	let translatedSummary = $state('');
@@ -436,6 +463,35 @@
 							</div>
 						{/if}
 					</Card.Content>
+
+					<!-- Engagement footer (Twitter-style): separator above, counts on the
+						 left, like toggle on the right. -->
+					<Card.Footer class="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+						<div class="flex items-center gap-5 text-sm text-muted-foreground">
+							<span class="flex items-center gap-1.5">
+								<Eye class="h-4 w-4" />
+								<span class="font-semibold text-foreground">{document.view_count}</span>
+								<span>{$_('document.detail.engagement.views')}</span>
+							</span>
+							<span class="flex items-center gap-1.5">
+								<Heart class="h-4 w-4 {document.liked_by_me ? 'fill-current text-rose-500' : ''}" />
+								<span class="font-semibold text-foreground">{document.like_count}</span>
+								<span>{$_('document.detail.engagement.likes')}</span>
+							</span>
+						</div>
+						<Button
+							variant={document.liked_by_me ? 'default' : 'outline'}
+							size="sm"
+							onclick={toggleLike}
+							disabled={isLikePending}
+							aria-pressed={document.liked_by_me}
+						>
+							<Heart class="mr-1.5 h-4 w-4 {document.liked_by_me ? 'fill-current' : ''}" />
+							{document.liked_by_me
+								? $_('document.detail.like.liked')
+								: $_('document.detail.like.like')}
+						</Button>
+					</Card.Footer>
 				</Card.Root>
 			</div>
 

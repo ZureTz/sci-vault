@@ -52,6 +52,7 @@ export interface DocumentResponse {
 	tags: string[];
 	view_count: number;
 	like_count: number;
+	liked_by_me: boolean;
 	uploaded_by: number;
 	download_url: string;
 	created_at: string;

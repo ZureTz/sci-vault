@@ -36,7 +36,8 @@
 		"account": "Account",
 		"settings": "Settings",
 		"profile": "Profile",
-		"logout": "Log out"
+		"logout": "Log out",
+		"history": "Activity History"
 	},
 	"breadcrumb": {
 		"lab_dashboard": "Lab Dashboard",
@@ -88,6 +89,26 @@
 			"title": "Quick Actions",
 			"upload": "Upload Document",
 			"my_documents": "My Documents"
+		}
+	},
+	"history": {
+		"title": "Activity History",
+		"description": "Your recent views and likes across the vault.",
+		"error": "Failed to load history",
+		"tab": {
+			"views": "Recently Viewed",
+			"likes": "Liked"
+		},
+		"empty": {
+			"views": "No documents viewed yet.",
+			"likes": "No documents liked yet."
+		},
+		"last_viewed_at": "Last viewed {time}",
+		"liked_at": "Liked {time}",
+		"pagination": {
+			"summary": "Page {page} of {total} · {count} item(s)",
+			"prev": "Previous",
+			"next": "Next"
 		}
 	},
 	"settings": {
@@ -145,6 +166,15 @@
 				"description": "Recommendations based on this document's content embedding.",
 				"empty": "No similar documents found in your library.",
 				"unavailable": "Recommendations will appear once enrichment completes."
+			},
+			"engagement": {
+				"views": "views",
+				"likes": "likes"
+			},
+			"like": {
+				"like": "Like",
+				"liked": "Liked",
+				"failed": "Failed to update like"
 			}
 		},
 		"mine": {
@@ -387,6 +417,13 @@
 		"search_documents": {
 			"not_lab_member": "You are not a member of the selected lab",
 			"failed": "Failed to search documents, please try again"
+		},
+		"like_document": {
+			"not_found": "Document not found",
+			"failed": "Failed to update like, please try again"
+		},
+		"history": {
+			"list_failed": "Failed to load history"
 		},
 		"recommend_similar": {
 			"not_lab_member": "You are not a member of the selected lab",

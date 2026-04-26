@@ -7,6 +7,7 @@
 		Compass,
 		FileText,
 		FlaskConical,
+		History,
 		LogOut,
 		Plus,
 		Search,
@@ -66,6 +67,7 @@
 				{ title: 'sidebar.upload', url: '/documents/upload' as const, icon: Upload }
 			]
 		},
+		{ title: 'sidebar.history', url: '/mine/history' as const, icon: History },
 		{
 			title: 'sidebar.account',
 			icon: User,
