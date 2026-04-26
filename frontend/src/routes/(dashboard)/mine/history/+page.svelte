@@ -18,7 +18,6 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
 	import interactionApi, { type HistoryItem, type ListHistoryResponse } from '$lib/api/interaction';
-	import { getMyLabs } from '$lib/stores/lab.svelte';
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	type Tab = 'views' | 'likes';
