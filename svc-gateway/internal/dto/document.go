@@ -116,6 +116,7 @@ type DocumentResponse struct {
 	Tags             []string  `json:"tags"`
 	ViewCount        uint      `json:"view_count"`
 	LikeCount        uint      `json:"like_count"`
+	LikedByMe        bool      `json:"liked_by_me"`
 	UploadedByUserID uint      `json:"uploaded_by"`
 	DownloadURL      string    `json:"download_url"`
 	CreatedAt        time.Time `json:"created_at"`
