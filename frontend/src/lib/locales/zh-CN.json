@@ -31,6 +31,7 @@
 		"members": "名成员",
 		"ai_discovery": "AI 探索",
 		"search": "语义搜索",
+		"recommendations": "为你推荐",
 		"lab_members": "成员管理",
 		"lab_settings": "实验室设置",
 		"account": "账户",
@@ -52,6 +53,7 @@
 		"create_lab": "创建实验室",
 		"join_lab": "加入实验室",
 		"search": "语义搜索",
+		"recommendations": "为你推荐",
 		"history": "活动记录",
 		"lab_members": "成员管理",
 		"lab_settings": "实验室设置",
@@ -328,6 +330,18 @@
 		"history_cleared": "搜索记录已清除",
 		"history_just_now": "刚刚"
 	},
+	"recommendations": {
+		"title": "为你推荐",
+		"subtitle": "基于你的点赞、浏览和搜索记录为你定制。",
+		"refresh": "刷新",
+		"empty": {
+			"title": "暂无推荐",
+			"description": "点赞或浏览一些文献，再尝试一两次搜索，我们会在这里为你定制推荐。"
+		},
+		"error": {
+			"failed": "加载推荐失败"
+		}
+	},
 	"service": {
 		"internal": {
 			"network": "无法连接到服务器，请检查网络或稍后再试",
@@ -438,6 +452,10 @@
 		"recommend_similar": {
 			"not_lab_member": "您不是所选实验室的成员",
 			"failed": "加载相似文献失败"
+		},
+		"recommend_for_user": {
+			"not_lab_member": "您不是所选实验室的成员",
+			"failed": "加载推荐失败"
 		},
 		"list_documents": {
 			"failed": "加载文档列表失败，请稍后重试"

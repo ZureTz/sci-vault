@@ -31,6 +31,7 @@
 		"members": "members",
 		"ai_discovery": "AI Discovery",
 		"search": "Search",
+		"recommendations": "Recommendations",
 		"lab_members": "Members",
 		"lab_settings": "Lab Settings",
 		"account": "Account",
@@ -52,6 +53,7 @@
 		"create_lab": "Create Lab",
 		"join_lab": "Join Lab",
 		"search": "Search",
+		"recommendations": "Recommendations",
 		"history": "Activity History",
 		"lab_members": "Members",
 		"lab_settings": "Lab Settings",
@@ -329,6 +331,18 @@
 		"history_cleared": "Search history cleared",
 		"history_just_now": "just now"
 	},
+	"recommendations": {
+		"title": "Recommendations",
+		"subtitle": "Personalized for you, based on what you've liked, viewed, and searched.",
+		"refresh": "Refresh",
+		"empty": {
+			"title": "Nothing to recommend yet",
+			"description": "Like or view a few documents — and try a search or two — and we'll start tailoring suggestions for you here."
+		},
+		"error": {
+			"failed": "Failed to load recommendations"
+		}
+	},
 	"service": {
 		"internal": {
 			"network": "Unable to connect to the server, please check your network or try again later",
@@ -429,6 +443,10 @@
 		"recommend_similar": {
 			"not_lab_member": "You are not a member of the selected lab",
 			"failed": "Failed to load similar documents"
+		},
+		"recommend_for_user": {
+			"not_lab_member": "You are not a member of the selected lab",
+			"failed": "Failed to load recommendations"
 		},
 		"list_documents": {
 			"failed": "Failed to load documents, please try again"
