@@ -18,3 +18,12 @@ type SimilarDocumentItem struct {
 type RecommendSimilarResponse struct {
 	Results []SimilarDocumentItem `json:"results"`
 }
+
+type RecommendForUserQuery struct {
+	LabID uint `form:"lab_id"`
+	Limit int  `form:"limit" binding:"omitempty,min=1,max=50"`
+}
+
+type RecommendForUserResponse struct {
+	Results []SimilarDocumentItem `json:"results"`
+}

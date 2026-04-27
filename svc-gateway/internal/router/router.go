@@ -60,6 +60,7 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 		deps.registerAuthenticatedRoutes(protected.Group("/auth"))
 		deps.registerDocumentRoutes(protected.Group("/docs"))
 		deps.registerHistoryRoutes(protected.Group("/mine/history"))
+		deps.registerRecommendationRoutes(protected.Group("/mine/recommendations"))
 		deps.registerSearchRoutes(protected.Group("/search"))
 		deps.registerStatsRoutes(protected.Group("/stats"))
 		deps.registerTranslateRoutes(protected.Group("/translate"))
@@ -139,6 +140,11 @@ func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 func (deps *RouterDeps) registerHistoryRoutes(group *gin.RouterGroup) {
 	group.GET("/views", deps.DocumentInteractionHandler.ListViewHistory)
 	group.GET("/likes", deps.DocumentInteractionHandler.ListLikeHistory)
+}
+
+// Recommendation routes (/api/v1/mine/recommendations/...)
+func (deps *RouterDeps) registerRecommendationRoutes(group *gin.RouterGroup) {
+	group.GET("", deps.RecommendHandler.RecommendForUser)
 }
 
 // Search routes (/api/v1/search/...)
