@@ -54,10 +54,10 @@ type RecommenderServiceClient interface {
 	// SemanticSearch: only private docs owned by the caller and lab-visible
 	// docs in the given lab are candidates.
 	RecommendSimilar(ctx context.Context, in *RecommendSimilarRequest, opts ...grpc.CallOption) (*RecommendSimilarResponse, error)
-	// RecommendForUser builds a personalised ranked feed for the caller using
+	// RecommendForUser builds a personalized ranked feed for the caller using
 	// their like history, recent view history, and recent search queries as
 	// preference signals. Per-signal embeddings are aggregated into a weighted
-	// profile vector and nearest neighbours are returned. Liked docs are
+	// profile vector and nearest neighbors are returned. Liked docs are
 	// excluded from the result set. Access control mirrors RecommendSimilar.
 	RecommendForUser(ctx context.Context, in *RecommendForUserRequest, opts ...grpc.CallOption) (*RecommendForUserResponse, error)
 }
@@ -166,10 +166,10 @@ type RecommenderServiceServer interface {
 	// SemanticSearch: only private docs owned by the caller and lab-visible
 	// docs in the given lab are candidates.
 	RecommendSimilar(context.Context, *RecommendSimilarRequest) (*RecommendSimilarResponse, error)
-	// RecommendForUser builds a personalised ranked feed for the caller using
+	// RecommendForUser builds a personalized ranked feed for the caller using
 	// their like history, recent view history, and recent search queries as
 	// preference signals. Per-signal embeddings are aggregated into a weighted
-	// profile vector and nearest neighbours are returned. Liked docs are
+	// profile vector and nearest neighbors are returned. Liked docs are
 	// excluded from the result set. Access control mirrors RecommendSimilar.
 	RecommendForUser(context.Context, *RecommendForUserRequest) (*RecommendForUserResponse, error)
 	mustEmbedUnimplementedRecommenderServiceServer()

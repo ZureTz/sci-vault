@@ -68,7 +68,7 @@ class SemanticSearchRequest(_message.Message):
     limit: int
     def __init__(self, query: _Optional[str] = ..., user_id: _Optional[int] = ..., lab_id: _Optional[int] = ..., limit: _Optional[int] = ...) -> None: ...
 
-class SearchResult(_message.Message):
+class ScoredDocument(_message.Message):
     __slots__ = ("doc_id", "title", "original_file_name", "summary", "authors", "tags", "similarity", "match_type")
     DOC_ID_FIELD_NUMBER: _ClassVar[int]
     TITLE_FIELD_NUMBER: _ClassVar[int]
@@ -91,8 +91,8 @@ class SearchResult(_message.Message):
 class SemanticSearchResponse(_message.Message):
     __slots__ = ("results",)
     RESULTS_FIELD_NUMBER: _ClassVar[int]
-    results: _containers.RepeatedCompositeFieldContainer[SearchResult]
-    def __init__(self, results: _Optional[_Iterable[_Union[SearchResult, _Mapping]]] = ...) -> None: ...
+    results: _containers.RepeatedCompositeFieldContainer[ScoredDocument]
+    def __init__(self, results: _Optional[_Iterable[_Union[ScoredDocument, _Mapping]]] = ...) -> None: ...
 
 class RecommendSimilarRequest(_message.Message):
     __slots__ = ("doc_id", "user_id", "lab_id", "limit")
@@ -109,8 +109,8 @@ class RecommendSimilarRequest(_message.Message):
 class RecommendSimilarResponse(_message.Message):
     __slots__ = ("results",)
     RESULTS_FIELD_NUMBER: _ClassVar[int]
-    results: _containers.RepeatedCompositeFieldContainer[SearchResult]
-    def __init__(self, results: _Optional[_Iterable[_Union[SearchResult, _Mapping]]] = ...) -> None: ...
+    results: _containers.RepeatedCompositeFieldContainer[ScoredDocument]
+    def __init__(self, results: _Optional[_Iterable[_Union[ScoredDocument, _Mapping]]] = ...) -> None: ...
 
 class RecommendForUserRequest(_message.Message):
     __slots__ = ("user_id", "lab_id", "limit", "liked_doc_ids", "viewed_doc_ids", "recent_queries")
@@ -131,5 +131,5 @@ class RecommendForUserRequest(_message.Message):
 class RecommendForUserResponse(_message.Message):
     __slots__ = ("results",)
     RESULTS_FIELD_NUMBER: _ClassVar[int]
-    results: _containers.RepeatedCompositeFieldContainer[SearchResult]
-    def __init__(self, results: _Optional[_Iterable[_Union[SearchResult, _Mapping]]] = ...) -> None: ...
+    results: _containers.RepeatedCompositeFieldContainer[ScoredDocument]
+    def __init__(self, results: _Optional[_Iterable[_Union[ScoredDocument, _Mapping]]] = ...) -> None: ...

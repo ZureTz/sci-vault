@@ -440,8 +440,10 @@ func (x *SemanticSearchRequest) GetLimit() uint32 {
 	return 0
 }
 
-// SearchResult is a single document returned by semantic search.
-type SearchResult struct {
+// ScoredDocument is a single document paired with a relevance/similarity
+// score. Shared by SemanticSearch, RecommendSimilar, and RecommendForUser
+// since all three return the same row shape over the wire.
+type ScoredDocument struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	DocId            uint64                 `protobuf:"varint,1,opt,name=doc_id,json=docId,proto3" json:"doc_id,omitempty"`
 	Title            string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
@@ -457,20 +459,20 @@ type SearchResult struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SearchResult) Reset() {
-	*x = SearchResult{}
+func (x *ScoredDocument) Reset() {
+	*x = ScoredDocument{}
 	mi := &file_recommender_v1_recommender_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SearchResult) String() string {
+func (x *ScoredDocument) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SearchResult) ProtoMessage() {}
+func (*ScoredDocument) ProtoMessage() {}
 
-func (x *SearchResult) ProtoReflect() protoreflect.Message {
+func (x *ScoredDocument) ProtoReflect() protoreflect.Message {
 	mi := &file_recommender_v1_recommender_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -482,61 +484,61 @@ func (x *SearchResult) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SearchResult.ProtoReflect.Descriptor instead.
-func (*SearchResult) Descriptor() ([]byte, []int) {
+// Deprecated: Use ScoredDocument.ProtoReflect.Descriptor instead.
+func (*ScoredDocument) Descriptor() ([]byte, []int) {
 	return file_recommender_v1_recommender_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *SearchResult) GetDocId() uint64 {
+func (x *ScoredDocument) GetDocId() uint64 {
 	if x != nil {
 		return x.DocId
 	}
 	return 0
 }
 
-func (x *SearchResult) GetTitle() string {
+func (x *ScoredDocument) GetTitle() string {
 	if x != nil {
 		return x.Title
 	}
 	return ""
 }
 
-func (x *SearchResult) GetOriginalFileName() string {
+func (x *ScoredDocument) GetOriginalFileName() string {
 	if x != nil {
 		return x.OriginalFileName
 	}
 	return ""
 }
 
-func (x *SearchResult) GetSummary() string {
+func (x *ScoredDocument) GetSummary() string {
 	if x != nil {
 		return x.Summary
 	}
 	return ""
 }
 
-func (x *SearchResult) GetAuthors() []string {
+func (x *ScoredDocument) GetAuthors() []string {
 	if x != nil {
 		return x.Authors
 	}
 	return nil
 }
 
-func (x *SearchResult) GetTags() []string {
+func (x *ScoredDocument) GetTags() []string {
 	if x != nil {
 		return x.Tags
 	}
 	return nil
 }
 
-func (x *SearchResult) GetSimilarity() float64 {
+func (x *ScoredDocument) GetSimilarity() float64 {
 	if x != nil {
 		return x.Similarity
 	}
 	return 0
 }
 
-func (x *SearchResult) GetMatchType() MatchType {
+func (x *ScoredDocument) GetMatchType() MatchType {
 	if x != nil {
 		return x.MatchType
 	}
@@ -546,7 +548,7 @@ func (x *SearchResult) GetMatchType() MatchType {
 // SemanticSearchResponse wraps the list of search results.
 type SemanticSearchResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Results       []*SearchResult        `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Results       []*ScoredDocument      `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -581,7 +583,7 @@ func (*SemanticSearchResponse) Descriptor() ([]byte, []int) {
 	return file_recommender_v1_recommender_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *SemanticSearchResponse) GetResults() []*SearchResult {
+func (x *SemanticSearchResponse) GetResults() []*ScoredDocument {
 	if x != nil {
 		return x.Results
 	}
@@ -664,7 +666,7 @@ func (x *RecommendSimilarRequest) GetLimit() uint32 {
 // RecommendSimilarResponse wraps the list of similar documents.
 type RecommendSimilarResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Results       []*SearchResult        `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Results       []*ScoredDocument      `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -699,7 +701,7 @@ func (*RecommendSimilarResponse) Descriptor() ([]byte, []int) {
 	return file_recommender_v1_recommender_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *RecommendSimilarResponse) GetResults() []*SearchResult {
+func (x *RecommendSimilarResponse) GetResults() []*ScoredDocument {
 	if x != nil {
 		return x.Results
 	}
@@ -803,10 +805,10 @@ func (x *RecommendForUserRequest) GetRecentQueries() []string {
 	return nil
 }
 
-// RecommendForUserResponse wraps the personalised feed.
+// RecommendForUserResponse wraps the personalized feed.
 type RecommendForUserResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Results       []*SearchResult        `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Results       []*ScoredDocument      `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -841,7 +843,7 @@ func (*RecommendForUserResponse) Descriptor() ([]byte, []int) {
 	return file_recommender_v1_recommender_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *RecommendForUserResponse) GetResults() []*SearchResult {
+func (x *RecommendForUserResponse) GetResults() []*ScoredDocument {
 	if x != nil {
 		return x.Results
 	}
@@ -871,8 +873,8 @@ const file_recommender_v1_recommender_proto_rawDesc = "" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x04R\x06userId\x12\x15\n" +
 	"\x06lab_id\x18\x03 \x01(\x04R\x05labId\x12\x14\n" +
-	"\x05limit\x18\x04 \x01(\rR\x05limit\"\x8b\x02\n" +
-	"\fSearchResult\x12\x15\n" +
+	"\x05limit\x18\x04 \x01(\rR\x05limit\"\x8d\x02\n" +
+	"\x0eScoredDocument\x12\x15\n" +
 	"\x06doc_id\x18\x01 \x01(\x04R\x05docId\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12,\n" +
 	"\x12original_file_name\x18\x03 \x01(\tR\x10originalFileName\x12\x18\n" +
@@ -883,25 +885,25 @@ const file_recommender_v1_recommender_proto_rawDesc = "" +
 	"similarity\x18\a \x01(\x01R\n" +
 	"similarity\x128\n" +
 	"\n" +
-	"match_type\x18\b \x01(\x0e2\x19.recommender.v1.MatchTypeR\tmatchType\"P\n" +
-	"\x16SemanticSearchResponse\x126\n" +
-	"\aresults\x18\x01 \x03(\v2\x1c.recommender.v1.SearchResultR\aresults\"v\n" +
+	"match_type\x18\b \x01(\x0e2\x19.recommender.v1.MatchTypeR\tmatchType\"R\n" +
+	"\x16SemanticSearchResponse\x128\n" +
+	"\aresults\x18\x01 \x03(\v2\x1e.recommender.v1.ScoredDocumentR\aresults\"v\n" +
 	"\x17RecommendSimilarRequest\x12\x15\n" +
 	"\x06doc_id\x18\x01 \x01(\x04R\x05docId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x04R\x06userId\x12\x15\n" +
 	"\x06lab_id\x18\x03 \x01(\x04R\x05labId\x12\x14\n" +
-	"\x05limit\x18\x04 \x01(\rR\x05limit\"R\n" +
-	"\x18RecommendSimilarResponse\x126\n" +
-	"\aresults\x18\x01 \x03(\v2\x1c.recommender.v1.SearchResultR\aresults\"\xd0\x01\n" +
+	"\x05limit\x18\x04 \x01(\rR\x05limit\"T\n" +
+	"\x18RecommendSimilarResponse\x128\n" +
+	"\aresults\x18\x01 \x03(\v2\x1e.recommender.v1.ScoredDocumentR\aresults\"\xd0\x01\n" +
 	"\x17RecommendForUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x04R\x06userId\x12\x15\n" +
 	"\x06lab_id\x18\x02 \x01(\x04R\x05labId\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\rR\x05limit\x12\"\n" +
 	"\rliked_doc_ids\x18\x04 \x03(\x04R\vlikedDocIds\x12$\n" +
 	"\x0eviewed_doc_ids\x18\x05 \x03(\x04R\fviewedDocIds\x12%\n" +
-	"\x0erecent_queries\x18\x06 \x03(\tR\rrecentQueries\"R\n" +
-	"\x18RecommendForUserResponse\x126\n" +
-	"\aresults\x18\x01 \x03(\v2\x1c.recommender.v1.SearchResultR\aresults*X\n" +
+	"\x0erecent_queries\x18\x06 \x03(\tR\rrecentQueries\"T\n" +
+	"\x18RecommendForUserResponse\x128\n" +
+	"\aresults\x18\x01 \x03(\v2\x1e.recommender.v1.ScoredDocumentR\aresults*X\n" +
 	"\tMatchType\x12\x1a\n" +
 	"\x16MATCH_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13MATCH_TYPE_SEMANTIC\x10\x01\x12\x16\n" +
@@ -937,7 +939,7 @@ var file_recommender_v1_recommender_proto_goTypes = []any{
 	(*TranslateTextRequest)(nil),     // 5: recommender.v1.TranslateTextRequest
 	(*TranslateTextResponse)(nil),    // 6: recommender.v1.TranslateTextResponse
 	(*SemanticSearchRequest)(nil),    // 7: recommender.v1.SemanticSearchRequest
-	(*SearchResult)(nil),             // 8: recommender.v1.SearchResult
+	(*ScoredDocument)(nil),           // 8: recommender.v1.ScoredDocument
 	(*SemanticSearchResponse)(nil),   // 9: recommender.v1.SemanticSearchResponse
 	(*RecommendSimilarRequest)(nil),  // 10: recommender.v1.RecommendSimilarRequest
 	(*RecommendSimilarResponse)(nil), // 11: recommender.v1.RecommendSimilarResponse
@@ -945,10 +947,10 @@ var file_recommender_v1_recommender_proto_goTypes = []any{
 	(*RecommendForUserResponse)(nil), // 13: recommender.v1.RecommendForUserResponse
 }
 var file_recommender_v1_recommender_proto_depIdxs = []int32{
-	0,  // 0: recommender.v1.SearchResult.match_type:type_name -> recommender.v1.MatchType
-	8,  // 1: recommender.v1.SemanticSearchResponse.results:type_name -> recommender.v1.SearchResult
-	8,  // 2: recommender.v1.RecommendSimilarResponse.results:type_name -> recommender.v1.SearchResult
-	8,  // 3: recommender.v1.RecommendForUserResponse.results:type_name -> recommender.v1.SearchResult
+	0,  // 0: recommender.v1.ScoredDocument.match_type:type_name -> recommender.v1.MatchType
+	8,  // 1: recommender.v1.SemanticSearchResponse.results:type_name -> recommender.v1.ScoredDocument
+	8,  // 2: recommender.v1.RecommendSimilarResponse.results:type_name -> recommender.v1.ScoredDocument
+	8,  // 3: recommender.v1.RecommendForUserResponse.results:type_name -> recommender.v1.ScoredDocument
 	1,  // 4: recommender.v1.RecommenderService.Health:input_type -> recommender.v1.HealthRequest
 	3,  // 5: recommender.v1.RecommenderService.EnrichDocument:input_type -> recommender.v1.EnrichDocumentRequest
 	5,  // 6: recommender.v1.RecommenderService.TranslateText:input_type -> recommender.v1.TranslateTextRequest

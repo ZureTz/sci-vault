@@ -32,10 +32,10 @@ service RecommenderService {
   // docs in the given lab are candidates.
   rpc RecommendSimilar(RecommendSimilarRequest) returns (RecommendSimilarResponse);
 
-  // RecommendForUser builds a personalised ranked feed for the caller using
+  // RecommendForUser builds a personalized ranked feed for the caller using
   // their like history, recent view history, and recent search queries as
   // preference signals. Per-signal embeddings are aggregated into a weighted
-  // profile vector and nearest neighbours are returned. Liked docs are
+  // profile vector and nearest neighbors are returned. Liked docs are
   // excluded from the result set. Access control mirrors RecommendSimilar.
   rpc RecommendForUser(RecommendForUserRequest) returns (RecommendForUserResponse);
 }
@@ -100,8 +100,10 @@ enum MatchType {
   MATCH_TYPE_KEYWORD = 2;
 }
 
-// SearchResult is a single document returned by semantic search.
-message SearchResult {
+// ScoredDocument is a single document paired with a relevance/similarity
+// score. Shared by SemanticSearch, RecommendSimilar, and RecommendForUser
+// since all three return the same row shape over the wire.
+message ScoredDocument {
   uint64 doc_id = 1;
   string title = 2;
   string original_file_name = 3;
@@ -116,7 +118,7 @@ message SearchResult {
 
 // SemanticSearchResponse wraps the list of search results.
 message SemanticSearchResponse {
-  repeated SearchResult results = 1;
+  repeated ScoredDocument results = 1;
 }
 
 // RecommendSimilarRequest carries the source doc + access scope for the lookup.
@@ -133,7 +135,7 @@ message RecommendSimilarRequest {
 
 // RecommendSimilarResponse wraps the list of similar documents.
 message RecommendSimilarResponse {
-  repeated SearchResult results = 1;
+  repeated ScoredDocument results = 1;
 }
 
 // RecommendForUserRequest carries the caller's preference signals plus access scope.
@@ -158,7 +160,7 @@ message RecommendForUserRequest {
   repeated string recent_queries = 6;
 }
 
-// RecommendForUserResponse wraps the personalised feed.
+// RecommendForUserResponse wraps the personalized feed.
 message RecommendForUserResponse {
-  repeated SearchResult results = 1;
+  repeated ScoredDocument results = 1;
 }
