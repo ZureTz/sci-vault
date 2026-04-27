@@ -56,10 +56,12 @@ class QueryEmbeddingRepository:
                         (hit_hashes, task_type),
                     )
                 except Exception:
-                    log.warning("query_embeddings: last_used_at bump failed")
+                    log.warning(
+                        "query_embeddings: last_used_at bump failed", exc_info=True
+                    )
             return {bytes(row[0]): row[1] for row in rows if row[1] is not None}
         except Exception:
-            log.warning("query_embeddings: get_many failed")
+            log.warning("query_embeddings: get_many failed", exc_info=True)
             return {}
 
     def set(self, text: str, task_type: str, embedding: np.ndarray) -> None:
@@ -88,4 +90,4 @@ class QueryEmbeddingRepository:
                         rows,
                     )
         except Exception:
-            log.warning("query_embeddings: set_many failed")
+            log.warning("query_embeddings: set_many failed", exc_info=True)
