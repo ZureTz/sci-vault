@@ -40,6 +40,11 @@ class RecommenderServiceStub(object):
                 request_serializer=recommender_dot_v1_dot_recommender__pb2.RecommendSimilarRequest.SerializeToString,
                 response_deserializer=recommender_dot_v1_dot_recommender__pb2.RecommendSimilarResponse.FromString,
                 _registered_method=True)
+        self.RecommendForUser = channel.unary_unary(
+                '/recommender.v1.RecommenderService/RecommendForUser',
+                request_serializer=recommender_dot_v1_dot_recommender__pb2.RecommendForUserRequest.SerializeToString,
+                response_deserializer=recommender_dot_v1_dot_recommender__pb2.RecommendForUserResponse.FromString,
+                _registered_method=True)
 
 
 class RecommenderServiceServicer(object):
@@ -92,6 +97,17 @@ class RecommenderServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RecommendForUser(self, request, context):
+        """RecommendForUser builds a personalised ranked feed for the caller using
+        their like history, recent view history, and recent search queries as
+        preference signals. Per-signal embeddings are aggregated into a weighted
+        profile vector and nearest neighbours are returned. Liked docs are
+        excluded from the result set. Access control mirrors RecommendSimilar.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_RecommenderServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -119,6 +135,11 @@ def add_RecommenderServiceServicer_to_server(servicer, server):
                     servicer.RecommendSimilar,
                     request_deserializer=recommender_dot_v1_dot_recommender__pb2.RecommendSimilarRequest.FromString,
                     response_serializer=recommender_dot_v1_dot_recommender__pb2.RecommendSimilarResponse.SerializeToString,
+            ),
+            'RecommendForUser': grpc.unary_unary_rpc_method_handler(
+                    servicer.RecommendForUser,
+                    request_deserializer=recommender_dot_v1_dot_recommender__pb2.RecommendForUserRequest.FromString,
+                    response_serializer=recommender_dot_v1_dot_recommender__pb2.RecommendForUserResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -257,6 +278,33 @@ class RecommenderService(object):
             '/recommender.v1.RecommenderService/RecommendSimilar',
             recommender_dot_v1_dot_recommender__pb2.RecommendSimilarRequest.SerializeToString,
             recommender_dot_v1_dot_recommender__pb2.RecommendSimilarResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RecommendForUser(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/recommender.v1.RecommenderService/RecommendForUser',
+            recommender_dot_v1_dot_recommender__pb2.RecommendForUserRequest.SerializeToString,
+            recommender_dot_v1_dot_recommender__pb2.RecommendForUserResponse.FromString,
             options,
             channel_credentials,
             insecure,
