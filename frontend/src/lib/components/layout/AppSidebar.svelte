@@ -12,6 +12,7 @@
 		Plus,
 		Search,
 		Settings,
+		Sparkles,
 		Upload,
 		User,
 		Users
@@ -298,6 +299,16 @@
 								<a href={resolve('/search')} {...props}>
 									<Search />
 									<span>{$_('sidebar.search')}</span>
+								</a>
+							{/snippet}
+						</Sidebar.MenuButton>
+					</Sidebar.MenuItem>
+					<Sidebar.MenuItem>
+						<Sidebar.MenuButton isActive={effectivePathname === resolve('/recommendations')}>
+							{#snippet child({ props })}
+								<a href={resolve('/recommendations')} {...props}>
+									<Sparkles />
+									<span>{$_('sidebar.recommendations')}</span>
 								</a>
 							{/snippet}
 						</Sidebar.MenuButton>
