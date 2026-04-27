@@ -31,6 +31,13 @@ service RecommenderService {
   // SemanticSearch: only private docs owned by the caller and lab-visible
   // docs in the given lab are candidates.
   rpc RecommendSimilar(RecommendSimilarRequest) returns (RecommendSimilarResponse);
+
+  // RecommendForUser builds a personalised ranked feed for the caller using
+  // their like history, recent view history, and recent search queries as
+  // preference signals. Per-signal embeddings are aggregated into a weighted
+  // profile vector and nearest neighbours are returned. Liked docs are
+  // excluded from the result set. Access control mirrors RecommendSimilar.
+  rpc RecommendForUser(RecommendForUserRequest) returns (RecommendForUserResponse);
 }
 
 // HealthRequest is an empty message used for health check requests.
@@ -126,5 +133,32 @@ message RecommendSimilarRequest {
 
 // RecommendSimilarResponse wraps the list of similar documents.
 message RecommendSimilarResponse {
+  repeated SearchResult results = 1;
+}
+
+// RecommendForUserRequest carries the caller's preference signals plus access scope.
+// All three signal lists are most-recent-first; the recommender applies recency
+// weighting within each list and cross-bucket weighting across them.
+message RecommendForUserRequest {
+  // user_id of the requesting user (for access control on private docs).
+  uint64 user_id = 1;
+  // lab_id to include lab-visible documents. 0 means private-only.
+  uint64 lab_id = 2;
+  // limit is the maximum number of recommendations (default 20, max 50).
+  uint32 limit = 3;
+  // liked_doc_ids are the caller's liked documents, most-recent first.
+  // Their embeddings are the strongest preference signal.
+  repeated uint64 liked_doc_ids = 4;
+  // viewed_doc_ids are the caller's recently-viewed documents, most-recent first.
+  // Their embeddings are a weaker preference signal than likes.
+  repeated uint64 viewed_doc_ids = 5;
+  // recent_queries are the caller's recent search query strings, most-recent first.
+  // They are embedded with RETRIEVAL_QUERY task type and contribute as a
+  // weaker signal than likes.
+  repeated string recent_queries = 6;
+}
+
+// RecommendForUserResponse wraps the personalised feed.
+message RecommendForUserResponse {
   repeated SearchResult results = 1;
 }

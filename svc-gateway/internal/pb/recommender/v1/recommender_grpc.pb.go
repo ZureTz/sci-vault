@@ -24,6 +24,7 @@ const (
 	RecommenderService_TranslateText_FullMethodName    = "/recommender.v1.RecommenderService/TranslateText"
 	RecommenderService_SemanticSearch_FullMethodName   = "/recommender.v1.RecommenderService/SemanticSearch"
 	RecommenderService_RecommendSimilar_FullMethodName = "/recommender.v1.RecommenderService/RecommendSimilar"
+	RecommenderService_RecommendForUser_FullMethodName = "/recommender.v1.RecommenderService/RecommendForUser"
 )
 
 // RecommenderServiceClient is the client API for RecommenderService service.
@@ -53,6 +54,12 @@ type RecommenderServiceClient interface {
 	// SemanticSearch: only private docs owned by the caller and lab-visible
 	// docs in the given lab are candidates.
 	RecommendSimilar(ctx context.Context, in *RecommendSimilarRequest, opts ...grpc.CallOption) (*RecommendSimilarResponse, error)
+	// RecommendForUser builds a personalised ranked feed for the caller using
+	// their like history, recent view history, and recent search queries as
+	// preference signals. Per-signal embeddings are aggregated into a weighted
+	// profile vector and nearest neighbours are returned. Liked docs are
+	// excluded from the result set. Access control mirrors RecommendSimilar.
+	RecommendForUser(ctx context.Context, in *RecommendForUserRequest, opts ...grpc.CallOption) (*RecommendForUserResponse, error)
 }
 
 type recommenderServiceClient struct {
@@ -122,6 +129,16 @@ func (c *recommenderServiceClient) RecommendSimilar(ctx context.Context, in *Rec
 	return out, nil
 }
 
+func (c *recommenderServiceClient) RecommendForUser(ctx context.Context, in *RecommendForUserRequest, opts ...grpc.CallOption) (*RecommendForUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecommendForUserResponse)
+	err := c.cc.Invoke(ctx, RecommenderService_RecommendForUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RecommenderServiceServer is the server API for RecommenderService service.
 // All implementations must embed UnimplementedRecommenderServiceServer
 // for forward compatibility.
@@ -149,6 +166,12 @@ type RecommenderServiceServer interface {
 	// SemanticSearch: only private docs owned by the caller and lab-visible
 	// docs in the given lab are candidates.
 	RecommendSimilar(context.Context, *RecommendSimilarRequest) (*RecommendSimilarResponse, error)
+	// RecommendForUser builds a personalised ranked feed for the caller using
+	// their like history, recent view history, and recent search queries as
+	// preference signals. Per-signal embeddings are aggregated into a weighted
+	// profile vector and nearest neighbours are returned. Liked docs are
+	// excluded from the result set. Access control mirrors RecommendSimilar.
+	RecommendForUser(context.Context, *RecommendForUserRequest) (*RecommendForUserResponse, error)
 	mustEmbedUnimplementedRecommenderServiceServer()
 }
 
@@ -173,6 +196,9 @@ func (UnimplementedRecommenderServiceServer) SemanticSearch(context.Context, *Se
 }
 func (UnimplementedRecommenderServiceServer) RecommendSimilar(context.Context, *RecommendSimilarRequest) (*RecommendSimilarResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RecommendSimilar not implemented")
+}
+func (UnimplementedRecommenderServiceServer) RecommendForUser(context.Context, *RecommendForUserRequest) (*RecommendForUserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecommendForUser not implemented")
 }
 func (UnimplementedRecommenderServiceServer) mustEmbedUnimplementedRecommenderServiceServer() {}
 func (UnimplementedRecommenderServiceServer) testEmbeddedByValue()                            {}
@@ -278,6 +304,24 @@ func _RecommenderService_RecommendSimilar_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RecommenderService_RecommendForUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecommendForUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RecommenderServiceServer).RecommendForUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RecommenderService_RecommendForUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RecommenderServiceServer).RecommendForUser(ctx, req.(*RecommendForUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RecommenderService_ServiceDesc is the grpc.ServiceDesc for RecommenderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -300,6 +344,10 @@ var RecommenderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RecommendSimilar",
 			Handler:    _RecommenderService_RecommendSimilar_Handler,
+		},
+		{
+			MethodName: "RecommendForUser",
+			Handler:    _RecommenderService_RecommendForUser_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

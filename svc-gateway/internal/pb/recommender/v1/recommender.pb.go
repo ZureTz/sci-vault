@@ -706,6 +706,148 @@ func (x *RecommendSimilarResponse) GetResults() []*SearchResult {
 	return nil
 }
 
+// RecommendForUserRequest carries the caller's preference signals plus access scope.
+// All three signal lists are most-recent-first; the recommender applies recency
+// weighting within each list and cross-bucket weighting across them.
+type RecommendForUserRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// user_id of the requesting user (for access control on private docs).
+	UserId uint64 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// lab_id to include lab-visible documents. 0 means private-only.
+	LabId uint64 `protobuf:"varint,2,opt,name=lab_id,json=labId,proto3" json:"lab_id,omitempty"`
+	// limit is the maximum number of recommendations (default 20, max 50).
+	Limit uint32 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	// liked_doc_ids are the caller's liked documents, most-recent first.
+	// Their embeddings are the strongest preference signal.
+	LikedDocIds []uint64 `protobuf:"varint,4,rep,packed,name=liked_doc_ids,json=likedDocIds,proto3" json:"liked_doc_ids,omitempty"`
+	// viewed_doc_ids are the caller's recently-viewed documents, most-recent first.
+	// Their embeddings are a weaker preference signal than likes.
+	ViewedDocIds []uint64 `protobuf:"varint,5,rep,packed,name=viewed_doc_ids,json=viewedDocIds,proto3" json:"viewed_doc_ids,omitempty"`
+	// recent_queries are the caller's recent search query strings, most-recent first.
+	// They are embedded with RETRIEVAL_QUERY task type and contribute as a
+	// weaker signal than likes.
+	RecentQueries []string `protobuf:"bytes,6,rep,name=recent_queries,json=recentQueries,proto3" json:"recent_queries,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecommendForUserRequest) Reset() {
+	*x = RecommendForUserRequest{}
+	mi := &file_recommender_v1_recommender_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecommendForUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecommendForUserRequest) ProtoMessage() {}
+
+func (x *RecommendForUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_recommender_v1_recommender_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecommendForUserRequest.ProtoReflect.Descriptor instead.
+func (*RecommendForUserRequest) Descriptor() ([]byte, []int) {
+	return file_recommender_v1_recommender_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *RecommendForUserRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *RecommendForUserRequest) GetLabId() uint64 {
+	if x != nil {
+		return x.LabId
+	}
+	return 0
+}
+
+func (x *RecommendForUserRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *RecommendForUserRequest) GetLikedDocIds() []uint64 {
+	if x != nil {
+		return x.LikedDocIds
+	}
+	return nil
+}
+
+func (x *RecommendForUserRequest) GetViewedDocIds() []uint64 {
+	if x != nil {
+		return x.ViewedDocIds
+	}
+	return nil
+}
+
+func (x *RecommendForUserRequest) GetRecentQueries() []string {
+	if x != nil {
+		return x.RecentQueries
+	}
+	return nil
+}
+
+// RecommendForUserResponse wraps the personalised feed.
+type RecommendForUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Results       []*SearchResult        `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecommendForUserResponse) Reset() {
+	*x = RecommendForUserResponse{}
+	mi := &file_recommender_v1_recommender_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecommendForUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecommendForUserResponse) ProtoMessage() {}
+
+func (x *RecommendForUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_recommender_v1_recommender_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecommendForUserResponse.ProtoReflect.Descriptor instead.
+func (*RecommendForUserResponse) Descriptor() ([]byte, []int) {
+	return file_recommender_v1_recommender_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RecommendForUserResponse) GetResults() []*SearchResult {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
 var File_recommender_v1_recommender_proto protoreflect.FileDescriptor
 
 const file_recommender_v1_recommender_proto_rawDesc = "" +
@@ -750,17 +892,27 @@ const file_recommender_v1_recommender_proto_rawDesc = "" +
 	"\x06lab_id\x18\x03 \x01(\x04R\x05labId\x12\x14\n" +
 	"\x05limit\x18\x04 \x01(\rR\x05limit\"R\n" +
 	"\x18RecommendSimilarResponse\x126\n" +
+	"\aresults\x18\x01 \x03(\v2\x1c.recommender.v1.SearchResultR\aresults\"\xd0\x01\n" +
+	"\x17RecommendForUserRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x04R\x06userId\x12\x15\n" +
+	"\x06lab_id\x18\x02 \x01(\x04R\x05labId\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\rR\x05limit\x12\"\n" +
+	"\rliked_doc_ids\x18\x04 \x03(\x04R\vlikedDocIds\x12$\n" +
+	"\x0eviewed_doc_ids\x18\x05 \x03(\x04R\fviewedDocIds\x12%\n" +
+	"\x0erecent_queries\x18\x06 \x03(\tR\rrecentQueries\"R\n" +
+	"\x18RecommendForUserResponse\x126\n" +
 	"\aresults\x18\x01 \x03(\v2\x1c.recommender.v1.SearchResultR\aresults*X\n" +
 	"\tMatchType\x12\x1a\n" +
 	"\x16MATCH_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13MATCH_TYPE_SEMANTIC\x10\x01\x12\x16\n" +
-	"\x12MATCH_TYPE_KEYWORD\x10\x022\xe6\x03\n" +
+	"\x12MATCH_TYPE_KEYWORD\x10\x022\xcd\x04\n" +
 	"\x12RecommenderService\x12G\n" +
 	"\x06Health\x12\x1d.recommender.v1.HealthRequest\x1a\x1e.recommender.v1.HealthResponse\x12_\n" +
 	"\x0eEnrichDocument\x12%.recommender.v1.EnrichDocumentRequest\x1a&.recommender.v1.EnrichDocumentResponse\x12^\n" +
 	"\rTranslateText\x12$.recommender.v1.TranslateTextRequest\x1a%.recommender.v1.TranslateTextResponse0\x01\x12_\n" +
 	"\x0eSemanticSearch\x12%.recommender.v1.SemanticSearchRequest\x1a&.recommender.v1.SemanticSearchResponse\x12e\n" +
-	"\x10RecommendSimilar\x12'.recommender.v1.RecommendSimilarRequest\x1a(.recommender.v1.RecommendSimilarResponseB!Z\x1fgateway/internal/pb/recommenderb\x06proto3"
+	"\x10RecommendSimilar\x12'.recommender.v1.RecommendSimilarRequest\x1a(.recommender.v1.RecommendSimilarResponse\x12e\n" +
+	"\x10RecommendForUser\x12'.recommender.v1.RecommendForUserRequest\x1a(.recommender.v1.RecommendForUserResponseB!Z\x1fgateway/internal/pb/recommenderb\x06proto3"
 
 var (
 	file_recommender_v1_recommender_proto_rawDescOnce sync.Once
@@ -775,7 +927,7 @@ func file_recommender_v1_recommender_proto_rawDescGZIP() []byte {
 }
 
 var file_recommender_v1_recommender_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_recommender_v1_recommender_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_recommender_v1_recommender_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_recommender_v1_recommender_proto_goTypes = []any{
 	(MatchType)(0),                   // 0: recommender.v1.MatchType
 	(*HealthRequest)(nil),            // 1: recommender.v1.HealthRequest
@@ -789,26 +941,31 @@ var file_recommender_v1_recommender_proto_goTypes = []any{
 	(*SemanticSearchResponse)(nil),   // 9: recommender.v1.SemanticSearchResponse
 	(*RecommendSimilarRequest)(nil),  // 10: recommender.v1.RecommendSimilarRequest
 	(*RecommendSimilarResponse)(nil), // 11: recommender.v1.RecommendSimilarResponse
+	(*RecommendForUserRequest)(nil),  // 12: recommender.v1.RecommendForUserRequest
+	(*RecommendForUserResponse)(nil), // 13: recommender.v1.RecommendForUserResponse
 }
 var file_recommender_v1_recommender_proto_depIdxs = []int32{
 	0,  // 0: recommender.v1.SearchResult.match_type:type_name -> recommender.v1.MatchType
 	8,  // 1: recommender.v1.SemanticSearchResponse.results:type_name -> recommender.v1.SearchResult
 	8,  // 2: recommender.v1.RecommendSimilarResponse.results:type_name -> recommender.v1.SearchResult
-	1,  // 3: recommender.v1.RecommenderService.Health:input_type -> recommender.v1.HealthRequest
-	3,  // 4: recommender.v1.RecommenderService.EnrichDocument:input_type -> recommender.v1.EnrichDocumentRequest
-	5,  // 5: recommender.v1.RecommenderService.TranslateText:input_type -> recommender.v1.TranslateTextRequest
-	7,  // 6: recommender.v1.RecommenderService.SemanticSearch:input_type -> recommender.v1.SemanticSearchRequest
-	10, // 7: recommender.v1.RecommenderService.RecommendSimilar:input_type -> recommender.v1.RecommendSimilarRequest
-	2,  // 8: recommender.v1.RecommenderService.Health:output_type -> recommender.v1.HealthResponse
-	4,  // 9: recommender.v1.RecommenderService.EnrichDocument:output_type -> recommender.v1.EnrichDocumentResponse
-	6,  // 10: recommender.v1.RecommenderService.TranslateText:output_type -> recommender.v1.TranslateTextResponse
-	9,  // 11: recommender.v1.RecommenderService.SemanticSearch:output_type -> recommender.v1.SemanticSearchResponse
-	11, // 12: recommender.v1.RecommenderService.RecommendSimilar:output_type -> recommender.v1.RecommendSimilarResponse
-	8,  // [8:13] is the sub-list for method output_type
-	3,  // [3:8] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	8,  // 3: recommender.v1.RecommendForUserResponse.results:type_name -> recommender.v1.SearchResult
+	1,  // 4: recommender.v1.RecommenderService.Health:input_type -> recommender.v1.HealthRequest
+	3,  // 5: recommender.v1.RecommenderService.EnrichDocument:input_type -> recommender.v1.EnrichDocumentRequest
+	5,  // 6: recommender.v1.RecommenderService.TranslateText:input_type -> recommender.v1.TranslateTextRequest
+	7,  // 7: recommender.v1.RecommenderService.SemanticSearch:input_type -> recommender.v1.SemanticSearchRequest
+	10, // 8: recommender.v1.RecommenderService.RecommendSimilar:input_type -> recommender.v1.RecommendSimilarRequest
+	12, // 9: recommender.v1.RecommenderService.RecommendForUser:input_type -> recommender.v1.RecommendForUserRequest
+	2,  // 10: recommender.v1.RecommenderService.Health:output_type -> recommender.v1.HealthResponse
+	4,  // 11: recommender.v1.RecommenderService.EnrichDocument:output_type -> recommender.v1.EnrichDocumentResponse
+	6,  // 12: recommender.v1.RecommenderService.TranslateText:output_type -> recommender.v1.TranslateTextResponse
+	9,  // 13: recommender.v1.RecommenderService.SemanticSearch:output_type -> recommender.v1.SemanticSearchResponse
+	11, // 14: recommender.v1.RecommenderService.RecommendSimilar:output_type -> recommender.v1.RecommendSimilarResponse
+	13, // 15: recommender.v1.RecommenderService.RecommendForUser:output_type -> recommender.v1.RecommendForUserResponse
+	10, // [10:16] is the sub-list for method output_type
+	4,  // [4:10] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_recommender_v1_recommender_proto_init() }
@@ -822,7 +979,7 @@ func file_recommender_v1_recommender_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_recommender_v1_recommender_proto_rawDesc), len(file_recommender_v1_recommender_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
