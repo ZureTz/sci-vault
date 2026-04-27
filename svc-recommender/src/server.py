@@ -15,13 +15,15 @@ from infrastructure.genai import GenAI
 from infrastructure.database import Database
 from infrastructure.storage import Storage
 from cache.enrichment import EnrichmentStatusCache
-from cache.search import SearchCache
+from cache.query_embedding import QueryEmbeddingCache
 from genai.document import DocumentGenAI
 from genai.translate import TranslateGenAI
-from genai.search import SearchGenAI
+from genai.query_embedder import QueryEmbedder
+from genai.embedding_resolver import QueryEmbeddingResolver
 from repository.document import DocumentRepository
 from repository.search import SearchRepository
 from repository.recommend import RecommendRepository
+from repository.query_embedding import QueryEmbeddingRepository
 from storage.document import DocumentStorage
 from servicer.document import DocumentServicer
 from servicer.health import HealthServicer
@@ -45,20 +47,30 @@ class RecommenderServer:
         doc_repo = DocumentRepository(self._db.pool)
         doc_storage = DocumentStorage(self._storage.client, cfg.s3_private_bucket)
         doc_genai = DocumentGenAI(
-            self._genai.metadata_client, self._genai.embedding_client
+            self._genai.metadata_client, self._genai.doc_embedding_client
         )
         translate_genai = TranslateGenAI(self._genai.translate_client)
 
         search_repo = SearchRepository(self._db.pool)
-        search_genai = SearchGenAI(self._genai.search_client)
-        search_cache = SearchCache(self._cache.client)
         recommend_repo = RecommendRepository(self._db.pool)
+        query_embedder = QueryEmbedder(self._genai.query_embedding_client)
+        query_embedding_cache = QueryEmbeddingCache(self._cache.client)
+        query_embedding_repo = QueryEmbeddingRepository(self._db.pool)
+
+        # Three-tier resolver: Redis → Postgres → Gemini. Shared by both the
+        # semantic-search and personalized-recommendation flows so a query
+        # ever pays the Gemini token cost at most once.
+        query_embedding_resolver = QueryEmbeddingResolver(
+            cache=query_embedding_cache,
+            repo=query_embedding_repo,
+            embedder=query_embedder,
+        )
 
         _document = DocumentServicer(enrich_cache, doc_repo, doc_storage, doc_genai)
         _health = HealthServicer()
         _translate = TranslateServicer(translate_genai)
-        _search = SearchServicer(search_repo, search_genai, search_cache)
-        _recommend = RecommendServicer(recommend_repo)
+        _search = SearchServicer(search_repo, query_embedding_resolver)
+        _recommend = RecommendServicer(recommend_repo, query_embedding_resolver)
 
         class _Servicer(recommender_pb2_grpc.RecommenderServiceServicer):
             def Health(self, request, context):
@@ -75,6 +87,9 @@ class RecommenderServer:
 
             def RecommendSimilar(self, request, context):
                 return _recommend.RecommendSimilar(request, context)
+
+            def RecommendForUser(self, request, context):
+                return _recommend.RecommendForUser(request, context)
 
         self._server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=cfg.max_workers),

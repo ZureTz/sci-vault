@@ -1,7 +1,6 @@
 """Search repository — pgvector cosine similarity + full-text keyword queries."""
 
 import logging
-from dataclasses import dataclass
 
 import numpy as np
 from psycopg import sql
@@ -12,6 +11,7 @@ from repository import (
     DOC_VISIBILITY_PRIVATE,
     ENRICH_STATUS_DONE,
 )
+from repository.types import ScoredDocument
 
 log = logging.getLogger(__name__)
 
@@ -50,17 +50,6 @@ _TEXT_VECTOR = sql.SQL(
 _TEXT_QUERY = sql.SQL("websearch_to_tsquery('english', %(text_query)s)")
 
 
-@dataclass
-class SearchHit:
-    doc_id: int
-    title: str
-    original_file_name: str
-    summary: str
-    authors: list[str]
-    tags: list[str]
-    similarity: float  # 1 - cosine_distance (0 for keyword-only matches)
-
-
 class SearchRepository:
     """Vector similarity + keyword search against the documents table."""
 
@@ -82,7 +71,7 @@ class SearchRepository:
         lab_id: int,
         limit: int,
         min_similarity: float = _MIN_SIMILARITY,
-    ) -> list[SearchHit]:
+    ) -> list[ScoredDocument]:
         """Find documents by vector cosine similarity, filtered by a minimum threshold."""
         limit = self._clamp_limit(limit)
 
@@ -124,7 +113,7 @@ class SearchRepository:
         lab_id: int,
         limit: int,
         exclude_ids: list[int] | None = None,
-    ) -> list[SearchHit]:
+    ) -> list[ScoredDocument]:
         """Full-text keyword search across title, summary, tags, and authors.
 
         Uses websearch_to_tsquery for natural-language query parsing.
@@ -174,8 +163,8 @@ class SearchRepository:
         return [self._row_to_hit(row) for row in rows]
 
     @staticmethod
-    def _row_to_hit(row: tuple) -> SearchHit:
-        return SearchHit(
+    def _row_to_hit(row: tuple) -> ScoredDocument:
+        return ScoredDocument(
             doc_id=row[0],
             title=row[1],
             original_file_name=row[2],
