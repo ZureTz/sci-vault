@@ -98,10 +98,10 @@ class RecommenderServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def RecommendForUser(self, request, context):
-        """RecommendForUser builds a personalised ranked feed for the caller using
+        """RecommendForUser builds a personalized ranked feed for the caller using
         their like history, recent view history, and recent search queries as
         preference signals. Per-signal embeddings are aggregated into a weighted
-        profile vector and nearest neighbours are returned. Liked docs are
+        profile vector and nearest neighbors are returned. Liked docs are
         excluded from the result set. Access control mirrors RecommendSimilar.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
