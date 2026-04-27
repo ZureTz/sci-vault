@@ -96,6 +96,29 @@ func (r *RecommenderClient) RecommendSimilar(ctx context.Context, docID, userID,
 	})
 }
 
+// RecommendForUser asks the Python service for a personalized feed built from
+// the caller's like / view / search-query history. The recent_queries list may
+// trigger Gemini calls (one per uncached query), so a generous timeout is
+// applied — same as SemanticSearch.
+func (r *RecommenderClient) RecommendForUser(
+	ctx context.Context,
+	userID, labID uint64,
+	limit uint32,
+	likedDocIDs, viewedDocIDs []uint64,
+	recentQueries []string,
+) (*pb.RecommendForUserResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	return r.client.RecommendForUser(ctx, &pb.RecommendForUserRequest{
+		UserId:        userID,
+		LabId:         labID,
+		Limit:         limit,
+		LikedDocIds:   likedDocIDs,
+		ViewedDocIds:  viewedDocIDs,
+		RecentQueries: recentQueries,
+	})
+}
+
 // Close releases the underlying gRPC connection.
 func (r *RecommenderClient) Close() error {
 	return r.conn.Close()
