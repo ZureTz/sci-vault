@@ -5,6 +5,7 @@
   ],
   "cSpell.words": [
     "conninfo",
+    "Embedder",
     "frombuffer",
     "genai",
     "grpcio",

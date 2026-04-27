@@ -11,13 +11,20 @@ from repository import (
     DOC_VISIBILITY_PRIVATE,
     ENRICH_STATUS_DONE,
 )
-from repository.search import SearchHit
+from repository.types import ScoredDocument
 
 log = logging.getLogger(__name__)
 
 _DEFAULT_LIMIT = 5
 _MAX_LIMIT = 20
 _MIN_SIMILARITY = 0.6
+
+_DEFAULT_PERSONALIZED_LIMIT = 20
+_MAX_PERSONALIZED_LIMIT = 50
+# Personalized feed uses a looser threshold than similar-docs because the
+# centroid of mixed signals is, by construction, less peaked than a single
+# document embedding; demanding 0.6 cosine sim would empty most feeds.
+_MIN_PERSONALIZED_SIMILARITY = 0.4
 
 _BASE_WHERE = sql.SQL("d.deleted_at IS NULL AND d.enrich_status = {}").format(
     sql.Literal(ENRICH_STATUS_DONE)
@@ -66,6 +73,21 @@ class RecommendRepository:
             return None
         return row[0]
 
+    def fetch_embeddings_bulk(self, doc_ids: list[int]) -> dict[int, np.ndarray]:
+        """Return a {doc_id: embedding} map for the subset of doc_ids that have
+        one (non-deleted, enrich_status=done). Missing IDs are silently absent;
+        callers should iterate their original list to preserve order."""
+        if not doc_ids:
+            return {}
+        with self._pool.connection() as conn:
+            rows = conn.execute(
+                "SELECT id, embedding FROM documents"
+                " WHERE id = ANY(%s) AND deleted_at IS NULL"
+                " AND enrich_status = %s AND embedding IS NOT NULL",
+                (doc_ids, ENRICH_STATUS_DONE),
+            ).fetchall()
+        return {int(row[0]): row[1] for row in rows if row[1] is not None}
+
     def similar(
         self,
         source_doc_id: int,
@@ -74,7 +96,7 @@ class RecommendRepository:
         lab_id: int,
         limit: int,
         min_similarity: float = _MIN_SIMILARITY,
-    ) -> list[SearchHit]:
+    ) -> list[ScoredDocument]:
         """Find documents most similar to the source doc's embedding, excluding
         the source itself. Results ranked by cosine distance ascending."""
         limit = self._clamp_limit(limit)
@@ -111,7 +133,74 @@ class RecommendRepository:
             rows = conn.execute(query, params).fetchall()
 
         return [
-            SearchHit(
+            ScoredDocument(
+                doc_id=row[0],
+                title=row[1],
+                original_file_name=row[2],
+                summary=row[3],
+                authors=list(row[4]) if row[4] else [],
+                tags=list(row[5]) if row[5] else [],
+                similarity=float(row[6]),
+            )
+            for row in rows
+        ]
+
+    @staticmethod
+    def _clamp_personalized_limit(limit: int) -> int:
+        if not limit:
+            return _DEFAULT_PERSONALIZED_LIMIT
+        return min(max(limit, 1), _MAX_PERSONALIZED_LIMIT)
+
+    def personalized_search(
+        self,
+        query_embedding: np.ndarray,
+        user_id: int,
+        lab_id: int,
+        exclude_ids: list[int],
+        limit: int,
+        min_similarity: float = _MIN_PERSONALIZED_SIMILARITY,
+    ) -> list[ScoredDocument]:
+        """Find documents most similar to a profile vector, excluding any IDs
+        the caller already engaged with (typically liked docs). Results ranked
+        by cosine distance ascending, same access-control shape as similar()."""
+        limit = self._clamp_personalized_limit(limit)
+        # Always pass a list so `!= ALL(%s)` is well-defined; an empty array
+        # means "exclude nothing".
+        excludes = exclude_ids or []
+
+        query = sql.SQL(
+            "SELECT"
+            "  d.id,"
+            "  COALESCE(d.title, '') AS title,"
+            "  d.original_file_name,"
+            "  COALESCE(d.summary, '') AS summary,"
+            "  COALESCE(d.authors, ARRAY[]::text[]) AS authors,"
+            "  COALESCE(d.tags, ARRAY[]::text[]) AS tags,"
+            "  1 - (d.embedding <=> %(query_vec)s) AS similarity"
+            " FROM documents d"
+            " WHERE {base}"
+            "  AND d.id != ALL(%(exclude_ids)s)"
+            "  AND d.embedding IS NOT NULL"
+            "  AND 1 - (d.embedding <=> %(query_vec)s) >= %(min_sim)s"
+            "  {access}"
+            " ORDER BY d.embedding <=> %(query_vec)s ASC"
+            " LIMIT %(limit)s"
+        ).format(base=_BASE_WHERE, access=self._access(lab_id))
+
+        params = {
+            "query_vec": query_embedding,
+            "exclude_ids": excludes,
+            "user_id": user_id,
+            "lab_id": lab_id,
+            "limit": limit,
+            "min_sim": min_similarity,
+        }
+
+        with self._pool.connection() as conn:
+            rows = conn.execute(query, params).fetchall()
+
+        return [
+            ScoredDocument(
                 doc_id=row[0],
                 title=row[1],
                 original_file_name=row[2],
