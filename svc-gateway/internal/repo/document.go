@@ -23,19 +23,32 @@ type ListMyDocumentsFilter struct {
 	Limit      int
 }
 
+// ListLabDocumentsFilter drives FindByLabID. Visibility and lab_id are
+// implicit (always visibility='lab', always the supplied labID), so the
+// filter only carries the user-controllable knobs.
+type ListLabDocumentsFilter struct {
+	Search    string
+	Status    string
+	SortBy    string
+	SortOrder string
+	Offset    int
+	Limit     int
+}
+
 type DocumentRepository interface {
 	Create(ctx context.Context, doc *model.Document) error
 	CreateBatch(ctx context.Context, docs []*model.Document) error
 	FindByID(ctx context.Context, id uint) (model.Document, error)
 	FindByUserID(ctx context.Context, userID uint, filter ListMyDocumentsFilter) ([]model.Document, int64, error)
+	FindByLabID(ctx context.Context, labID uint, filter ListLabDocumentsFilter) ([]model.Document, int64, error)
 	FindByUserIDAndStatus(ctx context.Context, userID uint, status string, offset, limit int) ([]model.Document, int64, error)
 	FindExistingByHash(ctx context.Context, visibility string, userID uint, labID *uint, sha256 string) (model.Document, error)
 	FindExistingHashesInSet(ctx context.Context, visibility string, userID uint, labID *uint, hashes []string) ([]string, error)
 	FindStaleNotStarted(ctx context.Context, olderThan time.Time, limit int) ([]model.Document, error)
 	UpdateVisibility(ctx context.Context, docID, ownerID uint, visibility string, labID *uint) error
 	BatchUpdateVisibility(ctx context.Context, docIDs []uint, ownerID uint, visibility string, labID *uint) (int64, error)
-	UpdateMetadata(ctx context.Context, docID, ownerID uint, patch DocumentMetadataPatch) error
-	DeleteByID(ctx context.Context, docID, ownerID uint) (model.Document, error)
+	UpdateMetadata(ctx context.Context, docID uint, patch DocumentMetadataPatch) error
+	DeleteByID(ctx context.Context, docID uint) error
 }
 
 type documentRepo struct {
@@ -108,6 +121,63 @@ func (r *documentRepo) FindByUserID(ctx context.Context, userID uint, filter Lis
 	}
 
 	err := tx.Preload("Lab").Order(orderBy).Offset(filter.Offset).Limit(filter.Limit).Find(&docs).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return docs, count, nil
+}
+
+// FindByLabID lists every lab-visible document in a lab, regardless of uploader.
+// Used by the lab-scope document management page (owner-only). The visibility
+// and lab_id predicates are baked in — no caller can widen them.
+func (r *documentRepo) FindByLabID(ctx context.Context, labID uint, filter ListLabDocumentsFilter) ([]model.Document, int64, error) {
+	var docs []model.Document
+	var count int64
+
+	tx := r.db.WithContext(ctx).Model(&model.Document{}).
+		Where("visibility = ? AND lab_id = ?", model.DocVisibilityLab, labID)
+	if filter.Search != "" {
+		pattern := "%" + filter.Search + "%"
+		tx = tx.Where("(title ILIKE ? OR original_file_name ILIKE ?)", pattern, pattern)
+	}
+	if filter.Status != "" {
+		tx = tx.Where("enrich_status = ?", filter.Status)
+	}
+	if err := tx.Count(&count).Error; err != nil {
+		return nil, 0, err
+	}
+
+	orderBy := "created_at DESC, id DESC"
+	ascending := filter.SortOrder == "asc"
+	switch filter.SortBy {
+	case "title":
+		if ascending {
+			orderBy = "title ASC, id ASC"
+		} else {
+			orderBy = "title DESC, id DESC"
+		}
+	case "file_size":
+		if ascending {
+			orderBy = "file_size ASC, id ASC"
+		} else {
+			orderBy = "file_size DESC, id DESC"
+		}
+	case "view_count":
+		if ascending {
+			orderBy = "view_count ASC, id ASC"
+		} else {
+			orderBy = "view_count DESC, id DESC"
+		}
+	case "created_at":
+		if ascending {
+			orderBy = "created_at ASC, id ASC"
+		} else {
+			orderBy = "created_at DESC, id DESC"
+		}
+	}
+
+	err := tx.Preload("Lab").Preload("UploadedBy").
+		Order(orderBy).Offset(filter.Offset).Limit(filter.Limit).Find(&docs).Error
 	if err != nil {
 		return nil, 0, err
 	}
@@ -226,9 +296,10 @@ type DocumentMetadataPatch struct {
 	DOI   *string
 }
 
-// UpdateMetadata patches user-editable metadata fields on a document the
-// caller owns. Only fields set on the patch are written.
-func (r *documentRepo) UpdateMetadata(ctx context.Context, docID, ownerID uint, patch DocumentMetadataPatch) error {
+// UpdateMetadata patches user-editable metadata fields on a document.
+// Only fields set on the patch are written. Authorisation (uploader OR lab
+// owner) is enforced by the service layer before this is called.
+func (r *documentRepo) UpdateMetadata(ctx context.Context, docID uint, patch DocumentMetadataPatch) error {
 	fields := map[string]any{}
 	if patch.Title != nil {
 		fields["title"] = *patch.Title
@@ -243,7 +314,7 @@ func (r *documentRepo) UpdateMetadata(ctx context.Context, docID, ownerID uint, 
 		return nil
 	}
 	res := r.db.WithContext(ctx).Model(&model.Document{}).
-		Where("id = ? AND uploaded_by_user_id = ?", docID, ownerID).
+		Where("id = ?", docID).
 		Updates(fields)
 	if res.Error != nil {
 		return res.Error
@@ -254,21 +325,17 @@ func (r *documentRepo) UpdateMetadata(ctx context.Context, docID, ownerID uint, 
 	return nil
 }
 
-// DeleteByID soft-deletes a document the caller owns and returns the deleted
-// row so callers can clean up side effects (e.g. remove the S3 object).
-// Returns gorm.ErrRecordNotFound when the caller does not own the document
-// or it does not exist.
-func (r *documentRepo) DeleteByID(ctx context.Context, docID, ownerID uint) (model.Document, error) {
-	var doc model.Document
-	if err := r.db.WithContext(ctx).
-		Where("id = ? AND uploaded_by_user_id = ?", docID, ownerID).
-		First(&doc).Error; err != nil {
-		return doc, err
+// DeleteByID soft-deletes a document. Authorisation is enforced by the service
+// layer before this is called.
+func (r *documentRepo) DeleteByID(ctx context.Context, docID uint) error {
+	res := r.db.WithContext(ctx).Where("id = ?", docID).Delete(&model.Document{})
+	if res.Error != nil {
+		return res.Error
 	}
-	if err := r.db.WithContext(ctx).Delete(&doc).Error; err != nil {
-		return doc, err
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
 	}
-	return doc, nil
+	return nil
 }
 
 // BatchUpdateVisibility atomically updates multiple documents' visibility and lab_id.

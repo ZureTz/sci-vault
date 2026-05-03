@@ -180,6 +180,7 @@ func (deps *RouterDeps) registerLabRoutes(group *gin.RouterGroup) {
 		labWithID.DELETE("/members/me", deps.LabHandler.LeaveLab)         // Step 2: confirm with email code
 
 		// Owner only operations
+		labWithID.GET("/documents", deps.DocumentHandler.ListLabDocuments)
 		labWithID.PATCH("", deps.LabHandler.UpdateLabInfo)
 		labWithID.DELETE("/members/:user_id", deps.LabHandler.KickMember)
 		labWithID.POST("/transfer", deps.LabHandler.TransferOwnership)

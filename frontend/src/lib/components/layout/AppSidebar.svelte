@@ -51,12 +51,16 @@
 	let selectedLabId = $state<number | null>(getActiveLab()?.id ?? null);
 	let selectedLab = $derived(myLabs.find((l) => l.id === selectedLabId) ?? null);
 
-	// Lab / workspace-level items
-	const topNavItems = [
+	// Lab / workspace-level items. Lab Documents is owner-only and slots in
+	// reactively when the active lab's role is 'owner'.
+	let topNavItems = $derived([
 		{ title: 'sidebar.lab_dashboard', url: '/' as const, icon: FlaskConical },
 		{ title: 'sidebar.lab_members', url: '/members' as const, icon: Users },
+		...(selectedLab?.role === 'owner'
+			? [{ title: 'sidebar.lab_documents', url: '/lab-documents' as const, icon: FileText }]
+			: []),
 		{ title: 'sidebar.lab_settings', url: '/lab-settings' as const, icon: Settings }
-	];
+	]);
 
 	// Personal items
 	let bottomNavItems = $derived([

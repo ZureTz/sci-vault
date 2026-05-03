@@ -106,6 +106,29 @@ func (s *DocumentService) canAccessDocument(ctx context.Context, userID uint, do
 	return false, nil
 }
 
+// canManageDocument reports whether userID is allowed to mutate doc
+// (edit metadata, restart enrichment, delete). Two paths grant authority:
+// being the uploader, or being the OWNER of the lab the doc is shared into.
+// Sits alongside canAccessDocument — same shape, but for write authority.
+func (s *DocumentService) canManageDocument(ctx context.Context, userID uint, doc *model.Document) (bool, error) {
+	if doc.UploadedByUserID == userID {
+		return true, nil
+	}
+	if doc.Visibility == model.DocVisibilityLab && doc.LabID != nil {
+		member, err := s.labRepo.FindMember(ctx, *doc.LabID, userID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return false, nil
+			}
+			return false, err
+		}
+		if member.Role == model.LabRoleOwner {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // resolveVisibility validates a visibility/labID pair and returns the canonical values to persist.
 // If visibility is "lab", labID must be provided AND the user must be a member of that lab.
 // If visibility is "private", labID is forced to nil.
@@ -460,7 +483,9 @@ func (s *DocumentService) RestartEnrichment(ctx context.Context, userID, docID u
 	if err != nil {
 		return app_error.ErrDocumentNotFound
 	}
-	if doc.UploadedByUserID != userID {
+	if ok, err := s.canManageDocument(ctx, userID, &doc); err != nil {
+		return fmt.Errorf("failed to check document manage permission: %w", err)
+	} else if !ok {
 		return app_error.ErrNotDocumentOwner
 	}
 
@@ -505,6 +530,54 @@ func (s *DocumentService) ListMyDocuments(ctx context.Context, userID uint, quer
 	docs, total, err := s.repo.FindByUserID(ctx, userID, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list documents: %w", err)
+	}
+
+	items := make([]dto.DocumentListItem, 0, len(docs))
+	for i := range docs {
+		items = append(items, toDocumentListItem(&docs[i]))
+	}
+
+	return &dto.ListMyDocumentsResponse{
+		Documents: items,
+		Total:     total,
+		Page:      page,
+		PageSize:  pageSize,
+	}, nil
+}
+
+// ListLabDocuments lists every lab-visible document in a lab, regardless of
+// uploader. Owner-only: members see ErrNotOwner, non-members see ErrNotMember.
+func (s *DocumentService) ListLabDocuments(ctx context.Context, requesterID, labID uint, query dto.ListLabDocumentsQuery) (*dto.ListMyDocumentsResponse, error) {
+	member, err := s.labRepo.FindMember(ctx, labID, requesterID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, app_error.ErrNotMember
+		}
+		return nil, fmt.Errorf("failed to load lab membership: %w", err)
+	}
+	if member.Role != model.LabRoleOwner {
+		return nil, app_error.ErrNotOwner
+	}
+
+	page := query.Page
+	if page == 0 {
+		page = 1
+	}
+	pageSize := query.PageSize
+	if pageSize == 0 {
+		pageSize = 20
+	}
+	filter := repo.ListLabDocumentsFilter{
+		Search:    strings.TrimSpace(query.Search),
+		Status:    query.Status,
+		SortBy:    query.SortBy,
+		SortOrder: query.SortOrder,
+		Offset:    (page - 1) * pageSize,
+		Limit:     pageSize,
+	}
+	docs, total, err := s.repo.FindByLabID(ctx, labID, filter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list lab documents: %w", err)
 	}
 
 	items := make([]dto.DocumentListItem, 0, len(docs))
@@ -570,34 +643,54 @@ func (s *DocumentService) BatchUpdateVisibility(ctx context.Context, userID uint
 	return updated, nil
 }
 
-// UpdateMetadata patches user-editable metadata on a document the caller owns.
+// UpdateMetadata patches user-editable metadata on a document the caller can manage
+// (the uploader, or — for lab-visible docs — the owner of the lab).
 // Only non-nil fields on the request are applied; a nil field means "leave as-is".
 // The three fields are nullable columns, so clients can clear them by sending
 // an explicit empty string / zero — callers send `null` via JSON to mean "no change".
 func (s *DocumentService) UpdateMetadata(ctx context.Context, userID, docID uint, req dto.UpdateDocumentMetadataRequest) error {
+	doc, err := s.repo.FindByID(ctx, docID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return app_error.ErrDocumentNotFound
+		}
+		return err
+	}
+	if ok, err := s.canManageDocument(ctx, userID, &doc); err != nil {
+		return fmt.Errorf("failed to check document manage permission: %w", err)
+	} else if !ok {
+		return app_error.ErrNotDocumentOwner
+	}
+
 	patch := repo.DocumentMetadataPatch{
 		Title: req.Title,
 		Year:  req.Year,
 		DOI:   req.DOI,
 	}
-	if err := s.repo.UpdateMetadata(ctx, docID, userID, patch); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return app_error.ErrNotDocumentOwner
-		}
+	if err := s.repo.UpdateMetadata(ctx, docID, patch); err != nil {
 		return err
 	}
 	return nil
 }
 
-// DeleteDocument soft-deletes a document owned by the caller and best-effort
-// removes the S3 object. Dashboard stats are invalidated so the breakdown
-// refreshes.
+// DeleteDocument soft-deletes a document the caller can manage (uploader or
+// lab owner) and best-effort removes the S3 object. Dashboard stats are
+// invalidated so the breakdown refreshes.
 func (s *DocumentService) DeleteDocument(ctx context.Context, userID, docID uint) error {
-	doc, err := s.repo.DeleteByID(ctx, docID, userID)
+	doc, err := s.repo.FindByID(ctx, docID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return app_error.ErrNotDocumentOwner
+			return app_error.ErrDocumentNotFound
 		}
+		return err
+	}
+	if ok, err := s.canManageDocument(ctx, userID, &doc); err != nil {
+		return fmt.Errorf("failed to check document manage permission: %w", err)
+	} else if !ok {
+		return app_error.ErrNotDocumentOwner
+	}
+
+	if err := s.repo.DeleteByID(ctx, docID); err != nil {
 		return fmt.Errorf("failed to delete document: %w", err)
 	}
 
@@ -609,8 +702,9 @@ func (s *DocumentService) DeleteDocument(ctx context.Context, userID, docID uint
 	if _, err := s.cacheConn.Del(ctx, enrichStatusKey(docID)); err != nil {
 		slog.Warn("Failed to clear enrich status cache", "docID", docID, "err", err)
 	}
-	if _, err := s.cacheConn.Del(ctx, dashboardStatsKey(userID)); err != nil {
-		slog.Warn("Failed to invalidate dashboard stats cache", "userID", userID, "err", err)
+	// Invalidate dashboard stats for the original uploader (their breakdown changed).
+	if _, err := s.cacheConn.Del(ctx, dashboardStatsKey(doc.UploadedByUserID)); err != nil {
+		slog.Warn("Failed to invalidate dashboard stats cache", "userID", doc.UploadedByUserID, "err", err)
 	}
 	return nil
 }
@@ -667,15 +761,24 @@ func toDocumentListItem(doc *model.Document) dto.DocumentListItem {
 		name := doc.Lab.Name
 		labName = &name
 	}
+	// UploadedBy is only preloaded for the lab-list endpoint; the personal
+	// list endpoint omits it because every row is the caller's own upload.
+	var uploaderName *string
+	if doc.UploadedBy.ID != 0 {
+		name := doc.UploadedBy.Username
+		uploaderName = &name
+	}
 	return dto.DocumentListItem{
-		ID:               doc.ID,
-		Title:            doc.Title,
-		OriginalFileName: doc.OriginalFileName,
-		FileSize:         doc.FileSize,
-		EnrichStatus:     doc.EnrichStatus,
-		Visibility:       doc.Visibility,
-		LabID:            doc.LabID,
-		LabName:          labName,
-		CreatedAt:        doc.CreatedAt,
+		ID:                 doc.ID,
+		Title:              doc.Title,
+		OriginalFileName:   doc.OriginalFileName,
+		FileSize:           doc.FileSize,
+		EnrichStatus:       doc.EnrichStatus,
+		Visibility:         doc.Visibility,
+		LabID:              doc.LabID,
+		LabName:            labName,
+		UploadedByUserID:   doc.UploadedByUserID,
+		UploadedByUsername: uploaderName,
+		CreatedAt:          doc.CreatedAt,
 	}
 }

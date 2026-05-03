@@ -33,6 +33,7 @@
 		"search": "Search",
 		"recommendations": "Recommendations",
 		"lab_members": "Members",
+		"lab_documents": "Lab Documents",
 		"lab_settings": "Lab Settings",
 		"account": "Account",
 		"settings": "Settings",
@@ -56,6 +57,7 @@
 		"recommendations": "Recommendations",
 		"history": "Activity History",
 		"lab_members": "Members",
+		"lab_documents": "Lab Documents",
 		"lab_settings": "Lab Settings",
 		"toggle_menu": "Toggle menu",
 		"navigate_to": "Navigate to",
@@ -266,6 +268,78 @@
 				"info": "{selected} of {total} row(s) selected."
 			}
 		},
+		"lab": {
+			"title": "Lab Documents",
+			"description": "Manage all documents shared in this lab. As the owner, you can edit metadata, restart enrichment, and delete any document.",
+			"no_lab": "No lab selected",
+			"no_lab_hint": "Select a lab from the sidebar to manage its documents.",
+			"not_owner": "Owner-only area",
+			"not_owner_hint": "Only the owner of this lab can manage its documents.",
+			"empty": "This lab has no shared documents yet.",
+			"empty_hint": "Documents shared with the lab will appear here.",
+			"empty_filtered": "No documents match your filters.",
+			"empty_filtered_hint": "Try adjusting your search or filters.",
+			"search_placeholder": "Search by title or filename...",
+			"columns": "Columns",
+			"filter": {
+				"status_all": "All statuses",
+				"reset": "Reset"
+			},
+			"table": {
+				"title": "Title",
+				"file_name": "File Name",
+				"file_size": "Size",
+				"status": "Status",
+				"uploader": "Uploaded By",
+				"created_at": "Uploaded",
+				"actions": "Actions"
+			},
+			"actions": {
+				"open_menu": "Open menu",
+				"view": "View",
+				"edit": "Edit metadata",
+				"restart": "Restart enrichment",
+				"delete": "Delete"
+			},
+			"edit_dialog": {
+				"title": "Edit metadata",
+				"description": "Update the title, publication year and DOI for this document.",
+				"title_label": "Title",
+				"year_label": "Year",
+				"doi_label": "DOI",
+				"save": "Save",
+				"success": "Document updated",
+				"failed": "Failed to update document",
+				"year_invalid": "Year must be a 4-digit number"
+			},
+			"delete": {
+				"title": "Delete document?",
+				"description": "\"{name}\" will be permanently removed from this lab. This action cannot be undone.",
+				"confirm": "Delete",
+				"success": "Document deleted",
+				"failed": "Failed to delete document"
+			},
+			"status": {
+				"not_started": "Pending",
+				"pending": "Queued",
+				"processing": "Enriching...",
+				"done": "Done",
+				"failed": "Failed"
+			},
+			"refresh": "Refresh",
+			"loading": "Loading documents...",
+			"error": "Failed to load lab documents",
+			"unknown_uploader": "Unknown",
+			"pagination": {
+				"prev": "Previous page",
+				"next": "Next page",
+				"first": "First page",
+				"last": "Last page",
+				"per_page": "Rows per page",
+				"page_info": "Page {current} of {total}",
+				"info": "{total} row(s) total."
+			}
+		},
 		"upload": {
 			"title": "Upload Document",
 			"description": "Upload a scientific paper or document to your vault.",
@@ -450,6 +524,11 @@
 		},
 		"list_documents": {
 			"failed": "Failed to load documents, please try again"
+		},
+		"list_lab_documents": {
+			"forbidden": "Only the lab owner can view this page",
+			"not_member": "You are not a member of this lab",
+			"failed": "Failed to load lab documents, please try again"
 		},
 		"create_lab": {
 			"failed": "Failed to create lab, please try again"
