@@ -266,6 +266,9 @@
 		// Reset stale per-doc state so skeletons show during the refetch.
 		similarDocs = [];
 		similarLoaded = false;
+		translatedSummary = '';
+		showOriginal = false;
+		isTranslating = false;
 		loadDocument();
 		// Note: `id` is read above purely to register the dependency.
 		void id;
