@@ -12,6 +12,7 @@ import (
 type SearchRepository interface {
 	UpsertHistory(ctx context.Context, userID uint, labID *uint, query string, resultCount int) error
 	FindHistoryByUserID(ctx context.Context, userID uint, limit int) ([]model.SearchHistory, error)
+	FindHistoryByUserAndLab(ctx context.Context, userID uint, labID *uint, limit int) ([]model.SearchHistory, error)
 	DeleteHistoryByUserID(ctx context.Context, userID uint) (int64, error)
 }
 
@@ -60,6 +61,24 @@ func (r *searchRepo) FindHistoryByUserID(ctx context.Context, userID uint, limit
 	err := r.db.WithContext(ctx).
 		Where("user_id = ?", userID).
 		Order("updated_at DESC, id DESC").
+		Limit(limit).
+		Find(&items).Error
+	return items, err
+}
+
+// FindHistoryByUserAndLab scopes results to a single lab context: labID == nil
+// returns rows recorded for private searches (lab_id IS NULL); a non-nil pointer
+// returns rows for that lab only. Used by the search page so the autocomplete
+// only surfaces queries from the user's current lab context.
+func (r *searchRepo) FindHistoryByUserAndLab(ctx context.Context, userID uint, labID *uint, limit int) ([]model.SearchHistory, error) {
+	var items []model.SearchHistory
+	tx := r.db.WithContext(ctx).Where("user_id = ?", userID)
+	if labID == nil {
+		tx = tx.Where("lab_id IS NULL")
+	} else {
+		tx = tx.Where("lab_id = ?", *labID)
+	}
+	err := tx.Order("updated_at DESC, id DESC").
 		Limit(limit).
 		Find(&items).Error
 	return items, err

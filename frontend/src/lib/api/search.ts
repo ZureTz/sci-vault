@@ -48,9 +48,9 @@ const searchApi = {
 		}) as unknown as Promise<SearchDocumentsResponse>;
 	},
 
-	listHistory(limit?: number): Promise<ListSearchHistoryResponse> {
+	listHistory(labId?: number, limit?: number): Promise<ListSearchHistoryResponse> {
 		return request.get<ListSearchHistoryResponse>('/search/history', {
-			params: { limit: limit || undefined }
+			params: { lab_id: labId || undefined, limit: limit || undefined }
 		}) as unknown as Promise<ListSearchHistoryResponse>;
 	},
 

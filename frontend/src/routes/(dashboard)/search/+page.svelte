@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 	import { Search, FileText, Tag, Users, LoaderCircle, Info, Clock, Trash2 } from 'lucide-svelte';
@@ -36,14 +35,18 @@
 	let inputEl = $state<HTMLInputElement | null>(null);
 
 	let activeLab = $derived(getActiveLab());
+	let activeLabId = $derived(activeLab?.id ?? null);
 
-	onMount(() => {
-		void loadHistory();
+	// History is scoped to the user's current lab context, so refetch whenever
+	// the active lab changes (depend on the primitive ID, not the object).
+	$effect(() => {
+		const id = activeLabId;
+		void loadHistory(id ?? undefined);
 	});
 
-	async function loadHistory() {
+	async function loadHistory(labId?: number) {
 		try {
-			const resp = await searchApi.listHistory(10);
+			const resp = await searchApi.listHistory(labId, 10);
 			setSearchHistory(resp.items ?? []);
 		} catch (err) {
 			showApiErrors(err, $_('search.history_empty'));
@@ -59,7 +62,7 @@
 		try {
 			const resp = await searchApi.searchDocuments(trimmed, activeLab?.id ?? undefined);
 			setSearchState(trimmed, resp.results ?? [], true);
-			void loadHistory();
+			void loadHistory(activeLab?.id ?? undefined);
 		} catch (err) {
 			showApiErrors(err, $_('search.no_results'));
 			setSearchState(trimmed, [], true);
