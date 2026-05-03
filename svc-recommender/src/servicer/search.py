@@ -4,10 +4,11 @@ import logging
 
 import grpc
 
-from cache.search import SearchCache
-from genai.search import SearchGenAI
+from genai.embedding_resolver import QueryEmbeddingResolver
+from genai.query_embedder import TASK_RETRIEVAL_QUERY
 from pb.recommender.v1 import recommender_pb2
-from repository.search import SearchRepository, SearchHit
+from repository.search import SearchRepository
+from repository.types import ScoredDocument
 
 log = logging.getLogger(__name__)
 
@@ -26,12 +27,10 @@ class SearchServicer:
     def __init__(
         self,
         search_repo: SearchRepository,
-        genai: SearchGenAI,
-        cache: SearchCache,
+        query_embedding_resolver: QueryEmbeddingResolver,
     ) -> None:
         self._repo = search_repo
-        self._genai = genai
-        self._cache = cache
+        self._resolver = query_embedding_resolver
 
     def SemanticSearch(
         self,
@@ -51,13 +50,11 @@ class SearchServicer:
             query[:80],
         )
 
-        # Phase 1: vector similarity search
-        query_embedding = self._cache.get_embedding(query)
-        if query_embedding is None:
-            query_embedding = self._genai.embed_query(query)
-            self._cache.set_embedding(query, query_embedding)
-        else:
-            log.info("SemanticSearch: query embedding cache hit")
+        # Phase 1: vector similarity search.
+        # Typed queries go in as RETRIEVAL_QUERY so they match the corpus's
+        # asymmetric RETRIEVAL_DOCUMENT space. Resolver chain: Redis →
+        # Postgres → Gemini (and persists on miss).
+        query_embedding = self._resolver.resolve(query, TASK_RETRIEVAL_QUERY)
         vector_hits = self._repo.vector_search(
             query_embedding=query_embedding,
             user_id=request.user_id,
@@ -71,7 +68,7 @@ class SearchServicer:
         )
 
         # Phase 2: keyword fallback if vector results are sparse
-        keyword_hits: list[SearchHit] = []
+        keyword_hits: list[ScoredDocument] = []
         remaining = limit - len(vector_hits)
         if remaining > 0:
             seen_ids = [h.doc_id for h in vector_hits]
@@ -87,11 +84,11 @@ class SearchServicer:
                 len(keyword_hits),
             )
 
-        def _to_result(
-            h: SearchHit,
+        def _to_scored_document(
+            h: ScoredDocument,
             match_type: recommender_pb2.MatchType,
-        ) -> recommender_pb2.SearchResult:
-            return recommender_pb2.SearchResult(
+        ) -> recommender_pb2.ScoredDocument:
+            return recommender_pb2.ScoredDocument(
                 doc_id=h.doc_id,
                 title=h.title,
                 original_file_name=h.original_file_name,
@@ -103,8 +100,12 @@ class SearchServicer:
             )
 
         results = [
-            _to_result(h, recommender_pb2.MATCH_TYPE_SEMANTIC) for h in vector_hits
-        ] + [_to_result(h, recommender_pb2.MATCH_TYPE_KEYWORD) for h in keyword_hits]
+            _to_scored_document(h, recommender_pb2.MATCH_TYPE_SEMANTIC)
+            for h in vector_hits
+        ] + [
+            _to_scored_document(h, recommender_pb2.MATCH_TYPE_KEYWORD)
+            for h in keyword_hits
+        ]
 
         log.info("SemanticSearch: returning %d total results", len(results))
         return recommender_pb2.SemanticSearchResponse(results=results)

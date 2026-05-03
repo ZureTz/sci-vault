@@ -7,10 +7,12 @@
 		Compass,
 		FileText,
 		FlaskConical,
+		History,
 		LogOut,
 		Plus,
 		Search,
 		Settings,
+		Sparkles,
 		Upload,
 		User,
 		Users
@@ -18,7 +20,7 @@
 	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 
-	import { goto } from '$app/navigation';
+	import { afterNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { Collapsible } from 'bits-ui';
@@ -28,7 +30,8 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import userApi from '$lib/api/user';
 	import labApi, { type LabListItem } from '$lib/api/lab';
-	import { getLabsVersion, getActiveLab, setActiveLab } from '$lib/stores/lab.svelte';
+	import { getLabsVersion, getActiveLab, setActiveLab, setMyLabs } from '$lib/stores/lab.svelte';
+	import { getDocDetailOrigin, setDocDetailOrigin } from '$lib/stores/nav.svelte';
 	import { getUser, getAvatarUrl, setAvatarUrl, clearUser } from '$lib/stores/user.svelte';
 
 	let { ref = $bindable(null), ...restProps } = $props();
@@ -66,6 +69,7 @@
 				{ title: 'sidebar.upload', url: '/documents/upload' as const, icon: Upload }
 			]
 		},
+		{ title: 'sidebar.history', url: '/mine/history' as const, icon: History },
 		{
 			title: 'sidebar.account',
 			icon: User,
@@ -76,9 +80,38 @@
 		}
 	]);
 
-	let isDocGroupActive = $derived(page.route.id?.startsWith('/(dashboard)/documents') ?? false);
+	// Doc detail (/documents/[id]) is reachable from many places — My Documents,
+	// Search, History, similar-doc cards. Tracking the *origin* lets the sidebar
+	// keep the originating section highlighted instead of always falling under
+	// "Documents". afterNavigate captures the source on entry, preserves it
+	// while hopping between detail pages, and clears it on any other navigation.
+	const DOC_DETAIL_ROUTE_ID = '/(dashboard)/documents/[id]';
+
+	afterNavigate((nav) => {
+		const toId = nav.to?.route.id ?? null;
+		const fromId = nav.from?.route.id ?? null;
+		if (toId === DOC_DETAIL_ROUTE_ID) {
+			if (fromId && fromId !== DOC_DETAIL_ROUTE_ID && nav.from) {
+				setDocDetailOrigin(nav.from.url.pathname);
+			}
+		} else {
+			setDocDetailOrigin(null);
+		}
+	});
+
+	// "Effective" pathname for sidebar-active checks: when on a doc detail with
+	// a known origin, pretend we're still on that origin page. Falls back to
+	// the real pathname (so deep-linked detail pages still expand the docs
+	// group as a sensible default).
+	let effectivePathname = $derived(
+		page.route.id === DOC_DETAIL_ROUTE_ID
+			? (getDocDetailOrigin() ?? page.url.pathname)
+			: page.url.pathname
+	);
+
+	let isDocGroupActive = $derived(effectivePathname.startsWith('/documents'));
 	let isAccountGroupActive = $derived(
-		page.route.id?.startsWith('/(dashboard)/profile') || page.route.id === '/(dashboard)/settings'
+		effectivePathname.startsWith('/profile') || effectivePathname === '/settings'
 	);
 
 	const groupActiveMap: Record<string, boolean> = $derived({
@@ -90,6 +123,9 @@
 		const result = await labApi.getMyLabs().catch(() => null);
 		if (result === null) return;
 		myLabs = result;
+		// Publish to the shared store so other pages can read labs without
+		// each firing their own getMyLabs request.
+		setMyLabs(result);
 		if (selectedLabId !== null && !myLabs.some((l) => l.id === selectedLabId)) {
 			selectLab(null);
 		}
@@ -258,11 +294,21 @@
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					<Sidebar.MenuItem>
-						<Sidebar.MenuButton isActive={page.url.pathname === resolve('/search')}>
+						<Sidebar.MenuButton isActive={effectivePathname === resolve('/search')}>
 							{#snippet child({ props })}
 								<a href={resolve('/search')} {...props}>
 									<Search />
 									<span>{$_('sidebar.search')}</span>
+								</a>
+							{/snippet}
+						</Sidebar.MenuButton>
+					</Sidebar.MenuItem>
+					<Sidebar.MenuItem>
+						<Sidebar.MenuButton isActive={effectivePathname === resolve('/recommendations')}>
+							{#snippet child({ props })}
+								<a href={resolve('/recommendations')} {...props}>
+									<Sparkles />
+									<span>{$_('sidebar.recommendations')}</span>
 								</a>
 							{/snippet}
 						</Sidebar.MenuButton>
@@ -280,7 +326,7 @@
 				<Sidebar.Menu>
 					{#each topNavItems as item (item.title)}
 						<Sidebar.MenuItem>
-							<Sidebar.MenuButton isActive={page.url.pathname === resolve(item.url)}>
+							<Sidebar.MenuButton isActive={effectivePathname === resolve(item.url)}>
 								{#snippet child({ props })}
 									<a href={resolve(item.url)} {...props}>
 										<item.icon />
@@ -324,9 +370,7 @@
 											{#each item.items as subItem (subItem.title)}
 												<Sidebar.MenuSubItem>
 													<Sidebar.MenuSubButton
-														isActive={page.url.pathname === resolve(subItem.url) ||
-															(subItem.url === '/documents/mine' &&
-																page.route.id === '/(dashboard)/documents/[id]')}
+														isActive={effectivePathname === resolve(subItem.url)}
 													>
 														{#snippet child({ props })}
 															<a href={resolve(subItem.url)} {...props}>
@@ -343,7 +387,7 @@
 							</Collapsible.Root>
 						{:else}
 							<Sidebar.MenuItem>
-								<Sidebar.MenuButton isActive={page.url.pathname === resolve(item.url)}>
+								<Sidebar.MenuButton isActive={effectivePathname === resolve(item.url)}>
 									{#snippet child({ props })}
 										<a href={resolve(item.url)} {...props}>
 											<item.icon />

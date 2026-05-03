@@ -31,12 +31,14 @@
 		"members": "members",
 		"ai_discovery": "AI Discovery",
 		"search": "Search",
+		"recommendations": "Recommendations",
 		"lab_members": "Members",
 		"lab_settings": "Lab Settings",
 		"account": "Account",
 		"settings": "Settings",
 		"profile": "Profile",
-		"logout": "Log out"
+		"logout": "Log out",
+		"history": "Activity History"
 	},
 	"breadcrumb": {
 		"lab_dashboard": "Lab Dashboard",
@@ -51,6 +53,8 @@
 		"create_lab": "Create Lab",
 		"join_lab": "Join Lab",
 		"search": "Search",
+		"recommendations": "Recommendations",
+		"history": "Activity History",
 		"lab_members": "Members",
 		"lab_settings": "Lab Settings",
 		"toggle_menu": "Toggle menu",
@@ -88,6 +92,26 @@
 			"title": "Quick Actions",
 			"upload": "Upload Document",
 			"my_documents": "My Documents"
+		}
+	},
+	"history": {
+		"title": "Activity History",
+		"description": "Your recent views and likes across the vault.",
+		"error": "Failed to load history",
+		"tab": {
+			"views": "Recently Viewed",
+			"likes": "Liked"
+		},
+		"empty": {
+			"views": "No documents viewed yet.",
+			"likes": "No documents liked yet."
+		},
+		"last_viewed_at": "Last viewed {time}",
+		"liked_at": "Liked {time}",
+		"pagination": {
+			"summary": "Page {page} of {total} · {count} item(s)",
+			"prev": "Previous",
+			"next": "Next"
 		}
 	},
 	"settings": {
@@ -139,6 +163,21 @@
 				"lab_required": "Please select a lab",
 				"success": "Visibility updated",
 				"failed": "Failed to update visibility"
+			},
+			"similar": {
+				"title": "Similar Documents",
+				"description": "Recommendations based on this document's content embedding.",
+				"empty": "No similar documents found in your library.",
+				"unavailable": "Recommendations will appear once enrichment completes."
+			},
+			"engagement": {
+				"views": "views",
+				"likes": "likes"
+			},
+			"like": {
+				"like": "Like",
+				"liked": "Liked",
+				"failed": "Failed to update like"
 			}
 		},
 		"mine": {
@@ -292,6 +331,18 @@
 		"history_cleared": "Search history cleared",
 		"history_just_now": "just now"
 	},
+	"recommendations": {
+		"title": "Recommendations",
+		"subtitle": "Personalized for you, based on what you've liked, viewed, and searched.",
+		"refresh": "Refresh",
+		"empty": {
+			"title": "Nothing to recommend yet",
+			"description": "Like or view a few documents — and try a search or two — and we'll start tailoring suggestions for you here."
+		},
+		"error": {
+			"failed": "Failed to load recommendations"
+		}
+	},
 	"service": {
 		"internal": {
 			"network": "Unable to connect to the server, please check your network or try again later",
@@ -381,6 +432,21 @@
 		"search_documents": {
 			"not_lab_member": "You are not a member of the selected lab",
 			"failed": "Failed to search documents, please try again"
+		},
+		"like_document": {
+			"not_found": "Document not found",
+			"failed": "Failed to update like, please try again"
+		},
+		"history": {
+			"list_failed": "Failed to load history"
+		},
+		"recommend_similar": {
+			"not_lab_member": "You are not a member of the selected lab",
+			"failed": "Failed to load similar documents"
+		},
+		"recommend_for_user": {
+			"not_lab_member": "You are not a member of the selected lab",
+			"failed": "Failed to load recommendations"
 		},
 		"list_documents": {
 			"failed": "Failed to load documents, please try again"

@@ -32,8 +32,6 @@ type DocumentRepository interface {
 	FindExistingByHash(ctx context.Context, visibility string, userID uint, labID *uint, sha256 string) (model.Document, error)
 	FindExistingHashesInSet(ctx context.Context, visibility string, userID uint, labID *uint, hashes []string) ([]string, error)
 	FindStaleNotStarted(ctx context.Context, olderThan time.Time, limit int) ([]model.Document, error)
-	IncrementViewCount(ctx context.Context, id uint) error
-	IncrementLikeCount(ctx context.Context, id uint) error
 	UpdateVisibility(ctx context.Context, docID, ownerID uint, visibility string, labID *uint) error
 	BatchUpdateVisibility(ctx context.Context, docIDs []uint, ownerID uint, visibility string, labID *uint) (int64, error)
 	UpdateMetadata(ctx context.Context, docID, ownerID uint, patch DocumentMetadataPatch) error
@@ -197,16 +195,6 @@ func (r *documentRepo) FindByUserIDAndStatus(ctx context.Context, userID uint, s
 		return nil, 0, err
 	}
 	return docs, count, nil
-}
-
-func (r *documentRepo) IncrementViewCount(ctx context.Context, id uint) error {
-	_, err := gorm.G[model.Document](r.db).Where("id = ?", id).Update(ctx, "view_count", gorm.Expr("view_count + 1"))
-	return err
-}
-
-func (r *documentRepo) IncrementLikeCount(ctx context.Context, id uint) error {
-	_, err := gorm.G[model.Document](r.db).Where("id = ?", id).Update(ctx, "like_count", gorm.Expr("like_count + 1"))
-	return err
 }
 
 // UpdateVisibility updates a single document's visibility and lab_id.

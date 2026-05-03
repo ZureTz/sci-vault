@@ -149,11 +149,7 @@ func (h *DocumentHandler) UpdateVisibility(c *gin.Context) {
 		return
 	}
 
-	var uri dto.DocumentIDUri
-	if err := c.ShouldBindUri(&uri); err != nil {
-		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
-		return
-	}
+	docID := c.GetUint("doc_id")
 
 	var req dto.UpdateVisibilityRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -161,7 +157,7 @@ func (h *DocumentHandler) UpdateVisibility(c *gin.Context) {
 		return
 	}
 
-	if err := h.documentService.UpdateVisibility(c.Request.Context(), uri.DocID, userID, req); err != nil {
+	if err := h.documentService.UpdateVisibility(c.Request.Context(), docID, userID, req); err != nil {
 		switch {
 		case errors.Is(err, app_error.ErrLabRequiredForLabVis):
 			c.JSON(http.StatusBadRequest, utils.ErrorResponse(fmt.Errorf("service.update_visibility.lab_required")))
@@ -220,13 +216,9 @@ func (h *DocumentHandler) GetEnrichStatus(c *gin.Context) {
 		return
 	}
 
-	var uri dto.DocumentIDUri
-	if err := c.ShouldBindUri(&uri); err != nil {
-		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
-		return
-	}
+	docID := c.GetUint("doc_id")
 
-	status, err := h.documentService.GetEnrichStatus(c.Request.Context(), userID, uri.DocID)
+	status, err := h.documentService.GetEnrichStatus(c.Request.Context(), userID, docID)
 	if err != nil {
 		if errors.Is(err, app_error.ErrDocumentNotFound) {
 			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.get_enrich_status.not_found")))
@@ -236,7 +228,7 @@ func (h *DocumentHandler) GetEnrichStatus(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.get_enrich_status.failed")))
 		return
 	}
-	c.JSON(http.StatusOK, dto.EnrichStatusResponse{DocID: uri.DocID, Status: status})
+	c.JSON(http.StatusOK, dto.EnrichStatusResponse{DocID: docID, Status: status})
 }
 
 func (h *DocumentHandler) ListMyDocuments(c *gin.Context) {
@@ -285,13 +277,9 @@ func (h *DocumentHandler) GetDocument(c *gin.Context) {
 		return
 	}
 
-	var uri dto.DocumentIDUri
-	if err := c.ShouldBindUri(&uri); err != nil {
-		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
-		return
-	}
+	docID := c.GetUint("doc_id")
 
-	resp, err := h.documentService.GetDocument(c.Request.Context(), userID, uri.DocID)
+	resp, err := h.documentService.GetDocument(c.Request.Context(), userID, docID)
 	if err != nil {
 		if errors.Is(err, app_error.ErrDocumentNotFound) {
 			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.get_document.not_found")))
@@ -311,13 +299,9 @@ func (h *DocumentHandler) RestartEnrichment(c *gin.Context) {
 		return
 	}
 
-	var uri dto.DocumentIDUri
-	if err := c.ShouldBindUri(&uri); err != nil {
-		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
-		return
-	}
+	docID := c.GetUint("doc_id")
 
-	err := h.documentService.RestartEnrichment(c.Request.Context(), userID, uri.DocID)
+	err := h.documentService.RestartEnrichment(c.Request.Context(), userID, docID)
 	if err != nil {
 		if errors.Is(err, app_error.ErrDocumentNotFound) {
 			c.JSON(http.StatusNotFound, utils.ErrorResponse(fmt.Errorf("service.restart_enrichment.not_found")))
@@ -341,11 +325,7 @@ func (h *DocumentHandler) UpdateMetadata(c *gin.Context) {
 		return
 	}
 
-	var uri dto.DocumentIDUri
-	if err := c.ShouldBindUri(&uri); err != nil {
-		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
-		return
-	}
+	docID := c.GetUint("doc_id")
 
 	var req dto.UpdateDocumentMetadataRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -353,7 +333,7 @@ func (h *DocumentHandler) UpdateMetadata(c *gin.Context) {
 		return
 	}
 
-	if err := h.documentService.UpdateMetadata(c.Request.Context(), userID, uri.DocID, req); err != nil {
+	if err := h.documentService.UpdateMetadata(c.Request.Context(), userID, docID, req); err != nil {
 		if errors.Is(err, app_error.ErrNotDocumentOwner) {
 			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.update_document.forbidden")))
 			return
@@ -372,13 +352,9 @@ func (h *DocumentHandler) DeleteDocument(c *gin.Context) {
 		return
 	}
 
-	var uri dto.DocumentIDUri
-	if err := c.ShouldBindUri(&uri); err != nil {
-		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
-		return
-	}
+	docID := c.GetUint("doc_id")
 
-	if err := h.documentService.DeleteDocument(c.Request.Context(), userID, uri.DocID); err != nil {
+	if err := h.documentService.DeleteDocument(c.Request.Context(), userID, docID); err != nil {
 		if errors.Is(err, app_error.ErrNotDocumentOwner) {
 			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.delete_document.forbidden")))
 			return
