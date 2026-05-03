@@ -19,7 +19,7 @@ client = GenAI(cfg)
 
 # Test embedding client
 print("\n--- embedding client ---")
-embed_resp = client.embedding_client.models.embed_content(
+embed_resp = client.doc_embedding_client.models.embed_content(
     model="gemini-embedding-001",
     contents="Hello, world!",
 )

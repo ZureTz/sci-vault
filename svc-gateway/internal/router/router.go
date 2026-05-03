@@ -17,14 +17,16 @@ import (
 
 type RouterDeps struct {
 	// Handlers
-	HealthHandler    *handler.HealthHandler
-	UserHandler      *handler.UserHandler
-	AuthHandler      *handler.AuthHandler
-	DocumentHandler  *handler.DocumentHandler
-	SearchHandler    *handler.SearchHandler
-	StatsHandler     *handler.StatsHandler
-	TranslateHandler *handler.TranslateHandler
-	LabHandler       *handler.LabHandler
+	HealthHandler              *handler.HealthHandler
+	UserHandler                *handler.UserHandler
+	AuthHandler                *handler.AuthHandler
+	DocumentHandler            *handler.DocumentHandler
+	DocumentInteractionHandler *handler.DocumentInteractionHandler
+	SearchHandler              *handler.SearchHandler
+	StatsHandler               *handler.StatsHandler
+	TranslateHandler           *handler.TranslateHandler
+	LabHandler                 *handler.LabHandler
+	RecommendHandler           *handler.RecommendHandler
 
 	// Cache connector
 	CacheConn *cache.CacheConnector
@@ -57,6 +59,8 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 	{
 		deps.registerAuthenticatedRoutes(protected.Group("/auth"))
 		deps.registerDocumentRoutes(protected.Group("/docs"))
+		deps.registerHistoryRoutes(protected.Group("/mine/history"))
+		deps.registerRecommendationRoutes(protected.Group("/mine/recommendations"))
 		deps.registerSearchRoutes(protected.Group("/search"))
 		deps.registerStatsRoutes(protected.Group("/stats"))
 		deps.registerTranslateRoutes(protected.Group("/translate"))
@@ -115,12 +119,32 @@ func (deps *RouterDeps) registerDocumentRoutes(group *gin.RouterGroup) {
 	group.GET("/mine", deps.DocumentHandler.ListMyDocuments)
 	group.GET("/pending", deps.DocumentHandler.ListPendingDocuments)
 	group.POST("/visibility/batch", deps.DocumentHandler.BatchUpdateVisibility)
-	group.GET("/:doc_id", deps.DocumentHandler.GetDocument)
-	group.GET("/:doc_id/enrich_status", deps.DocumentHandler.GetEnrichStatus)
-	group.POST("/:doc_id/restart_enrichment", deps.DocumentHandler.RestartEnrichment)
-	group.PATCH("/:doc_id/visibility", deps.DocumentHandler.UpdateVisibility)
-	group.PATCH("/:doc_id", deps.DocumentHandler.UpdateMetadata)
-	group.DELETE("/:doc_id", deps.DocumentHandler.DeleteDocument)
+
+	// ExtractDocID parses and validates the :doc_id param once for every
+	// document-scoped route below, so handlers just read c.GetUint("doc_id").
+	docWithID := group.Group("/:doc_id").Use(middleware.ExtractDocID())
+	{
+		docWithID.GET("", deps.DocumentHandler.GetDocument)
+		docWithID.GET("/enrich_status", deps.DocumentHandler.GetEnrichStatus)
+		docWithID.POST("/restart_enrichment", deps.DocumentHandler.RestartEnrichment)
+		docWithID.PATCH("/visibility", deps.DocumentHandler.UpdateVisibility)
+		docWithID.PATCH("", deps.DocumentHandler.UpdateMetadata)
+		docWithID.DELETE("", deps.DocumentHandler.DeleteDocument)
+		docWithID.GET("/similar", deps.RecommendHandler.RecommendSimilar)
+		docWithID.POST("/like", deps.DocumentInteractionHandler.Like)
+		docWithID.DELETE("/like", deps.DocumentInteractionHandler.Unlike)
+	}
+}
+
+// History routes (/api/v1/mine/history/...)
+func (deps *RouterDeps) registerHistoryRoutes(group *gin.RouterGroup) {
+	group.GET("/views", deps.DocumentInteractionHandler.ListViewHistory)
+	group.GET("/likes", deps.DocumentInteractionHandler.ListLikeHistory)
+}
+
+// Recommendation routes (/api/v1/mine/recommendations/...)
+func (deps *RouterDeps) registerRecommendationRoutes(group *gin.RouterGroup) {
+	group.GET("", deps.RecommendHandler.RecommendForUser)
 }
 
 // Search routes (/api/v1/search/...)

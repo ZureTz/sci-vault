@@ -27,6 +27,14 @@ var (
 	ErrLabRequiredForLabVis   = errors.New("lab_id is required when visibility is 'lab'")
 	ErrSomeDocsNotAccessible  = errors.New("one or more documents are not accessible")
 
+	// Document interactions (view / like).
+	// ErrInteractionDocNotFound is the read-side gate — same security pattern as
+	// ErrDocumentNotFound (returned when the user lacks access OR the doc is gone),
+	// but distinct so handlers/logs can tell interaction-context errors apart.
+	ErrInteractionDocNotFound = errors.New("document not found or not accessible for interaction")
+	ErrLikeAlreadyExists      = errors.New("document is already liked by this user")
+	ErrLikeNotExists          = errors.New("document is not currently liked by this user")
+
 	ErrLabNotFound       = errors.New("lab not found")
 	ErrInvalidInviteCode = errors.New("invalid invite code")
 	ErrAlreadyMember     = errors.New("already a member of this lab")
