@@ -20,6 +20,8 @@ export interface DocumentListItem {
 	visibility: DocumentVisibility;
 	lab_id: number | null;
 	lab_name: string | null;
+	uploaded_by: number;
+	uploaded_by_username?: string | null;
 	created_at: string;
 }
 
@@ -108,6 +110,15 @@ export interface ListMyDocumentsParams {
 	sort_order?: 'asc' | 'desc';
 }
 
+export interface ListLabDocumentsParams {
+	page?: number;
+	page_size?: number;
+	search?: string;
+	status?: 'not_started' | 'pending' | 'processing' | 'done' | 'failed';
+	sort_by?: 'created_at' | 'title' | 'file_size' | 'view_count';
+	sort_order?: 'asc' | 'desc';
+}
+
 const documentApi = {
 	listMyDocuments(params: ListMyDocumentsParams = {}): Promise<ListDocumentsResponse> {
 		const query: Record<string, string | number> = {
@@ -121,6 +132,23 @@ const documentApi = {
 		if (params.sort_by) query.sort_by = params.sort_by;
 		if (params.sort_order) query.sort_order = params.sort_order;
 		return request.get<ListDocumentsResponse>('/docs/mine', {
+			params: query
+		}) as unknown as Promise<ListDocumentsResponse>;
+	},
+
+	listLabDocuments(
+		labId: number,
+		params: ListLabDocumentsParams = {}
+	): Promise<ListDocumentsResponse> {
+		const query: Record<string, string | number> = {
+			page: params.page ?? 1,
+			page_size: params.page_size ?? 20
+		};
+		if (params.search) query.search = params.search;
+		if (params.status) query.status = params.status;
+		if (params.sort_by) query.sort_by = params.sort_by;
+		if (params.sort_order) query.sort_order = params.sort_order;
+		return request.get<ListDocumentsResponse>(`/labs/${labId}/documents`, {
 			params: query
 		}) as unknown as Promise<ListDocumentsResponse>;
 	},

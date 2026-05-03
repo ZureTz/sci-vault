@@ -33,6 +33,7 @@
 		"search": "语义搜索",
 		"recommendations": "为你推荐",
 		"lab_members": "成员管理",
+		"lab_documents": "实验室文献",
 		"lab_settings": "实验室设置",
 		"account": "账户",
 		"settings": "设置",
@@ -56,6 +57,7 @@
 		"recommendations": "为你推荐",
 		"history": "活动记录",
 		"lab_members": "成员管理",
+		"lab_documents": "实验室文献",
 		"lab_settings": "实验室设置",
 		"toggle_menu": "切换菜单",
 		"navigate_to": "跳转到",
@@ -265,6 +267,78 @@
 				"info": "已选择 {selected} / {total} 行"
 			}
 		},
+		"lab": {
+			"title": "实验室文献",
+			"description": "管理本实验室共享的所有文献。作为实验室所有者，您可以编辑元数据、重新处理或删除任意文献。",
+			"no_lab": "未选择实验室",
+			"no_lab_hint": "请从侧边栏选择一个实验室以管理其文献。",
+			"not_owner": "仅所有者可见",
+			"not_owner_hint": "只有实验室所有者可以管理实验室文献。",
+			"empty": "本实验室暂无共享文献。",
+			"empty_hint": "共享至本实验室的文献将显示在此处。",
+			"empty_filtered": "没有文献符合当前筛选条件。",
+			"empty_filtered_hint": "请尝试调整搜索或筛选条件。",
+			"search_placeholder": "按标题或文件名搜索...",
+			"columns": "列",
+			"filter": {
+				"status_all": "全部状态",
+				"reset": "重置"
+			},
+			"table": {
+				"title": "标题",
+				"file_name": "文件名",
+				"file_size": "大小",
+				"status": "状态",
+				"uploader": "上传者",
+				"created_at": "上传时间",
+				"actions": "操作"
+			},
+			"actions": {
+				"open_menu": "打开菜单",
+				"view": "查看",
+				"edit": "编辑元数据",
+				"restart": "重新处理",
+				"delete": "删除"
+			},
+			"edit_dialog": {
+				"title": "编辑元数据",
+				"description": "更新此文献的标题、出版年份和 DOI。",
+				"title_label": "标题",
+				"year_label": "年份",
+				"doi_label": "DOI",
+				"save": "保存",
+				"success": "文献已更新",
+				"failed": "更新文献失败",
+				"year_invalid": "年份必须是 4 位数"
+			},
+			"delete": {
+				"title": "删除文献？",
+				"description": "“{name}”将从本实验室中永久删除，此操作无法撤销。",
+				"confirm": "删除",
+				"success": "文献已删除",
+				"failed": "删除文献失败"
+			},
+			"status": {
+				"not_started": "待处理",
+				"pending": "排队中",
+				"processing": "正在丰富...",
+				"done": "已完成",
+				"failed": "失败"
+			},
+			"refresh": "刷新",
+			"loading": "正在加载文献...",
+			"error": "加载实验室文献失败",
+			"unknown_uploader": "未知",
+			"pagination": {
+				"prev": "上一页",
+				"next": "下一页",
+				"first": "第一页",
+				"last": "最后一页",
+				"per_page": "每页行数",
+				"page_info": "第 {current} 页，共 {total} 页",
+				"info": "共 {total} 行"
+			}
+		},
 		"upload": {
 			"title": "上传文献",
 			"description": "将科学论文或文献上传到您的文库。",
@@ -459,6 +533,11 @@
 		},
 		"list_documents": {
 			"failed": "加载文档列表失败，请稍后重试"
+		},
+		"list_lab_documents": {
+			"forbidden": "只有实验室所有者才能查看此页面",
+			"not_member": "您不是该实验室的成员",
+			"failed": "加载实验室文献失败，请稍后重试"
 		},
 		"create_lab": {
 			"failed": "创建实验室失败，请稍后重试"

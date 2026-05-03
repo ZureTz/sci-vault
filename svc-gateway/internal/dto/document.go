@@ -47,6 +47,18 @@ type ListMyDocumentsQuery struct {
 	SortOrder  string `form:"sort_order" binding:"omitempty,oneof=asc desc"`
 }
 
+// ListLabDocumentsQuery drives the lab-scope document management page (owner-only).
+// Visibility is implicitly 'lab' and lab_id comes from the route, so neither
+// field appears here.
+type ListLabDocumentsQuery struct {
+	Page      int    `form:"page" binding:"omitempty,min=1"`
+	PageSize  int    `form:"page_size" binding:"omitempty,min=1,max=100"`
+	Search    string `form:"search" binding:"omitempty,max=255"`
+	Status    string `form:"status" binding:"omitempty,oneof=not_started pending processing done failed"`
+	SortBy    string `form:"sort_by" binding:"omitempty,oneof=created_at title file_size view_count"`
+	SortOrder string `form:"sort_order" binding:"omitempty,oneof=asc desc"`
+}
+
 type UpdateDocumentMetadataRequest struct {
 	Title *string `json:"title" binding:"omitempty,max=255"`
 	Year  *int    `json:"year" binding:"omitempty,min=1000,max=9999"`
@@ -70,16 +82,20 @@ type BatchUpdateVisibilityResponse struct {
 
 // DocumentListItem is a lightweight summary used in list views.
 // It intentionally omits fields that require expensive operations (e.g. signed download URLs).
+// UploadedByUserID is always populated; UploadedByUsername is only filled when
+// the row was loaded with the uploader preloaded (lab list view).
 type DocumentListItem struct {
-	ID               uint      `json:"id"`
-	Title            *string   `json:"title"`
-	OriginalFileName string    `json:"original_file_name"`
-	FileSize         int64     `json:"file_size"`
-	EnrichStatus     string    `json:"enrich_status"`
-	Visibility       string    `json:"visibility"`
-	LabID            *uint     `json:"lab_id"`
-	LabName          *string   `json:"lab_name"`
-	CreatedAt        time.Time `json:"created_at"`
+	ID                 uint      `json:"id"`
+	Title              *string   `json:"title"`
+	OriginalFileName   string    `json:"original_file_name"`
+	FileSize           int64     `json:"file_size"`
+	EnrichStatus       string    `json:"enrich_status"`
+	Visibility         string    `json:"visibility"`
+	LabID              *uint     `json:"lab_id"`
+	LabName            *string   `json:"lab_name"`
+	UploadedByUserID   uint      `json:"uploaded_by"`
+	UploadedByUsername *string   `json:"uploaded_by_username,omitempty"`
+	CreatedAt          time.Time `json:"created_at"`
 }
 
 type ListMyDocumentsResponse struct {

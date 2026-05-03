@@ -65,6 +65,8 @@
 				return [{ label: $_('breadcrumb.search') }];
 			case '/(dashboard)/members':
 				return [labBase, { label: $_('breadcrumb.lab_members') }];
+			case '/(dashboard)/lab-documents':
+				return [labBase, { label: $_('breadcrumb.lab_documents') }];
 			case '/(dashboard)/lab-settings':
 				return [labBase, { label: $_('breadcrumb.lab_settings') }];
 
