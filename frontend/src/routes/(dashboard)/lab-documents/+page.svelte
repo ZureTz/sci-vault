@@ -636,12 +636,15 @@
 														</div>
 													</a>
 												{:else if colId === 'uploader'}
-													<div class="flex items-center gap-1.5 text-sm text-muted-foreground">
+													<a
+														href={resolve(`/profile/${doc.uploaded_by}`)}
+														class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary hover:underline"
+													>
 														<UserIcon class="h-3.5 w-3.5 shrink-0" />
 														<span class="truncate" title={doc.uploaded_by_username ?? ''}>
 															{doc.uploaded_by_username ?? $_('document.lab.unknown_uploader')}
 														</span>
-													</div>
+													</a>
 												{:else if colId === 'file_size'}
 													{formatFileSize(doc.file_size)}
 												{:else if colId === 'enrich_status'}

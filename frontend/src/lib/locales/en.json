@@ -150,6 +150,8 @@
 			"size": "File Size",
 			"type": "Content Type",
 			"uploaded": "Uploaded On",
+			"uploader": "Uploaded By",
+			"unknown_uploader": "Unknown",
 			"back": "Go Back",
 			"restart": "Restart Enrichment",
 			"translate": "Translate",

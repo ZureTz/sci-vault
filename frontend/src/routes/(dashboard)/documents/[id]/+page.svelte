@@ -553,6 +553,21 @@
 								<dd class="col-span-2 text-right font-medium">{formatDate(document.created_at)}</dd>
 							</div>
 
+							<div class="grid grid-cols-3 items-center gap-2 border-b pb-3">
+								<dt class="col-span-1 flex items-center text-muted-foreground">
+									<User class="mr-2 h-3.5 w-3.5" />
+									{$_('document.detail.uploader')}
+								</dt>
+								<dd class="col-span-2 text-right">
+									<a
+										href={resolve(`/profile/${document.uploaded_by}`)}
+										class="font-medium text-primary hover:underline"
+									>
+										{document.uploaded_by_username ?? $_('document.detail.unknown_uploader')}
+									</a>
+								</dd>
+							</div>
+
 							<div class="grid grid-cols-3 items-center gap-2">
 								<dt class="col-span-1 text-muted-foreground">
 									{$_('document.detail.visibility.label')}

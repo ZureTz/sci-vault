@@ -56,6 +56,7 @@ export interface DocumentResponse {
 	like_count: number;
 	liked_by_me: boolean;
 	uploaded_by: number;
+	uploaded_by_username?: string | null;
 	download_url: string;
 	created_at: string;
 }
