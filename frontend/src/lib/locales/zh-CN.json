@@ -149,6 +149,8 @@
 			"size": "文件大小",
 			"type": "文件类型",
 			"uploaded": "上传时间",
+			"uploader": "上传者",
+			"unknown_uploader": "未知",
 			"back": "返回",
 			"restart": "重新处理",
 			"translate": "翻译",

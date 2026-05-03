@@ -116,24 +116,25 @@ type TranslateSummaryRequest struct {
 }
 
 type DocumentResponse struct {
-	ID               uint      `json:"id"`
-	Title            *string   `json:"title"`
-	OriginalFileName string    `json:"original_file_name"`
-	FileSize         int64     `json:"file_size"`
-	ContentType      string    `json:"content_type"`
-	Year             *int      `json:"year"`
-	DOI              *string   `json:"doi"`
-	EnrichStatus     string    `json:"enrich_status"`
-	Visibility       string    `json:"visibility"`
-	LabID            *uint     `json:"lab_id"`
-	LabName          *string   `json:"lab_name"`
-	Authors          []string  `json:"authors"`
-	Summary          *string   `json:"summary"`
-	Tags             []string  `json:"tags"`
-	ViewCount        uint      `json:"view_count"`
-	LikeCount        uint      `json:"like_count"`
-	LikedByMe        bool      `json:"liked_by_me"`
-	UploadedByUserID uint      `json:"uploaded_by"`
-	DownloadURL      string    `json:"download_url"`
-	CreatedAt        time.Time `json:"created_at"`
+	ID                 uint      `json:"id"`
+	Title              *string   `json:"title"`
+	OriginalFileName   string    `json:"original_file_name"`
+	FileSize           int64     `json:"file_size"`
+	ContentType        string    `json:"content_type"`
+	Year               *int      `json:"year"`
+	DOI                *string   `json:"doi"`
+	EnrichStatus       string    `json:"enrich_status"`
+	Visibility         string    `json:"visibility"`
+	LabID              *uint     `json:"lab_id"`
+	LabName            *string   `json:"lab_name"`
+	Authors            []string  `json:"authors"`
+	Summary            *string   `json:"summary"`
+	Tags               []string  `json:"tags"`
+	ViewCount          uint      `json:"view_count"`
+	LikeCount          uint      `json:"like_count"`
+	LikedByMe          bool      `json:"liked_by_me"`
+	UploadedByUserID   uint      `json:"uploaded_by"`
+	UploadedByUsername *string   `json:"uploaded_by_username,omitempty"`
+	DownloadURL        string    `json:"download_url"`
+	CreatedAt          time.Time `json:"created_at"`
 }

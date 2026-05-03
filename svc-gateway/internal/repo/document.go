@@ -65,7 +65,7 @@ func (r *documentRepo) Create(ctx context.Context, doc *model.Document) error {
 
 func (r *documentRepo) FindByID(ctx context.Context, id uint) (model.Document, error) {
 	var doc model.Document
-	err := r.db.WithContext(ctx).Preload("Lab").Where("id = ?", id).First(&doc).Error
+	err := r.db.WithContext(ctx).Preload("Lab").Preload("UploadedBy").Where("id = ?", id).First(&doc).Error
 	return doc, err
 }
 

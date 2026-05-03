@@ -731,27 +731,33 @@ func toDocumentResponse(doc *model.Document, downloadURL string, likedByMe bool)
 		name := doc.Lab.Name
 		labName = &name
 	}
+	var uploaderName *string
+	if doc.UploadedBy.ID != 0 {
+		name := doc.UploadedBy.Username
+		uploaderName = &name
+	}
 	return &dto.DocumentResponse{
-		ID:               doc.ID,
-		Title:            doc.Title,
-		OriginalFileName: doc.OriginalFileName,
-		FileSize:         doc.FileSize,
-		ContentType:      doc.ContentType,
-		Year:             doc.Year,
-		DOI:              doc.DOI,
-		EnrichStatus:     doc.EnrichStatus,
-		Visibility:       doc.Visibility,
-		LabID:            doc.LabID,
-		LabName:          labName,
-		Authors:          authors,
-		Summary:          doc.Summary,
-		Tags:             tags,
-		ViewCount:        doc.ViewCount,
-		LikeCount:        doc.LikeCount,
-		LikedByMe:        likedByMe,
-		UploadedByUserID: doc.UploadedByUserID,
-		DownloadURL:      downloadURL,
-		CreatedAt:        doc.CreatedAt,
+		ID:                 doc.ID,
+		Title:              doc.Title,
+		OriginalFileName:   doc.OriginalFileName,
+		FileSize:           doc.FileSize,
+		ContentType:        doc.ContentType,
+		Year:               doc.Year,
+		DOI:                doc.DOI,
+		EnrichStatus:       doc.EnrichStatus,
+		Visibility:         doc.Visibility,
+		LabID:              doc.LabID,
+		LabName:            labName,
+		Authors:            authors,
+		Summary:            doc.Summary,
+		Tags:               tags,
+		ViewCount:          doc.ViewCount,
+		LikeCount:          doc.LikeCount,
+		LikedByMe:          likedByMe,
+		UploadedByUserID:   doc.UploadedByUserID,
+		UploadedByUsername: uploaderName,
+		DownloadURL:        downloadURL,
+		CreatedAt:          doc.CreatedAt,
 	}
 }
 
