@@ -24,7 +24,8 @@ type SearchDocumentsResponse struct {
 }
 
 type ListSearchHistoryQuery struct {
-	Limit int `form:"limit" binding:"omitempty,min=1,max=100"`
+	LabID uint `form:"lab_id"`
+	Limit int  `form:"limit" binding:"omitempty,min=1,max=100"`
 }
 
 type SearchHistoryItem struct {

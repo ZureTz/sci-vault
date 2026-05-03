@@ -16,7 +16,7 @@ import (
 
 type SearchService interface {
 	SearchDocuments(ctx context.Context, userID uint, q dto.SearchDocumentsQuery) (*dto.SearchDocumentsResponse, error)
-	ListMyHistory(ctx context.Context, userID uint, limit int) (*dto.ListSearchHistoryResponse, error)
+	ListMyHistory(ctx context.Context, userID uint, labID *uint, limit int) (*dto.ListSearchHistoryResponse, error)
 	ClearMyHistory(ctx context.Context, userID uint) (int64, error)
 }
 
@@ -67,7 +67,12 @@ func (h *SearchHandler) ListMyHistory(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.searchService.ListMyHistory(c.Request.Context(), userID, q.Limit)
+	var labIDPtr *uint
+	if q.LabID > 0 {
+		labID := q.LabID
+		labIDPtr = &labID
+	}
+	resp, err := h.searchService.ListMyHistory(c.Request.Context(), userID, labIDPtr, q.Limit)
 	if err != nil {
 		slog.Error("ListMyHistory service error", "err", err)
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.search_history.list_failed")))

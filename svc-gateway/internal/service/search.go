@@ -89,11 +89,11 @@ func (s *SearchService) SearchDocuments(ctx context.Context, userID uint, q dto.
 	return &dto.SearchDocumentsResponse{Results: results}, nil
 }
 
-func (s *SearchService) ListMyHistory(ctx context.Context, userID uint, limit int) (*dto.ListSearchHistoryResponse, error) {
+func (s *SearchService) ListMyHistory(ctx context.Context, userID uint, labID *uint, limit int) (*dto.ListSearchHistoryResponse, error) {
 	if limit <= 0 {
 		limit = defaultHistoryLimit
 	}
-	rows, err := s.repo.FindHistoryByUserID(ctx, userID, limit)
+	rows, err := s.repo.FindHistoryByUserAndLab(ctx, userID, labID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list search history: %w", err)
 	}
