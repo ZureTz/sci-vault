@@ -49,12 +49,17 @@ class DocumentGenAI:
         self._metadata_client = metadata_client
         self._embedding_client = embedding_client
 
-    def extract_metadata(self, pdf_bytes: bytes) -> DocumentMetadata:
-        """Call LLM with the PDF directly to extract structured metadata."""
+    def extract_metadata(self, payload: bytes, mime_type: str) -> DocumentMetadata:
+        """Call LLM with the document bytes directly to extract structured metadata.
+
+        `mime_type` must be one of `application/pdf` or `text/plain` — the two
+        formats Gemini handles natively. Office formats are converted upstream
+        in `conversion.to_enrichment_payload`.
+        """
         response = self._metadata_client.models.generate_content(
             model=DEFAULT_MODEL,
             contents=[
-                types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf"),
+                types.Part.from_bytes(data=payload, mime_type=mime_type),
                 (
                     """
                     You are an expert academic paper analyst. Your task is to extract highly condensed metadata from the provided academic document.
