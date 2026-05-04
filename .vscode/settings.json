@@ -1,9 +1,16 @@
 {
   "cSpell.words": [
+    "genai",
     "healthcheck",
+    "HNSW",
     "isready",
+    "OOXML",
+    "openpyxl",
     "pgvector",
+    "psycopg",
+    "returncode",
     "rustfs",
+    "soffice",
     "trixie"
   ]
 }
