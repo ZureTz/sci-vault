@@ -24,6 +24,12 @@
 	import { showApiErrors } from '$lib/utils/api-error';
 
 	const MAX_BATCH_FILES = 20;
+	const ALLOWED_UPLOAD_EXTENSIONS = new Set(['pdf', 'txt', 'md', 'docx', 'pptx', 'xlsx']);
+
+	function extOf(filename: string): string {
+		const dot = filename.lastIndexOf('.');
+		return dot >= 0 ? filename.slice(dot + 1).toLowerCase() : '';
+	}
 
 	let fileInput = $state<HTMLInputElement | undefined>(undefined);
 	let selectedFiles = $state<File[]>([]);
@@ -108,7 +114,7 @@
 			if (fileInput) fileInput.value = '';
 			return;
 		}
-		const invalid = list.find((f) => !f.name.toLowerCase().endsWith('.pdf'));
+		const invalid = list.find((f) => !ALLOWED_UPLOAD_EXTENSIONS.has(extOf(f.name)));
 		if (invalid) {
 			toast.error($_('document.upload.error.invalid_type'));
 			if (fileInput) fileInput.value = '';
@@ -269,7 +275,7 @@
 					<input
 						id="file"
 						type="file"
-						accept=".pdf"
+						accept=".pdf,.txt,.md,.docx,.pptx,.xlsx"
 						multiple
 						class="hidden"
 						bind:this={fileInput}

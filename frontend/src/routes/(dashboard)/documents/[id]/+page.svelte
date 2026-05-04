@@ -249,6 +249,20 @@
 		return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 	}
 
+	const CONTENT_TYPE_LABELS: Record<string, string> = {
+		'application/pdf': 'PDF',
+		'text/plain': 'TXT',
+		'text/markdown': 'Markdown',
+		'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+		'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPTX',
+		'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX'
+	};
+
+	function formatContentType(ct: string): string {
+		const bare = ct.split(';')[0].trim().toLowerCase();
+		return CONTENT_TYPE_LABELS[bare] ?? (bare.split('/').pop() || bare);
+	}
+
 	function formatDate(dateStr: string): string {
 		return new Date(dateStr).toLocaleDateString(undefined, {
 			year: 'numeric',
@@ -542,9 +556,7 @@
 							<div class="grid grid-cols-3 gap-2 border-b pb-3">
 								<dt class="col-span-1 text-muted-foreground">{$_('document.detail.type')}</dt>
 								<dd class="col-span-2 text-right font-medium">
-									<Badge variant="outline"
-										>{document.content_type.split('/').pop() || document.content_type}</Badge
-									>
+									<Badge variant="outline">{formatContentType(document.content_type)}</Badge>
 								</dd>
 							</div>
 
