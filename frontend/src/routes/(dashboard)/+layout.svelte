@@ -35,7 +35,8 @@
 		| '/search'
 		| '/mine/history'
 		| '/documents/mine'
-		| '/documents/upload';
+		| '/documents/upload'
+		| '/lab-documents';
 	type Crumb = { label: string; href?: CrumbHref };
 
 	const crumbs = $derived.by((): Crumb[] => {
@@ -108,6 +109,12 @@
 							personalBase,
 							documentsCrumb,
 							{ label: $_('breadcrumb.my_documents'), href: '/documents/mine' },
+							detail
+						];
+					case '/lab-documents':
+						return [
+							labBase,
+							{ label: $_('breadcrumb.lab_documents'), href: '/lab-documents' },
 							detail
 						];
 					default:
