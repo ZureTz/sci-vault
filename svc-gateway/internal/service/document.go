@@ -34,7 +34,7 @@ var allowedUploadTypes = map[string]struct{}{
 	"application/pdf": {},
 	"text/plain":      {},
 	"text/markdown":   {},
-	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": {},
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document":   {},
 	"application/vnd.openxmlformats-officedocument.presentationml.presentation": {},
 	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":         {},
 }
