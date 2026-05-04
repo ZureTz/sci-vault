@@ -8,6 +8,7 @@ from typing import Optional
 import grpc
 import numpy as np
 
+from conversion import UnsupportedContentTypeError, to_enrichment_payload
 from genai.document import DocumentGenAI, DocumentMetadata
 from pb.recommender.v1 import recommender_pb2
 from cache.enrichment import EnrichmentStatusCache
@@ -47,26 +48,67 @@ class DocumentServicer:
         """Set Redis -> pending, queue background job, return ACK immediately."""
         doc_id: int = request.doc_id
         file_key: str = request.file_key
+        content_type: str = request.content_type
 
         # Mark as pending before the task even enters the thread pool.
         self._cache.set_pending(doc_id)
 
-        _enrichment_executor.submit(self._run_enrichment, doc_id, file_key)
+        _enrichment_executor.submit(
+            self._run_enrichment, doc_id, file_key, content_type
+        )
 
-        log.info("EnrichDocument queued: doc_id=%d file_key=%s", doc_id, file_key)
+        log.info(
+            "EnrichDocument queued: doc_id=%d file_key=%s content_type=%s",
+            doc_id,
+            file_key,
+            content_type,
+        )
         return recommender_pb2.EnrichDocumentResponse(accepted=True)
 
     # ------------------------------------------------------------------ #
     # Background worker                                                    #
     # ------------------------------------------------------------------ #
 
-    def _run_enrichment(self, doc_id: int, file_key: str) -> None:
+    def _run_enrichment(self, doc_id: int, file_key: str, content_type: str) -> None:
         """Enrichment pipeline with retries. On success writes DB done; on failure leaves DB unchanged."""
         self._cache.set_processing(doc_id)
         log.info("enrichment started: doc_id=%d", doc_id)
 
-        pdf_bytes = self._storage.download_pdf(file_key)
-        log.info("downloaded PDF: doc_id=%d size=%d bytes", doc_id, len(pdf_bytes))
+        raw_bytes = self._storage.download_file(file_key)
+        log.info(
+            "downloaded file: doc_id=%d size=%d bytes content_type=%s",
+            doc_id,
+            len(raw_bytes),
+            content_type,
+        )
+
+        try:
+            payload, mime_type = to_enrichment_payload(raw_bytes, content_type)
+        except UnsupportedContentTypeError:
+            log.exception(
+                "unsupported content_type, marking failed: doc_id=%d content_type=%s",
+                doc_id,
+                content_type,
+            )
+            self._cache.set_failed(doc_id)
+            return
+        except Exception:
+            log.exception(
+                "conversion failed, marking failed: doc_id=%d content_type=%s",
+                doc_id,
+                content_type,
+            )
+            self._cache.set_failed(doc_id)
+            return
+
+        if mime_type != content_type:
+            log.info(
+                "converted for enrichment: doc_id=%d original=%s gemini_mime=%s payload_size=%d",
+                doc_id,
+                content_type,
+                mime_type,
+                len(payload),
+            )
 
         # Cached results — each step is only called if not yet succeeded.
         metadata: Optional[DocumentMetadata] = None
@@ -76,7 +118,7 @@ class DocumentServicer:
         for attempt in range(1, _ENRICH_MAX_ATTEMPTS + 1):
             try:
                 if metadata is None:
-                    metadata = self._genai.extract_metadata(pdf_bytes)
+                    metadata = self._genai.extract_metadata(payload, mime_type)
                     log.info(
                         "metadata extracted: doc_id=%d title=%s authors=%s tags=%s",
                         doc_id,

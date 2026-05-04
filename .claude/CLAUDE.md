@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 sci-vault is an AI-powered microservices platform for laboratory research data management. It consists of three services:
 
 - **svc-gateway** (Go/Gin) — REST API gateway, handles auth, document CRUD, user management, search, recommendations
-- **svc-recommender** (Python/gRPC) — AI-powered document enrichment (metadata extraction + vector embeddings via Google Gemini), semantic search, similar-document recommendations, personalised feed
+- **svc-recommender** (Python/gRPC) — AI-powered document enrichment (format conversion to PDF/text via LibreOffice, metadata extraction + vector embeddings via Google Gemini), semantic search, similar-document recommendations, personalised feed
 - **frontend** (SvelteKit 2 / Svelte 5) — Web UI with Tailwind CSS v4, shadcn-svelte + Bits UI components, i18n (en, zh-CN)
 
 Infrastructure: PostgreSQL 18 + pgvector, Redis 8.6, RustFS (S3-compatible storage).
@@ -22,11 +22,11 @@ Browser → (REST) → svc-gateway → (gRPC) → svc-recommender
 
 Both backend services follow layered architecture: `handler`/`servicer` → `service` → `repository` → infrastructure.
 
-Document enrichment is async: gateway calls `EnrichDocument` RPC, recommender ACKs immediately, then processes in a background thread (extract PDF → Gemini metadata + embedding → store in pgvector). Status is tracked via Redis and polled by the frontend.
+Document enrichment is async: gateway calls `EnrichDocument` RPC with the file's MIME type, recommender ACKs immediately, then processes in a background thread (download → format-dispatch via `src/conversion/` (PDF/text passthrough, OOXML → LibreOffice headless → PDF) → Gemini metadata + embedding → store in pgvector). Status is tracked via Redis and polled by the frontend. The original file always stays in RustFS byte-for-byte; the converted PDF is ephemeral, regenerated only at enrichment time.
 
 gRPC surface (`proto/recommender/v1/recommender.proto`):
 - `Health` — liveness
-- `EnrichDocument` — fire-and-forget async enrichment
+- `EnrichDocument` — fire-and-forget async enrichment; carries `(doc_id, file_key, content_type)`. The recommender dispatches on `content_type` for format conversion (see `src/conversion/`); the gateway is the source of truth and stores the bare MIME on `Document.ContentType`.
 - `TranslateText` — server-streaming LLM translation
 - `SemanticSearch` — embed query + vector search (+ keyword fallback)
 - `RecommendSimilar` — nearest neighbours to a source document's embedding
@@ -114,6 +114,10 @@ Don't reintroduce per-handler `ShouldBindUri` blocks for these params.
 
 **Async side-effects on writes**: document creates/updates/deletes also (a) update Redis enrichment status when appropriate, (b) invalidate the dashboard stats cache (`dashboardStatsKey(userID)`), (c) trigger `EnrichDocument` gRPC where relevant. These are best-effort — log-and-continue on failure; don't fail the request.
 
+**Upload MIME handling**: `service.allowedUploadTypes` is the upload allowlist (PDF, TXT, MD, DOCX, PPTX, XLSX) and `service.extensionContentTypes` is the authoritative ext→MIME map — checked **before** Go's `mime.TypeByExtension`, because the host's `/etc/mime.types` doesn't reliably know `.md` and varies by OS for OOXML. `resolveUploadContentType` also rewrites mismatched headers (e.g. `application/zip` for a `.pptx`) using the extension. Two derived values diverge intentionally: the DB `Document.ContentType` stays the **bare** MIME (so the recommender's exact-match dispatcher works), but `storageContentType()` appends `; charset=utf-8` for `text/plain`/`text/markdown` when calling `PutObject` so browsers render UTF-8 correctly off the presigned URL. Keep `allowedUploadTypes` in sync with `svc-recommender/src/conversion/converter.py`.
+
+**Non-ASCII download filenames**: presigned URLs go through `storage.contentDisposition()`, which emits both `filename="<ascii-fallback>"` and `filename*=UTF-8''<percent-encoded>` (RFC 6266). Don't reintroduce a bare `filename="..."` — Chinese/accented names break with that.
+
 **Cross-service-owned schemas**: a few tables are declared as gateway models (so GORM `AutoMigrate` runs the DDL) but read/written only by svc-recommender — `QueryEmbedding` is the canonical example. The gateway never queries it; the recommender owns all reads/writes via psycopg. When changing such a model, remember GORM's `AutoMigrate` adds columns but **does not alter primary keys or constraints** on existing tables — for composite-PK changes in dev, drop the affected table and let AutoMigrate recreate it; production needs a real migration.
 
 ## Backend Patterns (svc-recommender)
@@ -132,6 +136,8 @@ Don't reintroduce per-handler `ShouldBindUri` blocks for these params.
 - The cache key includes `task_type` (Redis namespace + Postgres composite PK with `query_hash`) so the same string under two task types stores as two distinct entries and never collides. Constants `TASK_RETRIEVAL_QUERY` / `TASK_RETRIEVAL_DOCUMENT` are exported from `genai/query_embedder.py`.
 
 **Shared row type**: `repository/types.py:ScoredDocument` is the dataclass returned by every embedding-based query (search results, similar-doc results, personalised feed results). Add new query helpers to this shape rather than introducing a parallel hierarchy.
+
+**Format conversion (`src/conversion/`)**: `to_enrichment_payload(raw, content_type)` returns `(payload, mime_for_gemini)` where `mime_for_gemini` is always `application/pdf` or `text/plain` (the two formats Gemini's `Part.from_bytes` accepts). PDF and TXT/MD pass through; DOCX/PPTX/XLSX shell out to LibreOffice (`soffice --headless --convert-to pdf`) — each call gets its own `-env:UserInstallation` profile dir so concurrent jobs from the 8-thread enrichment pool don't fight LibreOffice's user-profile lock. The Dockerfile installs `libreoffice` + `font-noto-cjk` (CJK fonts ensure Chinese-language docs render). Conversion failures and unknown content types are deterministic, so `_run_enrichment` marks `failed` immediately without retrying.
 
 ## Frontend Patterns
 
@@ -172,6 +178,7 @@ afterNavigate((nav) => {
 ## Data Model Notes
 
 - **Document soft-delete**: `gorm.Model` supplies `deleted_at`; all dedup/access queries include `deleted_at IS NULL`.
+- **Supported upload formats**: PDF, TXT, Markdown, DOCX, PPTX, XLSX (max 100 MB). The original file is what's stored, hashed for dedup, and served on download. Office formats are converted to PDF only as ephemeral input to Gemini — the converted PDF is never persisted. Adding a format means updating both `service.allowedUploadTypes` (gateway) and `conversion/converter.py` (recommender) **plus** the frontend `ALLOWED_UPLOAD_EXTENSIONS` and the upload page's `accept`.
 - **Visibility**: `private` | `lab`. Lab-visible docs require `lab_id` set. Switching visibility is owner-only.
 - **Enrichment status**: `not_started | pending | processing | done | failed`. Redis is the real-time source (key `doc:enrich:<id>`, TTL 24h); Postgres stores the final value. Only docs with `enrich_status = 'done'` carry a usable embedding.
 - **Dedup indexes** (partial unique): `idx_documents_private_user_sha` on (`uploaded_by_user_id`, `content_sha256`) where `visibility='private'`; `idx_documents_lab_sha` on (`lab_id`, `content_sha256`) where `visibility='lab'`. Violations of each are distinguished in service-layer error mapping (`ErrDocumentDuplicate` vs `ErrDocumentDuplicateInLab`).

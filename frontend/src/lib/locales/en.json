@@ -346,7 +346,7 @@
 			"title": "Upload Document",
 			"description": "Upload a scientific paper or document to your vault.",
 			"file_label": "File",
-			"file_placeholder": "Select a PDF or document file",
+			"file_placeholder": "Select a file (PDF, TXT, Markdown, DOCX, PPTX, XLSX)",
 			"title_label": "Title",
 			"title_placeholder": "Document title (optional)",
 			"year_label": "Publication Year",
@@ -372,7 +372,7 @@
 			"pending_queue": "Background Processing Queue",
 			"error": {
 				"file_required": "Please select a file to upload",
-				"invalid_type": "Only PDF files are supported",
+				"invalid_type": "Supported formats: PDF, TXT, Markdown, DOCX, PPTX, XLSX",
 				"too_many_files": "You can upload at most {max} files at a time",
 				"lab_required": "Please select a lab",
 				"failed": "Failed to upload document, please try again"
@@ -469,7 +469,7 @@
 		"upload_document": {
 			"read_failed": "Failed to read file, please try again",
 			"too_large": "Document exceeds the maximum size limit",
-			"unsupported_type": "Unsupported file type, please upload a PDF or supported document",
+			"unsupported_type": "Supported formats: PDF, TXT, Markdown, DOCX, PPTX, XLSX",
 			"duplicate": "You have already uploaded this file as a private document",
 			"duplicate_in_lab": "An identical document already exists in this lab",
 			"lab_required": "A lab must be selected when sharing with a lab",

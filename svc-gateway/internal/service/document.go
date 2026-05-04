@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"mime"
 	"mime/multipart"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -23,6 +25,81 @@ import (
 	"gateway/pkg/grpc_client"
 	"gateway/pkg/storage"
 )
+
+// allowedUploadTypes is the set of MIME types accepted by the upload endpoints.
+// PDFs and plaintext flow straight through; the three OOXML office formats are
+// converted to PDF inside svc-recommender before enrichment. Keep this in sync
+// with the conversion module in svc-recommender (src/conversion/converter.py).
+var allowedUploadTypes = map[string]struct{}{
+	"application/pdf": {},
+	"text/plain":      {},
+	"text/markdown":   {},
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document":   {},
+	"application/vnd.openxmlformats-officedocument.presentationml.presentation": {},
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":         {},
+}
+
+// extensionContentTypes is the authoritative ext→MIME map for our supported
+// upload formats. It's checked before Go's `mime.TypeByExtension`, which on
+// many systems doesn't know about `.md` (and varies by OS for the OOXML
+// formats too) — making the allowlist effectively dependent on the host's
+// /etc/mime.types is fragile.
+var extensionContentTypes = map[string]string{
+	".pdf":  "application/pdf",
+	".txt":  "text/plain",
+	".md":   "text/markdown",
+	".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+	".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+}
+
+// resolveUploadContentType normalises the multipart Content-Type header.
+// Browsers often send empty or generic `application/octet-stream` for `.md`
+// and other less-common types, so fall back to the filename extension. We
+// also re-resolve from extension when the header disagrees with our known
+// extension mapping — some browsers report `.md` as `text/x-markdown` or
+// the OOXML formats as `application/zip`.
+func resolveUploadContentType(header, filename string) string {
+	ct := strings.ToLower(strings.TrimSpace(header))
+	if i := strings.IndexByte(ct, ';'); i >= 0 {
+		ct = strings.TrimSpace(ct[:i])
+	}
+
+	ext := strings.ToLower(filepath.Ext(filename))
+	if known, ok := extensionContentTypes[ext]; ok {
+		// Trust the extension over an octet-stream / empty / mismatched header.
+		if ct == "" || ct == "application/octet-stream" || ct != known {
+			return known
+		}
+		return ct
+	}
+
+	if ct == "" || ct == "application/octet-stream" {
+		if sniffed := mime.TypeByExtension(ext); sniffed != "" {
+			ct = strings.ToLower(strings.TrimSpace(strings.SplitN(sniffed, ";", 2)[0]))
+		}
+	}
+	return ct
+}
+
+func isAllowedUploadType(contentType string) bool {
+	_, ok := allowedUploadTypes[contentType]
+	return ok
+}
+
+// storageContentType is the value sent to S3 as the object's Content-Type
+// header. Text-y formats get an explicit `charset=utf-8` so browsers render
+// non-ASCII content correctly when hitting the presigned download URL —
+// without it they fall back to a system default and mangle UTF-8. The DB
+// `Document.ContentType` field stays the bare MIME so the recommender's
+// dispatcher (which matches exact strings) keeps working.
+func storageContentType(ct string) string {
+	switch ct {
+	case "text/plain", "text/markdown":
+		return ct + "; charset=utf-8"
+	}
+	return ct
+}
 
 const (
 	maxDocumentSize   = 100 << 20 // 100 MB
@@ -157,8 +234,8 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 		return nil, app_error.ErrDocumentTooLarge
 	}
 
-	contentType := strings.ToLower(form.File.Header.Get("Content-Type"))
-	if contentType != "application/pdf" {
+	contentType := resolveUploadContentType(form.File.Header.Get("Content-Type"), form.File.Filename)
+	if !isAllowedUploadType(contentType) {
 		return nil, app_error.ErrDocumentInvalidType
 	}
 
@@ -197,7 +274,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 	keyHash := sha256.Sum256([]byte(form.File.Filename + ts.Format(time.RFC3339Nano)))
 	key := fmt.Sprintf("documents/%s/%x", ts.Format("20060102"), keyHash)
 
-	if err := s.storageClient.PutObject(ctx, key, bytes.NewReader(buf), contentType, true); err != nil {
+	if err := s.storageClient.PutObject(ctx, key, bytes.NewReader(buf), storageContentType(contentType), true); err != nil {
 		return nil, fmt.Errorf("failed to upload document: %w", err)
 	}
 
@@ -235,7 +312,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 	// Trigger async enrichment on the Python microservice.
 	// The call returns an immediate ACK; Python owns all status updates from this point.
 	// A failure here is non-fatal — the document is already saved.
-	if _, err := s.recommenderClient.EnrichDocument(ctx, uint64(doc.ID), key); err != nil {
+	if _, err := s.recommenderClient.EnrichDocument(ctx, uint64(doc.ID), key, contentType); err != nil {
 		slog.Warn("EnrichDocument gRPC call failed", "docID", doc.ID, "err", err)
 	}
 
@@ -281,8 +358,8 @@ func (s *DocumentService) BatchUploadDocuments(ctx context.Context, userID uint,
 			pendingDocs[i] = p
 			continue
 		}
-		ct := strings.ToLower(fh.Header.Get("Content-Type"))
-		if ct != "application/pdf" {
+		ct := resolveUploadContentType(fh.Header.Get("Content-Type"), fh.Filename)
+		if !isAllowedUploadType(ct) {
 			p.err = app_error.ErrDocumentInvalidType.Error()
 			pendingDocs[i] = p
 			continue
@@ -352,7 +429,7 @@ func (s *DocumentService) BatchUploadDocuments(ctx context.Context, userID uint,
 
 		keyHash := sha256.Sum256([]byte(p.fh.Filename + tsNano + fmt.Sprint(i)))
 		key := fmt.Sprintf("documents/%s/%x", dayPrefix, keyHash)
-		if err := s.storageClient.PutObject(ctx, key, bytes.NewReader(p.buf), p.contentType, true); err != nil {
+		if err := s.storageClient.PutObject(ctx, key, bytes.NewReader(p.buf), storageContentType(p.contentType), true); err != nil {
 			results[i].Error = err.Error()
 			continue
 		}
@@ -404,7 +481,7 @@ func (s *DocumentService) BatchUploadDocuments(ctx context.Context, userID uint,
 			if err := s.cacheConn.Set(ctx, enrichStatusKey(doc.ID), model.EnrichStatusNotStarted, enrichStatusTTL); err != nil {
 				slog.Warn("Failed to set enrich status in cache", "docID", doc.ID, "err", err)
 			}
-			if _, err := s.recommenderClient.EnrichDocument(ctx, uint64(doc.ID), doc.FileKey); err != nil {
+			if _, err := s.recommenderClient.EnrichDocument(ctx, uint64(doc.ID), doc.FileKey, doc.ContentType); err != nil {
 				slog.Warn("EnrichDocument gRPC call failed", "docID", doc.ID, "err", err)
 			}
 		}
@@ -500,7 +577,7 @@ func (s *DocumentService) RestartEnrichment(ctx context.Context, userID, docID u
 	}
 
 	// Trigger async enrichment on the Python microservice.
-	if _, err := s.recommenderClient.EnrichDocument(ctx, uint64(doc.ID), doc.FileKey); err != nil {
+	if _, err := s.recommenderClient.EnrichDocument(ctx, uint64(doc.ID), doc.FileKey, doc.ContentType); err != nil {
 		slog.Warn("EnrichDocument gRPC call failed", "docID", doc.ID, "err", err)
 		return fmt.Errorf("failed to restart enrichment: %w", err)
 	}
@@ -709,12 +786,11 @@ func (s *DocumentService) DeleteDocument(ctx context.Context, userID, docID uint
 	return nil
 }
 
-// downloadFilename ensures the filename ends with ".pdf".
+// downloadFilename returns the original upload filename. Files are stored
+// byte-for-byte in their original format (the recommender converts to PDF
+// only for embedding), so callers download exactly what they uploaded.
 func downloadFilename(original string) string {
-	if strings.HasSuffix(strings.ToLower(original), ".pdf") {
-		return original
-	}
-	return original + ".pdf"
+	return original
 }
 
 func toDocumentResponse(doc *model.Document, downloadURL string, likedByMe bool) *dto.DocumentResponse {

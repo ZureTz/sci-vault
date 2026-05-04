@@ -14,7 +14,7 @@ var (
 	ErrProfileNotFound      = errors.New("user profile not found")
 
 	ErrDocumentTooLarge    = errors.New("document file too large")
-	ErrDocumentInvalidType = errors.New("unsupported document type; only PDF is accepted")
+	ErrDocumentInvalidType = errors.New("unsupported document type")
 	ErrDocumentNotFound    = errors.New("document not found")
 	// ErrDocumentDuplicate is returned when an upload's content matches an existing
 	// private document owned by the same user.

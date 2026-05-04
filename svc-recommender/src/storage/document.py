@@ -1,4 +1,4 @@
-"""Document storage — S3-compatible object store access for PDFs."""
+"""Document storage — S3-compatible object store access for document files."""
 
 import logging
 from typing import TYPE_CHECKING
@@ -16,7 +16,7 @@ class DocumentStorage:
         self._s3 = s3_client
         self._bucket = bucket
 
-    def download_pdf(self, file_key: str) -> bytes:
-        """Download a PDF from the private bucket and return raw bytes."""
+    def download_file(self, file_key: str) -> bytes:
+        """Download a document from the private bucket and return raw bytes."""
         response = self._s3.get_object(Bucket=self._bucket, Key=file_key)
         return response["Body"].read()
