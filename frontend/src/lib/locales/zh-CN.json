@@ -345,7 +345,7 @@
 			"title": "上传文献",
 			"description": "将科学论文或文献上传到您的文库。",
 			"file_label": "文件",
-			"file_placeholder": "选择 PDF 或文档文件",
+			"file_placeholder": "选择文件（PDF、TXT、Markdown、DOCX、PPTX、XLSX）",
 			"title_label": "标题",
 			"title_placeholder": "文献标题（可选）",
 			"year_label": "发表年份",
@@ -371,7 +371,7 @@
 			"pending_queue": "后台解析队列",
 			"error": {
 				"file_required": "请选择要上传的文件",
-				"invalid_type": "仅支持 PDF 文件",
+				"invalid_type": "支持的格式：PDF、TXT、Markdown、DOCX、PPTX、XLSX",
 				"too_many_files": "一次最多上传 {max} 个文件",
 				"lab_required": "请选择一个实验室",
 				"failed": "文献上传失败，请稍后重试"
@@ -468,7 +468,7 @@
 		"upload_document": {
 			"read_failed": "读取文件失败，请重试",
 			"too_large": "文献超过最大文件大小限制",
-			"unsupported_type": "不支持的文件类型，请上传 PDF 或受支持的文档格式",
+			"unsupported_type": "支持的格式：PDF、TXT、Markdown、DOCX、PPTX、XLSX",
 			"duplicate": "您已经将此文件作为私有文档上传过",
 			"duplicate_in_lab": "该实验室中已存在相同文档",
 			"lab_required": "分享至实验室时必须选择实验室",
