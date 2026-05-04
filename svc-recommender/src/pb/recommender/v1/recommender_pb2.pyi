@@ -29,12 +29,14 @@ class HealthResponse(_message.Message):
     def __init__(self, status: _Optional[str] = ..., service: _Optional[str] = ...) -> None: ...
 
 class EnrichDocumentRequest(_message.Message):
-    __slots__ = ("doc_id", "file_key")
+    __slots__ = ("doc_id", "file_key", "content_type")
     DOC_ID_FIELD_NUMBER: _ClassVar[int]
     FILE_KEY_FIELD_NUMBER: _ClassVar[int]
+    CONTENT_TYPE_FIELD_NUMBER: _ClassVar[int]
     doc_id: int
     file_key: str
-    def __init__(self, doc_id: _Optional[int] = ..., file_key: _Optional[str] = ...) -> None: ...
+    content_type: str
+    def __init__(self, doc_id: _Optional[int] = ..., file_key: _Optional[str] = ..., content_type: _Optional[str] = ...) -> None: ...
 
 class EnrichDocumentResponse(_message.Message):
     __slots__ = ("accepted",)

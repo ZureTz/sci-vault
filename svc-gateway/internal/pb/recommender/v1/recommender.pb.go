@@ -170,8 +170,12 @@ type EnrichDocumentRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// doc_id is the database primary key of the document.
 	DocId uint64 `protobuf:"varint,1,opt,name=doc_id,json=docId,proto3" json:"doc_id,omitempty"`
-	// file_key is the S3 object key for the uploaded PDF.
-	FileKey       string `protobuf:"bytes,2,opt,name=file_key,json=fileKey,proto3" json:"file_key,omitempty"`
+	// file_key is the S3 object key for the uploaded file.
+	FileKey string `protobuf:"bytes,2,opt,name=file_key,json=fileKey,proto3" json:"file_key,omitempty"`
+	// content_type is the MIME type of the uploaded file. The recommender uses
+	// this to decide between passthrough (PDF, plaintext) and on-the-fly
+	// conversion to PDF (DOCX, PPTX, XLSX) before feeding bytes to Gemini.
+	ContentType   string `protobuf:"bytes,3,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -216,6 +220,13 @@ func (x *EnrichDocumentRequest) GetDocId() uint64 {
 func (x *EnrichDocumentRequest) GetFileKey() string {
 	if x != nil {
 		return x.FileKey
+	}
+	return ""
+}
+
+func (x *EnrichDocumentRequest) GetContentType() string {
+	if x != nil {
+		return x.ContentType
 	}
 	return ""
 }
@@ -858,10 +869,11 @@ const file_recommender_v1_recommender_proto_rawDesc = "" +
 	"\rHealthRequest\"B\n" +
 	"\x0eHealthResponse\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x18\n" +
-	"\aservice\x18\x02 \x01(\tR\aservice\"I\n" +
+	"\aservice\x18\x02 \x01(\tR\aservice\"l\n" +
 	"\x15EnrichDocumentRequest\x12\x15\n" +
 	"\x06doc_id\x18\x01 \x01(\x04R\x05docId\x12\x19\n" +
-	"\bfile_key\x18\x02 \x01(\tR\afileKey\"4\n" +
+	"\bfile_key\x18\x02 \x01(\tR\afileKey\x12!\n" +
+	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\"4\n" +
 	"\x16EnrichDocumentResponse\x12\x1a\n" +
 	"\baccepted\x18\x01 \x01(\bR\baccepted\"S\n" +
 	"\x14TranslateTextRequest\x12\x12\n" +
