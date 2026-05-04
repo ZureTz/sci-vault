@@ -177,7 +177,7 @@ func (c *Client) PublicObjectURL(key string) string {
 // contentDisposition builds an RFC 6266 Content-Disposition value that survives
 // non-ASCII filenames (Chinese, accents, etc.). It always emits both:
 //   - filename="<ascii-fallback>" — for clients that don't grok RFC 5987
-//   - filename*=UTF-8''<percent-encoded> — modern browsers prefer this and
+//   - filename*=UTF-8”<percent-encoded> — modern browsers prefer this and
 //     decode it as UTF-8, so 中文.pdf comes through intact
 //
 // Non-ASCII bytes in the fallback are stripped (replaced with `_`) since the
