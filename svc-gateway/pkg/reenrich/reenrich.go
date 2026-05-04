@@ -79,7 +79,7 @@ func (s *Scheduler) runOnce() {
 	slog.Info("re-enrich scheduler: rescheduling stale docs", "count", len(docs))
 	for i := range docs {
 		doc := &docs[i]
-		if _, err := s.recommenderClient.EnrichDocument(ctx, uint64(doc.ID), doc.FileKey); err != nil {
+		if _, err := s.recommenderClient.EnrichDocument(ctx, uint64(doc.ID), doc.FileKey, doc.ContentType); err != nil {
 			slog.Warn("re-enrich: EnrichDocument call failed", "docID", doc.ID, "err", err)
 			continue
 		}

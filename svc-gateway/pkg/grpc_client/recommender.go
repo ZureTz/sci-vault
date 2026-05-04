@@ -46,13 +46,16 @@ func (r *RecommenderClient) Health(ctx context.Context) (*pb.HealthResponse, err
 }
 
 // EnrichDocument sends a fire-and-forget enrichment request to the Python service.
-// The Python service ACKs immediately and processes asynchronously.
-func (r *RecommenderClient) EnrichDocument(ctx context.Context, docID uint64, fileKey string) (bool, error) {
+// The Python service ACKs immediately and processes asynchronously. contentType
+// is the MIME of the uploaded file — the recommender uses it to pick a
+// passthrough or office-conversion strategy before feeding bytes to Gemini.
+func (r *RecommenderClient) EnrichDocument(ctx context.Context, docID uint64, fileKey, contentType string) (bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	resp, err := r.client.EnrichDocument(ctx, &pb.EnrichDocumentRequest{
-		DocId:   docID,
-		FileKey: fileKey,
+		DocId:       docID,
+		FileKey:     fileKey,
+		ContentType: contentType,
 	})
 	if err != nil {
 		return false, err

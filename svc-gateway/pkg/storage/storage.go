@@ -174,6 +174,27 @@ func (c *Client) PublicObjectURL(key string) string {
 	return path.Join(c.publicProxyPath, key)
 }
 
+// contentDisposition builds an RFC 6266 Content-Disposition value that survives
+// non-ASCII filenames (Chinese, accents, etc.). It always emits both:
+//   - filename="<ascii-fallback>" — for clients that don't grok RFC 5987
+//   - filename*=UTF-8''<percent-encoded> — modern browsers prefer this and
+//     decode it as UTF-8, so 中文.pdf comes through intact
+//
+// Non-ASCII bytes in the fallback are stripped (replaced with `_`) since the
+// quoted form is ISO-8859-1 only.
+func contentDisposition(disposition, filename string) string {
+	var ascii strings.Builder
+	for _, r := range filename {
+		if r > 0x7e || r < 0x20 || r == '"' || r == '\\' {
+			ascii.WriteByte('_')
+		} else {
+			ascii.WriteRune(r)
+		}
+	}
+	return fmt.Sprintf(`%s; filename="%s"; filename*=UTF-8''%s`,
+		disposition, ascii.String(), url.PathEscape(filename))
+}
+
 // PrivateObjectURL returns a presigned proxy URL for an object in the private bucket.
 // The S3 host and bucket prefix are stripped and replaced with /private/, which
 // Nginx/Vite proxies to the rustfs private bucket. The presign signature is preserved
@@ -186,7 +207,7 @@ func (c *Client) PrivateObjectURL(ctx context.Context, key string, expiry time.D
 		Key:    aws.String(key),
 	}
 	if filename != "" {
-		input.ResponseContentDisposition = aws.String(fmt.Sprintf(`inline; filename="%s"`, filename))
+		input.ResponseContentDisposition = aws.String(contentDisposition("inline", filename))
 	}
 	req, err := presignClient.PresignGetObject(ctx, input, func(opts *s3.PresignOptions) {
 		opts.Expires = expiry
