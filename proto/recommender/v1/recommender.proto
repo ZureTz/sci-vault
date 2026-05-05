@@ -38,6 +38,15 @@ service RecommenderService {
   // profile vector and nearest neighbors are returned. Liked docs are
   // excluded from the result set. Access control mirrors RecommendSimilar.
   rpc RecommendForUser(RecommendForUserRequest) returns (RecommendForUserResponse);
+
+  // RecommendCollaborators ranks the caller's lab-mates by interest-profile
+  // similarity. The caller's profile centroid is built from their liked/viewed
+  // docs and recent search queries (same shape as RecommendForUser); each
+  // candidate's centroid is built server-side by averaging the embeddings of
+  // documents they liked or viewed (no per-candidate Gemini calls). The
+  // caller is excluded; users with no like/view signals are excluded. Results
+  // are scoped to a single lab the caller belongs to.
+  rpc RecommendCollaborators(RecommendCollaboratorsRequest) returns (RecommendCollaboratorsResponse);
 }
 
 // HealthRequest is an empty message used for health check requests.
@@ -167,4 +176,44 @@ message RecommendForUserRequest {
 // RecommendForUserResponse wraps the personalized feed.
 message RecommendForUserResponse {
   repeated ScoredDocument results = 1;
+}
+
+// RecommendCollaboratorsRequest carries the caller's preference signals plus
+// the lab to scope candidate users to.
+message RecommendCollaboratorsRequest {
+  // user_id of the caller — always excluded from results.
+  uint64 user_id = 1;
+  // lab_id is required and > 0; candidates are members of this lab.
+  uint64 lab_id = 2;
+  // limit is the maximum number of recommendations (default 10, max 50).
+  uint32 limit = 3;
+  // liked_doc_ids are the caller's liked documents, most-recent first.
+  repeated uint64 liked_doc_ids = 4;
+  // viewed_doc_ids are the caller's recently-viewed documents, most-recent first.
+  repeated uint64 viewed_doc_ids = 5;
+  // recent_queries are the caller's recent search query strings, most-recent first.
+  // Embedded with RETRIEVAL_DOCUMENT task type to share space with doc embeddings.
+  repeated string recent_queries = 6;
+}
+
+// ScoredUser is a single user paired with a similarity score against the
+// caller's profile centroid.
+message ScoredUser {
+  uint64 user_id = 1;
+  string username = 2;
+  // nickname is empty when the user has not set one.
+  string nickname = 3;
+  // avatar_key is the S3 key for the user's avatar; empty when unset. The
+  // gateway turns this into a presigned URL before returning to the frontend.
+  string avatar_key = 4;
+  // similarity is 1 - cosine_distance against the caller's profile centroid.
+  double similarity = 5;
+  // signal_count is the number of liked+viewed docs that fed this user's
+  // centroid — surfaced so the UI can hint at confidence.
+  uint32 signal_count = 6;
+}
+
+// RecommendCollaboratorsResponse wraps the ranked list of similar users.
+message RecommendCollaboratorsResponse {
+  repeated ScoredUser results = 1;
 }

@@ -135,3 +135,41 @@ class RecommendForUserResponse(_message.Message):
     RESULTS_FIELD_NUMBER: _ClassVar[int]
     results: _containers.RepeatedCompositeFieldContainer[ScoredDocument]
     def __init__(self, results: _Optional[_Iterable[_Union[ScoredDocument, _Mapping]]] = ...) -> None: ...
+
+class RecommendCollaboratorsRequest(_message.Message):
+    __slots__ = ("user_id", "lab_id", "limit", "liked_doc_ids", "viewed_doc_ids", "recent_queries")
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    LAB_ID_FIELD_NUMBER: _ClassVar[int]
+    LIMIT_FIELD_NUMBER: _ClassVar[int]
+    LIKED_DOC_IDS_FIELD_NUMBER: _ClassVar[int]
+    VIEWED_DOC_IDS_FIELD_NUMBER: _ClassVar[int]
+    RECENT_QUERIES_FIELD_NUMBER: _ClassVar[int]
+    user_id: int
+    lab_id: int
+    limit: int
+    liked_doc_ids: _containers.RepeatedScalarFieldContainer[int]
+    viewed_doc_ids: _containers.RepeatedScalarFieldContainer[int]
+    recent_queries: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, user_id: _Optional[int] = ..., lab_id: _Optional[int] = ..., limit: _Optional[int] = ..., liked_doc_ids: _Optional[_Iterable[int]] = ..., viewed_doc_ids: _Optional[_Iterable[int]] = ..., recent_queries: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class ScoredUser(_message.Message):
+    __slots__ = ("user_id", "username", "nickname", "avatar_key", "similarity", "signal_count")
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    USERNAME_FIELD_NUMBER: _ClassVar[int]
+    NICKNAME_FIELD_NUMBER: _ClassVar[int]
+    AVATAR_KEY_FIELD_NUMBER: _ClassVar[int]
+    SIMILARITY_FIELD_NUMBER: _ClassVar[int]
+    SIGNAL_COUNT_FIELD_NUMBER: _ClassVar[int]
+    user_id: int
+    username: str
+    nickname: str
+    avatar_key: str
+    similarity: float
+    signal_count: int
+    def __init__(self, user_id: _Optional[int] = ..., username: _Optional[str] = ..., nickname: _Optional[str] = ..., avatar_key: _Optional[str] = ..., similarity: _Optional[float] = ..., signal_count: _Optional[int] = ...) -> None: ...
+
+class RecommendCollaboratorsResponse(_message.Message):
+    __slots__ = ("results",)
+    RESULTS_FIELD_NUMBER: _ClassVar[int]
+    results: _containers.RepeatedCompositeFieldContainer[ScoredUser]
+    def __init__(self, results: _Optional[_Iterable[_Union[ScoredUser, _Mapping]]] = ...) -> None: ...

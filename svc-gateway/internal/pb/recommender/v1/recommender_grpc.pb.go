@@ -19,12 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RecommenderService_Health_FullMethodName           = "/recommender.v1.RecommenderService/Health"
-	RecommenderService_EnrichDocument_FullMethodName   = "/recommender.v1.RecommenderService/EnrichDocument"
-	RecommenderService_TranslateText_FullMethodName    = "/recommender.v1.RecommenderService/TranslateText"
-	RecommenderService_SemanticSearch_FullMethodName   = "/recommender.v1.RecommenderService/SemanticSearch"
-	RecommenderService_RecommendSimilar_FullMethodName = "/recommender.v1.RecommenderService/RecommendSimilar"
-	RecommenderService_RecommendForUser_FullMethodName = "/recommender.v1.RecommenderService/RecommendForUser"
+	RecommenderService_Health_FullMethodName                 = "/recommender.v1.RecommenderService/Health"
+	RecommenderService_EnrichDocument_FullMethodName         = "/recommender.v1.RecommenderService/EnrichDocument"
+	RecommenderService_TranslateText_FullMethodName          = "/recommender.v1.RecommenderService/TranslateText"
+	RecommenderService_SemanticSearch_FullMethodName         = "/recommender.v1.RecommenderService/SemanticSearch"
+	RecommenderService_RecommendSimilar_FullMethodName       = "/recommender.v1.RecommenderService/RecommendSimilar"
+	RecommenderService_RecommendForUser_FullMethodName       = "/recommender.v1.RecommenderService/RecommendForUser"
+	RecommenderService_RecommendCollaborators_FullMethodName = "/recommender.v1.RecommenderService/RecommendCollaborators"
 )
 
 // RecommenderServiceClient is the client API for RecommenderService service.
@@ -60,6 +61,14 @@ type RecommenderServiceClient interface {
 	// profile vector and nearest neighbors are returned. Liked docs are
 	// excluded from the result set. Access control mirrors RecommendSimilar.
 	RecommendForUser(ctx context.Context, in *RecommendForUserRequest, opts ...grpc.CallOption) (*RecommendForUserResponse, error)
+	// RecommendCollaborators ranks the caller's lab-mates by interest-profile
+	// similarity. The caller's profile centroid is built from their liked/viewed
+	// docs and recent search queries (same shape as RecommendForUser); each
+	// candidate's centroid is built server-side by averaging the embeddings of
+	// documents they liked or viewed (no per-candidate Gemini calls). The
+	// caller is excluded; users with no like/view signals are excluded. Results
+	// are scoped to a single lab the caller belongs to.
+	RecommendCollaborators(ctx context.Context, in *RecommendCollaboratorsRequest, opts ...grpc.CallOption) (*RecommendCollaboratorsResponse, error)
 }
 
 type recommenderServiceClient struct {
@@ -139,6 +148,16 @@ func (c *recommenderServiceClient) RecommendForUser(ctx context.Context, in *Rec
 	return out, nil
 }
 
+func (c *recommenderServiceClient) RecommendCollaborators(ctx context.Context, in *RecommendCollaboratorsRequest, opts ...grpc.CallOption) (*RecommendCollaboratorsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecommendCollaboratorsResponse)
+	err := c.cc.Invoke(ctx, RecommenderService_RecommendCollaborators_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RecommenderServiceServer is the server API for RecommenderService service.
 // All implementations must embed UnimplementedRecommenderServiceServer
 // for forward compatibility.
@@ -172,6 +191,14 @@ type RecommenderServiceServer interface {
 	// profile vector and nearest neighbors are returned. Liked docs are
 	// excluded from the result set. Access control mirrors RecommendSimilar.
 	RecommendForUser(context.Context, *RecommendForUserRequest) (*RecommendForUserResponse, error)
+	// RecommendCollaborators ranks the caller's lab-mates by interest-profile
+	// similarity. The caller's profile centroid is built from their liked/viewed
+	// docs and recent search queries (same shape as RecommendForUser); each
+	// candidate's centroid is built server-side by averaging the embeddings of
+	// documents they liked or viewed (no per-candidate Gemini calls). The
+	// caller is excluded; users with no like/view signals are excluded. Results
+	// are scoped to a single lab the caller belongs to.
+	RecommendCollaborators(context.Context, *RecommendCollaboratorsRequest) (*RecommendCollaboratorsResponse, error)
 	mustEmbedUnimplementedRecommenderServiceServer()
 }
 
@@ -199,6 +226,9 @@ func (UnimplementedRecommenderServiceServer) RecommendSimilar(context.Context, *
 }
 func (UnimplementedRecommenderServiceServer) RecommendForUser(context.Context, *RecommendForUserRequest) (*RecommendForUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RecommendForUser not implemented")
+}
+func (UnimplementedRecommenderServiceServer) RecommendCollaborators(context.Context, *RecommendCollaboratorsRequest) (*RecommendCollaboratorsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecommendCollaborators not implemented")
 }
 func (UnimplementedRecommenderServiceServer) mustEmbedUnimplementedRecommenderServiceServer() {}
 func (UnimplementedRecommenderServiceServer) testEmbeddedByValue()                            {}
@@ -322,6 +352,24 @@ func _RecommenderService_RecommendForUser_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RecommenderService_RecommendCollaborators_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecommendCollaboratorsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RecommenderServiceServer).RecommendCollaborators(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RecommenderService_RecommendCollaborators_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RecommenderServiceServer).RecommendCollaborators(ctx, req.(*RecommendCollaboratorsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RecommenderService_ServiceDesc is the grpc.ServiceDesc for RecommenderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -348,6 +396,10 @@ var RecommenderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RecommendForUser",
 			Handler:    _RecommenderService_RecommendForUser_Handler,
+		},
+		{
+			MethodName: "RecommendCollaborators",
+			Handler:    _RecommenderService_RecommendCollaborators_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

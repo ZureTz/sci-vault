@@ -45,6 +45,11 @@ class RecommenderServiceStub(object):
                 request_serializer=recommender_dot_v1_dot_recommender__pb2.RecommendForUserRequest.SerializeToString,
                 response_deserializer=recommender_dot_v1_dot_recommender__pb2.RecommendForUserResponse.FromString,
                 _registered_method=True)
+        self.RecommendCollaborators = channel.unary_unary(
+                '/recommender.v1.RecommenderService/RecommendCollaborators',
+                request_serializer=recommender_dot_v1_dot_recommender__pb2.RecommendCollaboratorsRequest.SerializeToString,
+                response_deserializer=recommender_dot_v1_dot_recommender__pb2.RecommendCollaboratorsResponse.FromString,
+                _registered_method=True)
 
 
 class RecommenderServiceServicer(object):
@@ -108,6 +113,19 @@ class RecommenderServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RecommendCollaborators(self, request, context):
+        """RecommendCollaborators ranks the caller's lab-mates by interest-profile
+        similarity. The caller's profile centroid is built from their liked/viewed
+        docs and recent search queries (same shape as RecommendForUser); each
+        candidate's centroid is built server-side by averaging the embeddings of
+        documents they liked or viewed (no per-candidate Gemini calls). The
+        caller is excluded; users with no like/view signals are excluded. Results
+        are scoped to a single lab the caller belongs to.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_RecommenderServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -140,6 +158,11 @@ def add_RecommenderServiceServicer_to_server(servicer, server):
                     servicer.RecommendForUser,
                     request_deserializer=recommender_dot_v1_dot_recommender__pb2.RecommendForUserRequest.FromString,
                     response_serializer=recommender_dot_v1_dot_recommender__pb2.RecommendForUserResponse.SerializeToString,
+            ),
+            'RecommendCollaborators': grpc.unary_unary_rpc_method_handler(
+                    servicer.RecommendCollaborators,
+                    request_deserializer=recommender_dot_v1_dot_recommender__pb2.RecommendCollaboratorsRequest.FromString,
+                    response_serializer=recommender_dot_v1_dot_recommender__pb2.RecommendCollaboratorsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -305,6 +328,33 @@ class RecommenderService(object):
             '/recommender.v1.RecommenderService/RecommendForUser',
             recommender_dot_v1_dot_recommender__pb2.RecommendForUserRequest.SerializeToString,
             recommender_dot_v1_dot_recommender__pb2.RecommendForUserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RecommendCollaborators(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/recommender.v1.RecommenderService/RecommendCollaborators',
+            recommender_dot_v1_dot_recommender__pb2.RecommendCollaboratorsRequest.SerializeToString,
+            recommender_dot_v1_dot_recommender__pb2.RecommendCollaboratorsResponse.FromString,
             options,
             channel_credentials,
             insecure,
