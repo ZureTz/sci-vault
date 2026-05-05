@@ -91,6 +91,9 @@ class RecommenderServer:
             def RecommendForUser(self, request, context):
                 return _recommend.RecommendForUser(request, context)
 
+            def RecommendCollaborators(self, request, context):
+                return _recommend.RecommendCollaborators(request, context)
+
         self._server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=cfg.max_workers),
             interceptors=[LoggingInterceptor()],

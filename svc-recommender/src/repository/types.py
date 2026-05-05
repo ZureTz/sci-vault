@@ -20,3 +20,16 @@ class ScoredDocument:
     authors: list[str]
     tags: list[str]
     similarity: float
+
+
+@dataclass
+class ScoredUser:
+    """A user paired with a similarity score against the caller's profile
+    centroid. Returned by RecommendCollaborators."""
+
+    user_id: int
+    username: str
+    nickname: str
+    avatar_key: str
+    similarity: float
+    signal_count: int

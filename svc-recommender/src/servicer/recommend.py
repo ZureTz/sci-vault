@@ -1,5 +1,5 @@
-"""Recommend servicer — implements RecommenderService.RecommendSimilar and
-RecommenderService.RecommendForUser."""
+"""Recommend servicer — implements RecommenderService.RecommendSimilar,
+RecommenderService.RecommendForUser, and RecommenderService.RecommendCollaborators."""
 
 import logging
 
@@ -10,7 +10,7 @@ from genai.embedding_resolver import QueryEmbeddingResolver
 from genai.query_embedder import TASK_RETRIEVAL_DOCUMENT
 from pb.recommender.v1 import recommender_pb2
 from repository.recommend import RecommendRepository
-from repository.types import ScoredDocument
+from repository.types import ScoredDocument, ScoredUser
 
 log = logging.getLogger(__name__)
 
@@ -139,52 +139,9 @@ class RecommendServicer:
             len(queries),
         )
 
-        if not liked_ids and not viewed_ids and not queries:
-            log.info("RecommendForUser: no signals — returning empty")
-            return recommender_pb2.RecommendForUserResponse(results=[])
-
-        # Bulk-fetch doc embeddings (preserve order for recency weighting).
-        liked_embeddings = self._fetch_doc_embeddings_ordered(liked_ids)
-        viewed_embeddings = self._fetch_doc_embeddings_ordered(viewed_ids)
-
-        # Resolve query embeddings via the three-tier chain (Redis → Postgres
-        # → Gemini). Critically, we use RETRIEVAL_DOCUMENT here — not
-        # RETRIEVAL_QUERY — because these vectors are about to be averaged
-        # with liked/viewed *document* embeddings (also RETRIEVAL_DOCUMENT)
-        # to form a profile centroid. Gemini's QUERY/DOCUMENT spaces are
-        # deliberately asymmetric; mixing them in a centroid is meaningless.
-        #
-        # Bulk-resolve in one call — each tier collapses to a single
-        # round-trip regardless of how many queries we have. Without this
-        # the cold path would be N Redis GETs + N Postgres SELECTs + N
-        # Gemini calls.
-        query_embeddings: list[np.ndarray] = []
-        if self._resolver is not None and queries:
-            try:
-                query_embeddings = self._resolver.resolve_many(
-                    queries, TASK_RETRIEVAL_DOCUMENT
-                )
-            except Exception:
-                log.warning(
-                    "RecommendForUser: failed to resolve query embeddings; "
-                    "continuing without query signal"
-                )
-
-        # Build weighted centroid.
-        centroid: np.ndarray | None = None
-        centroid = _accumulate(centroid, liked_embeddings, _WEIGHT_LIKED)
-        centroid = _accumulate(centroid, viewed_embeddings, _WEIGHT_VIEWED)
-        centroid = _accumulate(centroid, query_embeddings, _WEIGHT_QUERY)
-
-        if centroid is None:
-            log.info(
-                "RecommendForUser: signals present but no usable embeddings — "
-                "returning empty"
-            )
-            return recommender_pb2.RecommendForUserResponse(results=[])
-
-        normalized = _l2_normalize(centroid)
+        normalized = self._build_caller_centroid(liked_ids, viewed_ids, queries)
         if normalized is None:
+            log.info("RecommendForUser: no usable signals — returning empty")
             return recommender_pb2.RecommendForUserResponse(results=[])
 
         hits = self._repo.personalized_search(
@@ -202,6 +159,90 @@ class RecommendServicer:
                 for h in hits
             ]
         )
+
+    def RecommendCollaborators(
+        self,
+        request: recommender_pb2.RecommendCollaboratorsRequest,
+        context: grpc.ServicerContext,
+    ) -> recommender_pb2.RecommendCollaboratorsResponse:
+        if request.lab_id == 0:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "lab_id must be > 0")
+        if request.user_id == 0:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "user_id must be > 0")
+
+        liked_ids = list(request.liked_doc_ids)
+        viewed_ids = list(request.viewed_doc_ids)
+        queries = [q for q in request.recent_queries if q.strip()]
+        log.info(
+            "RecommendCollaborators: user_id=%d lab_id=%d limit=%d "
+            "likes=%d views=%d queries=%d",
+            request.user_id,
+            request.lab_id,
+            request.limit,
+            len(liked_ids),
+            len(viewed_ids),
+            len(queries),
+        )
+
+        normalized = self._build_caller_centroid(liked_ids, viewed_ids, queries)
+        if normalized is None:
+            log.info("RecommendCollaborators: no usable signals — returning empty")
+            return recommender_pb2.RecommendCollaboratorsResponse(results=[])
+
+        hits = self._repo.collaborators_search(
+            query_embedding=normalized,
+            lab_id=int(request.lab_id),
+            exclude_user_id=int(request.user_id),
+            limit=int(request.limit),
+        )
+        log.info("RecommendCollaborators: returning %d results", len(hits))
+
+        return recommender_pb2.RecommendCollaboratorsResponse(
+            results=[_to_scored_user(h) for h in hits]
+        )
+
+    def _build_caller_centroid(
+        self,
+        liked_ids: list[int],
+        viewed_ids: list[int],
+        queries: list[str],
+    ) -> np.ndarray | None:
+        """Build the caller's L2-normalized profile centroid from liked/viewed
+        docs and recent search queries. Returns None when there are no signals
+        or none of the signals resolved to a usable embedding.
+
+        Search queries are embedded with RETRIEVAL_DOCUMENT — not
+        RETRIEVAL_QUERY — because these vectors are averaged with liked/viewed
+        *document* embeddings into a profile centroid. Gemini's QUERY/DOCUMENT
+        spaces are deliberately asymmetric; mixing them is meaningless.
+        """
+        if not liked_ids and not viewed_ids and not queries:
+            return None
+
+        liked_embeddings = self._fetch_doc_embeddings_ordered(liked_ids)
+        viewed_embeddings = self._fetch_doc_embeddings_ordered(viewed_ids)
+
+        # Bulk-resolve queries in one call — each tier collapses to a single
+        # round-trip regardless of how many queries we have.
+        query_embeddings: list[np.ndarray] = []
+        if self._resolver is not None and queries:
+            try:
+                query_embeddings = self._resolver.resolve_many(
+                    queries, TASK_RETRIEVAL_DOCUMENT
+                )
+            except Exception:
+                log.warning(
+                    "_build_caller_centroid: failed to resolve query "
+                    "embeddings; continuing without query signal"
+                )
+
+        centroid: np.ndarray | None = None
+        centroid = _accumulate(centroid, liked_embeddings, _WEIGHT_LIKED)
+        centroid = _accumulate(centroid, viewed_embeddings, _WEIGHT_VIEWED)
+        centroid = _accumulate(centroid, query_embeddings, _WEIGHT_QUERY)
+        if centroid is None:
+            return None
+        return _l2_normalize(centroid)
 
     def _fetch_doc_embeddings_ordered(self, doc_ids: list[int]) -> list[np.ndarray]:
         """Fetch embeddings in one round-trip while preserving the input order
@@ -224,4 +265,15 @@ def _to_scored_document(
         tags=h.tags,
         similarity=h.similarity,
         match_type=match_type,
+    )
+
+
+def _to_scored_user(h: ScoredUser) -> recommender_pb2.ScoredUser:
+    return recommender_pb2.ScoredUser(
+        user_id=h.user_id,
+        username=h.username,
+        nickname=h.nickname,
+        avatar_key=h.avatar_key,
+        similarity=h.similarity,
+        signal_count=h.signal_count,
     )

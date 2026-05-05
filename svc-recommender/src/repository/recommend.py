@@ -11,7 +11,7 @@ from repository import (
     DOC_VISIBILITY_PRIVATE,
     ENRICH_STATUS_DONE,
 )
-from repository.types import ScoredDocument
+from repository.types import ScoredDocument, ScoredUser
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +25,12 @@ _MAX_PERSONALIZED_LIMIT = 50
 # centroid of mixed signals is, by construction, less peaked than a single
 # document embedding; demanding 0.6 cosine sim would empty most feeds.
 _MIN_PERSONALIZED_SIMILARITY = 0.4
+
+_DEFAULT_COLLABORATOR_LIMIT = 10
+_MAX_COLLABORATOR_LIMIT = 50
+# Same reasoning as personalized feed — comparing two centroids of noisy
+# user signals will rarely cross 0.6.
+_MIN_COLLABORATOR_SIMILARITY = 0.4
 
 _BASE_WHERE = sql.SQL("d.deleted_at IS NULL AND d.enrich_status = {}").format(
     sql.Literal(ENRICH_STATUS_DONE)
@@ -150,6 +156,100 @@ class RecommendRepository:
         if not limit:
             return _DEFAULT_PERSONALIZED_LIMIT
         return min(max(limit, 1), _MAX_PERSONALIZED_LIMIT)
+
+    @staticmethod
+    def _clamp_collaborator_limit(limit: int) -> int:
+        if not limit:
+            return _DEFAULT_COLLABORATOR_LIMIT
+        return min(max(limit, 1), _MAX_COLLABORATOR_LIMIT)
+
+    def collaborators_search(
+        self,
+        query_embedding: np.ndarray,
+        lab_id: int,
+        exclude_user_id: int,
+        limit: int,
+        min_similarity: float = _MIN_COLLABORATOR_SIMILARITY,
+    ) -> list[ScoredUser]:
+        """Rank lab members by cosine similarity between the caller's profile
+        centroid and each candidate's centroid (averaged embeddings of docs
+        they liked or viewed). The caller is excluded; users without any
+        like/view signal are excluded by the inner join. UNION ALL means a
+        doc both liked and viewed contributes twice — that's intentional, more
+        engagement → more weight in the candidate centroid."""
+        limit = self._clamp_collaborator_limit(limit)
+
+        query = sql.SQL(
+            "WITH candidate_signals AS ("
+            "  SELECT lm.user_id, d.embedding"
+            "    FROM lab_members lm"
+            "    JOIN document_likes dl"
+            "      ON dl.user_id = lm.user_id AND dl.deleted_at IS NULL"
+            "    JOIN documents d"
+            "      ON d.id = dl.document_id"
+            "     AND d.deleted_at IS NULL"
+            "     AND d.enrich_status = {done}"
+            "     AND d.embedding IS NOT NULL"
+            "   WHERE lm.lab_id = %(lab_id)s"
+            "     AND lm.deleted_at IS NULL"
+            "     AND lm.user_id <> %(exclude_user_id)s"
+            "  UNION ALL"
+            "  SELECT lm.user_id, d.embedding"
+            "    FROM lab_members lm"
+            "    JOIN document_views dv"
+            "      ON dv.user_id = lm.user_id AND dv.deleted_at IS NULL"
+            "    JOIN documents d"
+            "      ON d.id = dv.document_id"
+            "     AND d.deleted_at IS NULL"
+            "     AND d.enrich_status = {done}"
+            "     AND d.embedding IS NOT NULL"
+            "   WHERE lm.lab_id = %(lab_id)s"
+            "     AND lm.deleted_at IS NULL"
+            "     AND lm.user_id <> %(exclude_user_id)s"
+            "), centroids AS ("
+            "  SELECT user_id,"
+            "         AVG(embedding)::vector(768) AS centroid,"
+            "         COUNT(*)::int AS signal_count"
+            "    FROM candidate_signals"
+            "   GROUP BY user_id"
+            ")"
+            " SELECT u.id,"
+            "        u.username,"
+            "        COALESCE(up.nickname, '') AS nickname,"
+            "        COALESCE(up.avatar_key, '') AS avatar_key,"
+            "        1 - (c.centroid <=> %(query_vec)s) AS similarity,"
+            "        c.signal_count"
+            "   FROM centroids c"
+            "   JOIN users u ON u.id = c.user_id AND u.deleted_at IS NULL"
+            "   LEFT JOIN user_profiles up"
+            "     ON up.user_id = u.id AND up.deleted_at IS NULL"
+            "  WHERE 1 - (c.centroid <=> %(query_vec)s) >= %(min_sim)s"
+            "  ORDER BY c.centroid <=> %(query_vec)s ASC"
+            "  LIMIT %(limit)s"
+        ).format(done=sql.Literal(ENRICH_STATUS_DONE))
+
+        params = {
+            "query_vec": query_embedding,
+            "lab_id": lab_id,
+            "exclude_user_id": exclude_user_id,
+            "limit": limit,
+            "min_sim": min_similarity,
+        }
+
+        with self._pool.connection() as conn:
+            rows = conn.execute(query, params).fetchall()
+
+        return [
+            ScoredUser(
+                user_id=int(row[0]),
+                username=row[1],
+                nickname=row[2],
+                avatar_key=row[3],
+                similarity=float(row[4]),
+                signal_count=int(row[5]),
+            )
+            for row in rows
+        ]
 
     def personalized_search(
         self,
