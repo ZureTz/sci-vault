@@ -32,6 +32,7 @@
 		"ai_discovery": "AI 探索",
 		"search": "语义搜索",
 		"recommendations": "为你推荐",
+		"collaborators": "合作推荐",
 		"lab_members": "成员管理",
 		"lab_documents": "实验室文献",
 		"lab_settings": "实验室设置",
@@ -55,6 +56,7 @@
 		"join_lab": "加入实验室",
 		"search": "语义搜索",
 		"recommendations": "为你推荐",
+		"collaborators": "合作推荐",
 		"history": "活动记录",
 		"lab_members": "成员管理",
 		"lab_documents": "实验室文献",
@@ -416,6 +418,22 @@
 		},
 		"error": {
 			"failed": "加载推荐失败"
+		}
+	},
+	"collaborators": {
+		"title": "推荐协作者",
+		"subtitle": "实验室中阅读与搜索习惯与你相近的成员。",
+		"refresh": "刷新",
+		"signals": "{count} 条共同信号",
+		"no_lab": {
+			"description": "请在侧边栏选择一个实验室，查看与你兴趣相近的成员。"
+		},
+		"empty": {
+			"title": "暂无推荐",
+			"description": "在该实验室中点赞或浏览一些文献，等其他成员也产生互动后再来看看。"
+		},
+		"error": {
+			"failed": "加载推荐协作者失败"
 		}
 	},
 	"service": {

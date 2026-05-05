@@ -317,6 +317,16 @@
 							{/snippet}
 						</Sidebar.MenuButton>
 					</Sidebar.MenuItem>
+					<Sidebar.MenuItem>
+						<Sidebar.MenuButton isActive={effectivePathname === resolve('/collaborators')}>
+							{#snippet child({ props })}
+								<a href={resolve('/collaborators')} {...props}>
+									<Users />
+									<span>{$_('sidebar.collaborators')}</span>
+								</a>
+							{/snippet}
+						</Sidebar.MenuButton>
+					</Sidebar.MenuItem>
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
 		</Sidebar.Group>

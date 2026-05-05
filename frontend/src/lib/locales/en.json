@@ -32,6 +32,7 @@
 		"ai_discovery": "AI Discovery",
 		"search": "Search",
 		"recommendations": "Recommendations",
+		"collaborators": "Collaborators",
 		"lab_members": "Members",
 		"lab_documents": "Lab Documents",
 		"lab_settings": "Lab Settings",
@@ -55,6 +56,7 @@
 		"join_lab": "Join Lab",
 		"search": "Search",
 		"recommendations": "Recommendations",
+		"collaborators": "Collaborators",
 		"history": "Activity History",
 		"lab_members": "Members",
 		"lab_documents": "Lab Documents",
@@ -417,6 +419,22 @@
 		},
 		"error": {
 			"failed": "Failed to load recommendations"
+		}
+	},
+	"collaborators": {
+		"title": "Suggested Collaborators",
+		"subtitle": "Lab members whose reading and search patterns line up with yours.",
+		"refresh": "Refresh",
+		"signals": "{count} shared signals",
+		"no_lab": {
+			"description": "Pick a lab from the sidebar to see members whose interests overlap with yours."
+		},
+		"empty": {
+			"title": "No suggestions yet",
+			"description": "Like or view a few documents in this lab — and check back once other members have done the same."
+		},
+		"error": {
+			"failed": "Failed to load suggested collaborators"
 		}
 	},
 	"service": {
