@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 sci-vault is an AI-powered microservices platform for laboratory research data management. It consists of three services:
 
 - **svc-gateway** (Go/Gin) — REST API gateway, handles auth, document CRUD, user management, search, recommendations
-- **svc-recommender** (Python/gRPC) — AI-powered document enrichment (format conversion to PDF/text via LibreOffice, metadata extraction + vector embeddings via Google Gemini), semantic search, similar-document recommendations, personalised feed
+- **svc-recommender** (Python/gRPC) — AI-powered document enrichment (format conversion to PDF/text via LibreOffice, metadata extraction + vector embeddings via Google Gemini), semantic search, similar-document recommendations, personalised feed, collaborator suggestions
 - **frontend** (SvelteKit 2 / Svelte 5) — Web UI with Tailwind CSS v4, shadcn-svelte + Bits UI components, i18n (en, zh-CN)
 
 Infrastructure: PostgreSQL 18 + pgvector, Redis 8.6, RustFS (S3-compatible storage).
@@ -31,6 +31,7 @@ gRPC surface (`proto/recommender/v1/recommender.proto`):
 - `SemanticSearch` — embed query + vector search (+ keyword fallback)
 - `RecommendSimilar` — nearest neighbours to a source document's embedding
 - `RecommendForUser` — personalised feed; the gateway forwards the caller's recent likes/views/search-queries and the recommender averages their embeddings into a profile centroid for nearest-neighbour search
+- `RecommendCollaborators` — ranks lab-mates by interest-profile similarity. Same caller-signal payload as `RecommendForUser`; the recommender builds **each candidate's** centroid directly in SQL by averaging the embeddings of docs they liked or viewed (no per-candidate Gemini calls). Caller and zero-signal users are excluded; results scoped to a single `lab_id` the caller belongs to.
 
 ## Common Commands
 
@@ -135,7 +136,13 @@ Don't reintroduce per-handler `ShouldBindUri` blocks for these params.
 - `RecommendForUser` embeds historical search strings with `RETRIEVAL_DOCUMENT` because those vectors are averaged with liked/viewed *document* embeddings into a profile centroid — mixing the two spaces in a centroid is mathematically meaningless.
 - The cache key includes `task_type` (Redis namespace + Postgres composite PK with `query_hash`) so the same string under two task types stores as two distinct entries and never collides. Constants `TASK_RETRIEVAL_QUERY` / `TASK_RETRIEVAL_DOCUMENT` are exported from `genai/query_embedder.py`.
 
-**Shared row type**: `repository/types.py:ScoredDocument` is the dataclass returned by every embedding-based query (search results, similar-doc results, personalised feed results). Add new query helpers to this shape rather than introducing a parallel hierarchy.
+**Shared row types**: `repository/types.py:ScoredDocument` is the dataclass returned by every embedding-based **document** query (search results, similar-doc results, personalised feed results). `ScoredUser` is the **user** equivalent, returned by `RecommendCollaborators`. Add new query helpers to one of these shapes rather than introducing a parallel hierarchy.
+
+**Shared caller-centroid helper**: `RecommendServicer._build_caller_centroid(liked_ids, viewed_ids, queries)` is the single place that turns the caller's three signal lists into an L2-normalized profile vector. Both `RecommendForUser` and `RecommendCollaborators` call it — keep this true so the two flows can never drift on weighting, recency decay, or task-type handling. Search queries are always embedded with `RETRIEVAL_DOCUMENT` here (see asymmetry note above).
+
+**No similarity threshold for `RecommendCollaborators`**: unlike `RecommendSimilar` (`_MIN_SIMILARITY = 0.6`) and `RecommendForUser` (`_MIN_PERSONALIZED_SIMILARITY = 0.4`), `collaborators_search` in `repository/recommend.py` deliberately has **no** min-similarity cutoff — only `ORDER BY` + `LIMIT`. Comparing two noisy centroids will rarely cross 0.4, and the feature is "rank my lab-mates by interest overlap" not "filter to only the very similar ones." Don't reintroduce a threshold; if results look too noisy, lower `LIMIT` or rework the candidate centroid weighting instead.
+
+**Cross-service table reads**: `RecommendCollaborators` is the first flow where the recommender reads gateway-owned interaction tables (`lab_members`, `document_likes`, `document_views`, `users`, `user_profiles`) directly via psycopg — same pattern that already applies to `documents` and `query_embeddings`. The gateway never sends candidate signal lists over gRPC: a populous lab would explode the payload, and document embeddings are already in Postgres. Aggregation is done in SQL with `AVG(embedding)::vector(768)` (requires pgvector ≥ 0.7, which the `pgvector/pgvector:pg18-trixie` image provides).
 
 **Format conversion (`src/conversion/`)**: `to_enrichment_payload(raw, content_type)` returns `(payload, mime_for_gemini)` where `mime_for_gemini` is always `application/pdf` or `text/plain` (the two formats Gemini's `Part.from_bytes` accepts). PDF and TXT/MD pass through; DOCX/PPTX/XLSX shell out to LibreOffice (`soffice --headless --convert-to pdf`) — each call gets its own `-env:UserInstallation` profile dir so concurrent jobs from the 8-thread enrichment pool don't fight LibreOffice's user-profile lock. The Dockerfile installs `libreoffice` + `font-noto-cjk` (CJK fonts ensure Chinese-language docs render). Conversion failures and unknown content types are deterministic, so `_run_enrichment` marks `failed` immediately without retrying.
 
