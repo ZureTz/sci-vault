@@ -28,9 +28,6 @@ _MIN_PERSONALIZED_SIMILARITY = 0.4
 
 _DEFAULT_COLLABORATOR_LIMIT = 10
 _MAX_COLLABORATOR_LIMIT = 50
-# Same reasoning as personalized feed — comparing two centroids of noisy
-# user signals will rarely cross 0.6.
-_MIN_COLLABORATOR_SIMILARITY = 0.4
 
 _BASE_WHERE = sql.SQL("d.deleted_at IS NULL AND d.enrich_status = {}").format(
     sql.Literal(ENRICH_STATUS_DONE)
@@ -169,14 +166,20 @@ class RecommendRepository:
         lab_id: int,
         exclude_user_id: int,
         limit: int,
-        min_similarity: float = _MIN_COLLABORATOR_SIMILARITY,
     ) -> list[ScoredUser]:
         """Rank lab members by cosine similarity between the caller's profile
         centroid and each candidate's centroid (averaged embeddings of docs
         they liked or viewed). The caller is excluded; users without any
         like/view signal are excluded by the inner join. UNION ALL means a
         doc both liked and viewed contributes twice — that's intentional, more
-        engagement → more weight in the candidate centroid."""
+        engagement → more weight in the candidate centroid.
+
+        No similarity threshold: the feature is "rank my lab-mates by
+        interest overlap" not "filter to only the very-similar ones." A 30%
+        cosine match between two noisy centroids is still useful for
+        ranking — and any cutoff above 0 risks empty results in small or
+        cross-disciplinary labs. ORDER BY + LIMIT alone do the right thing.
+        """
         limit = self._clamp_collaborator_limit(limit)
 
         query = sql.SQL(
@@ -223,7 +226,6 @@ class RecommendRepository:
             "   JOIN users u ON u.id = c.user_id AND u.deleted_at IS NULL"
             "   LEFT JOIN user_profiles up"
             "     ON up.user_id = u.id AND up.deleted_at IS NULL"
-            "  WHERE 1 - (c.centroid <=> %(query_vec)s) >= %(min_sim)s"
             "  ORDER BY c.centroid <=> %(query_vec)s ASC"
             "  LIMIT %(limit)s"
         ).format(done=sql.Literal(ENRICH_STATUS_DONE))
@@ -233,7 +235,6 @@ class RecommendRepository:
             "lab_id": lab_id,
             "exclude_user_id": exclude_user_id,
             "limit": limit,
-            "min_sim": min_similarity,
         }
 
         with self._pool.connection() as conn:
