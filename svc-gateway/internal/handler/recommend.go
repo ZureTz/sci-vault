@@ -17,6 +17,7 @@ import (
 type RecommendService interface {
 	RecommendSimilar(ctx context.Context, userID, docID uint, q dto.RecommendSimilarQuery) (*dto.RecommendSimilarResponse, error)
 	RecommendForUser(ctx context.Context, userID uint, q dto.RecommendForUserQuery) (*dto.RecommendForUserResponse, error)
+	RecommendCollaborators(ctx context.Context, userID uint, q dto.RecommendCollaboratorsQuery) (*dto.RecommendCollaboratorsResponse, error)
 }
 
 type RecommendHandler struct {
@@ -77,6 +78,33 @@ func (h *RecommendHandler) RecommendForUser(c *gin.Context) {
 		default:
 			slog.Error("RecommendForUser service error", "err", err)
 			c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.recommend_for_user.failed")))
+		}
+		return
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
+func (h *RecommendHandler) RecommendCollaborators(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(fmt.Errorf("common.unauthorized")))
+		return
+	}
+
+	var q dto.RecommendCollaboratorsQuery
+	if err := c.ShouldBindQuery(&q); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse(err))
+		return
+	}
+
+	resp, err := h.recommendService.RecommendCollaborators(c.Request.Context(), userID, q)
+	if err != nil {
+		switch {
+		case errors.Is(err, app_error.ErrNotMember):
+			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.recommend_collaborators.not_lab_member")))
+		default:
+			slog.Error("RecommendCollaborators service error", "err", err)
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.recommend_collaborators.failed")))
 		}
 		return
 	}

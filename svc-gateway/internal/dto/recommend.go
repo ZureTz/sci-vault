@@ -27,3 +27,21 @@ type RecommendForUserQuery struct {
 type RecommendForUserResponse struct {
 	Results []SimilarDocumentItem `json:"results"`
 }
+
+type RecommendCollaboratorsQuery struct {
+	LabID uint `form:"lab_id" binding:"required,gt=0"`
+	Limit int  `form:"limit" binding:"omitempty,min=1,max=50"`
+}
+
+type CollaboratorItem struct {
+	UserID      uint    `json:"user_id"`
+	Username    string  `json:"username"`
+	Nickname    string  `json:"nickname"`
+	AvatarURL   *string `json:"avatar_url"`
+	Similarity  float64 `json:"similarity"`
+	SignalCount uint32  `json:"signal_count"`
+}
+
+type RecommendCollaboratorsResponse struct {
+	Results []CollaboratorItem `json:"results"`
+}

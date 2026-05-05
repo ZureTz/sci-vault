@@ -61,6 +61,7 @@ func NewRouter(deps *RouterDeps) *gin.Engine {
 		deps.registerDocumentRoutes(protected.Group("/docs"))
 		deps.registerHistoryRoutes(protected.Group("/mine/history"))
 		deps.registerRecommendationRoutes(protected.Group("/mine/recommendations"))
+		deps.registerCollaboratorRoutes(protected.Group("/mine/collaborators"))
 		deps.registerSearchRoutes(protected.Group("/search"))
 		deps.registerStatsRoutes(protected.Group("/stats"))
 		deps.registerTranslateRoutes(protected.Group("/translate"))
@@ -145,6 +146,11 @@ func (deps *RouterDeps) registerHistoryRoutes(group *gin.RouterGroup) {
 // Recommendation routes (/api/v1/mine/recommendations/...)
 func (deps *RouterDeps) registerRecommendationRoutes(group *gin.RouterGroup) {
 	group.GET("", deps.RecommendHandler.RecommendForUser)
+}
+
+// Collaborator-suggestion routes (/api/v1/mine/collaborators/...)
+func (deps *RouterDeps) registerCollaboratorRoutes(group *gin.RouterGroup) {
+	group.GET("", deps.RecommendHandler.RecommendCollaborators)
 }
 
 // Search routes (/api/v1/search/...)

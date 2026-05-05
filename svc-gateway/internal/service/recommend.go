@@ -12,6 +12,7 @@ import (
 	"gateway/internal/repo"
 	"gateway/pkg/app_error"
 	"gateway/pkg/grpc_client"
+	"gateway/pkg/storage"
 )
 
 const (
@@ -21,6 +22,9 @@ const (
 	defaultRecommendForUserLimit = 20
 	maxRecommendForUserLimit     = 50
 
+	defaultRecommendCollaboratorsLimit = 10
+	maxRecommendCollaboratorsLimit     = 50
+
 	// Signal-collection budgets. The recommender further weights items by
 	// recency within each list, so generous bounds are fine — these are just
 	// the absolute caps on payload size per gRPC call.
@@ -29,14 +33,15 @@ const (
 	recommendForUserSearchBudget = 10
 )
 
-// RecommendService surfaces document recommendations sourced from the
-// recommender microservice. Wraps both the per-document "similar to this"
-// flow and the personalized feed.
+// RecommendService surfaces document and user recommendations sourced from
+// the recommender microservice. Wraps the per-document "similar to this"
+// flow, the personalized feed, and the collaborator-suggestion flow.
 type RecommendService struct {
 	labRepo           repo.LabRepository
 	interactionRepo   repo.DocumentInteractionRepository
 	searchRepo        repo.SearchRepository
 	recommenderClient *grpc_client.RecommenderClient
+	storageClient     *storage.Client
 }
 
 func NewRecommendService(
@@ -44,12 +49,14 @@ func NewRecommendService(
 	interactionRepo repo.DocumentInteractionRepository,
 	searchRepo repo.SearchRepository,
 	recommenderClient *grpc_client.RecommenderClient,
+	storageClient *storage.Client,
 ) *RecommendService {
 	return &RecommendService{
 		labRepo:           labRepo,
 		interactionRepo:   interactionRepo,
 		searchRepo:        searchRepo,
 		recommenderClient: recommenderClient,
+		storageClient:     storageClient,
 	}
 }
 
@@ -123,12 +130,102 @@ func (s *RecommendService) RecommendForUser(ctx context.Context, userID uint, q 
 		limit = maxRecommendForUserLimit
 	}
 
-	// Pull the three signal lists in parallel — they're independent reads.
-	var (
-		likedIDs      []uint64
-		viewedIDs     []uint64
-		recentQueries []string
+	likedIDs, viewedIDs, recentQueries, err := s.gatherUserSignals(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.recommenderClient.RecommendForUser(
+		ctx,
+		uint64(userID),
+		uint64(q.LabID),
+		limit,
+		likedIDs,
+		viewedIDs,
+		recentQueries,
 	)
+	if err != nil {
+		return nil, fmt.Errorf("recommend-for-user RPC: %w", err)
+	}
+
+	results := make([]dto.SimilarDocumentItem, len(resp.Results))
+	for i, r := range resp.Results {
+		results[i] = dto.SimilarDocumentItem{
+			DocID:            uint(r.DocId),
+			Title:            r.Title,
+			OriginalFileName: r.OriginalFileName,
+			Summary:          r.Summary,
+			Authors:          r.Authors,
+			Tags:             r.Tags,
+			Similarity:       r.Similarity,
+		}
+	}
+	return &dto.RecommendForUserResponse{Results: results}, nil
+}
+
+// RecommendCollaborators returns lab members whose interest profile is closest
+// to the caller's. lab_id is required and must be a lab the caller belongs
+// to. Caller-side signals match RecommendForUser exactly (likes + views +
+// recent search queries); the recommender builds each candidate's centroid
+// from their likes/views directly in SQL.
+func (s *RecommendService) RecommendCollaborators(ctx context.Context, userID uint, q dto.RecommendCollaboratorsQuery) (*dto.RecommendCollaboratorsResponse, error) {
+	if _, err := s.labRepo.FindMember(ctx, q.LabID, userID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, app_error.ErrNotMember
+		}
+		return nil, fmt.Errorf("failed to check lab membership: %w", err)
+	}
+
+	limit := uint32(q.Limit)
+	if limit == 0 {
+		limit = defaultRecommendCollaboratorsLimit
+	}
+	if limit > maxRecommendCollaboratorsLimit {
+		limit = maxRecommendCollaboratorsLimit
+	}
+
+	likedIDs, viewedIDs, recentQueries, err := s.gatherUserSignals(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.recommenderClient.RecommendCollaborators(
+		ctx,
+		uint64(userID),
+		uint64(q.LabID),
+		limit,
+		likedIDs,
+		viewedIDs,
+		recentQueries,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("recommend-collaborators RPC: %w", err)
+	}
+
+	results := make([]dto.CollaboratorItem, len(resp.Results))
+	for i, r := range resp.Results {
+		var avatarURL *string
+		if r.AvatarKey != "" {
+			url := s.storageClient.PublicObjectURL(r.AvatarKey)
+			avatarURL = &url
+		}
+		results[i] = dto.CollaboratorItem{
+			UserID:      uint(r.UserId),
+			Username:    r.Username,
+			Nickname:    r.Nickname,
+			AvatarURL:   avatarURL,
+			Similarity:  r.Similarity,
+			SignalCount: r.SignalCount,
+		}
+	}
+	return &dto.RecommendCollaboratorsResponse{Results: results}, nil
+}
+
+// gatherUserSignals pulls the caller's most-recent likes, views, and search
+// queries in parallel — they're independent reads. Shared by RecommendForUser
+// and RecommendCollaborators so the two flows always see the same signal
+// shape; if you change a budget, both flows pick it up.
+func (s *RecommendService) gatherUserSignals(ctx context.Context, userID uint) (likedIDs, viewedIDs []uint64, recentQueries []string, err error) {
 	g, gctx := errgroup.WithContext(ctx)
 	g.Go(func() error {
 		items, _, err := s.interactionRepo.ListLikeHistory(gctx, userID, 0, recommendForUserLikeBudget)
@@ -166,33 +263,7 @@ func (s *RecommendService) RecommendForUser(ctx context.Context, userID uint, q 
 		return nil
 	})
 	if err := g.Wait(); err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
-
-	resp, err := s.recommenderClient.RecommendForUser(
-		ctx,
-		uint64(userID),
-		uint64(q.LabID),
-		limit,
-		likedIDs,
-		viewedIDs,
-		recentQueries,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("recommend-for-user RPC: %w", err)
-	}
-
-	results := make([]dto.SimilarDocumentItem, len(resp.Results))
-	for i, r := range resp.Results {
-		results[i] = dto.SimilarDocumentItem{
-			DocID:            uint(r.DocId),
-			Title:            r.Title,
-			OriginalFileName: r.OriginalFileName,
-			Summary:          r.Summary,
-			Authors:          r.Authors,
-			Tags:             r.Tags,
-			Similarity:       r.Similarity,
-		}
-	}
-	return &dto.RecommendForUserResponse{Results: results}, nil
+	return likedIDs, viewedIDs, recentQueries, nil
 }

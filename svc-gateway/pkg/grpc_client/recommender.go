@@ -122,6 +122,30 @@ func (r *RecommenderClient) RecommendForUser(
 	})
 }
 
+// RecommendCollaborators asks the Python service for the lab members whose
+// interest profile is closest to the caller's. Same caller-signal payload
+// as RecommendForUser; the recommender builds candidate centroids from each
+// member's likes/views directly in SQL. recent_queries may trigger Gemini
+// calls so the timeout matches RecommendForUser.
+func (r *RecommenderClient) RecommendCollaborators(
+	ctx context.Context,
+	userID, labID uint64,
+	limit uint32,
+	likedDocIDs, viewedDocIDs []uint64,
+	recentQueries []string,
+) (*pb.RecommendCollaboratorsResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	return r.client.RecommendCollaborators(ctx, &pb.RecommendCollaboratorsRequest{
+		UserId:        userID,
+		LabId:         labID,
+		Limit:         limit,
+		LikedDocIds:   likedDocIDs,
+		ViewedDocIds:  viewedDocIDs,
+		RecentQueries: recentQueries,
+	})
+}
+
 // Close releases the underlying gRPC connection.
 func (r *RecommenderClient) Close() error {
 	return r.conn.Close()
