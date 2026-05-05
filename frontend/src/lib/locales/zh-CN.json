@@ -533,6 +533,10 @@
 			"not_lab_member": "您不是所选实验室的成员",
 			"failed": "加载推荐失败"
 		},
+		"recommend_collaborators": {
+			"not_lab_member": "您不是所选实验室的成员",
+			"failed": "加载推荐协作者失败"
+		},
 		"list_documents": {
 			"failed": "加载文档列表失败，请稍后重试"
 		},

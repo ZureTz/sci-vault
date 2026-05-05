@@ -524,6 +524,10 @@
 			"not_lab_member": "You are not a member of the selected lab",
 			"failed": "Failed to load recommendations"
 		},
+		"recommend_collaborators": {
+			"not_lab_member": "You are not a member of the selected lab",
+			"failed": "Failed to load suggested collaborators"
+		},
 		"list_documents": {
 			"failed": "Failed to load documents, please try again"
 		},
