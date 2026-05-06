@@ -111,7 +111,7 @@ func New(configPath string) (*App, error) {
 	documentService := service.NewDocumentService(documentRepo, documentInteractionRepo, labRepo, storageClient, recommenderClient, cacheConn)
 	documentInteractionService := service.NewDocumentInteractionService(documentRepo, documentInteractionRepo, labRepo)
 	searchService := service.NewSearchService(searchRepo, labRepo, recommenderClient)
-	statsService := service.NewStatsService(statsRepo, cacheConn)
+	statsService := service.NewStatsService(statsRepo, labRepo, cacheConn, storageClient)
 	healthService := service.NewHealthService(recommenderClient)
 	translateService := service.NewTranslateService(recommenderClient)
 	labService := service.NewLabService(labRepo, userRepo, cacheConn, mailSrv, storageClient)

@@ -163,6 +163,9 @@ func (deps *RouterDeps) registerSearchRoutes(group *gin.RouterGroup) {
 // Stats routes (/api/v1/stats/...)
 func (deps *RouterDeps) registerStatsRoutes(group *gin.RouterGroup) {
 	group.GET("/mine/dashboard", deps.StatsHandler.GetMyDashboardStats)
+
+	labStats := group.Group("/labs/:lab_id").Use(middleware.ExtractLabID())
+	labStats.GET("/dashboard", deps.StatsHandler.GetLabDashboardStats)
 }
 
 // Translate routes (/api/v1/translate/...)

@@ -308,6 +308,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, userID uint, file 
 	if _, err := s.cacheConn.Del(ctx, dashboardStatsKey(userID)); err != nil {
 		slog.Warn("Failed to invalidate dashboard stats cache", "userID", userID, "err", err)
 	}
+	invalidateLabDashboard(ctx, s.cacheConn, doc.LabID, doc.Visibility)
 
 	// Trigger async enrichment on the Python microservice.
 	// The call returns an immediate ACK; Python owns all status updates from this point.
@@ -488,6 +489,7 @@ func (s *DocumentService) BatchUploadDocuments(ctx context.Context, userID uint,
 		if _, err := s.cacheConn.Del(ctx, dashboardStatsKey(userID)); err != nil {
 			slog.Warn("Failed to invalidate dashboard stats cache", "userID", userID, "err", err)
 		}
+		invalidateLabDashboard(ctx, s.cacheConn, resolvedLabID, resolvedVis)
 	}
 
 	resp := &dto.BatchUploadDocumentResponse{Results: results}
@@ -575,6 +577,7 @@ func (s *DocumentService) RestartEnrichment(ctx context.Context, userID, docID u
 	if _, err := s.cacheConn.Del(ctx, dashboardStatsKey(doc.UploadedByUserID)); err != nil {
 		slog.Warn("Failed to invalidate dashboard stats cache", "userID", doc.UploadedByUserID, "err", err)
 	}
+	invalidateLabDashboard(ctx, s.cacheConn, doc.LabID, doc.Visibility)
 
 	// Trigger async enrichment on the Python microservice.
 	if _, err := s.recommenderClient.EnrichDocument(ctx, uint64(doc.ID), doc.FileKey, doc.ContentType); err != nil {
@@ -783,7 +786,20 @@ func (s *DocumentService) DeleteDocument(ctx context.Context, userID, docID uint
 	if _, err := s.cacheConn.Del(ctx, dashboardStatsKey(doc.UploadedByUserID)); err != nil {
 		slog.Warn("Failed to invalidate dashboard stats cache", "userID", doc.UploadedByUserID, "err", err)
 	}
+	invalidateLabDashboard(ctx, s.cacheConn, doc.LabID, doc.Visibility)
 	return nil
+}
+
+// invalidateLabDashboard drops the cached lab dashboard stats for a document's
+// owning lab, but only when the document is actually lab-visible (private docs
+// are never aggregated into the lab dashboard).
+func invalidateLabDashboard(ctx context.Context, cacheConn *cache.CacheConnector, labID *uint, visibility string) {
+	if labID == nil || *labID == 0 || visibility != model.DocVisibilityLab {
+		return
+	}
+	if _, err := cacheConn.Del(ctx, labDashboardStatsKey(*labID)); err != nil {
+		slog.Warn("Failed to invalidate lab dashboard stats cache", "labID", *labID, "err", err)
+	}
 }
 
 // downloadFilename returns the original upload filename. Files are stored

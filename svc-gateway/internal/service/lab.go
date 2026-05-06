@@ -86,6 +86,10 @@ func (s *LabService) JoinLabByCode(ctx context.Context, userID uint, req dto.Joi
 	}); err != nil {
 		return nil, err
 	}
+	if _, err := s.cacheConn.Del(ctx, labDashboardStatsKey(lab.ID)); err != nil {
+		// member_count drives the lab dashboard, so refresh it on join.
+		_ = err
+	}
 
 	count, err := s.repo.CountMembers(ctx, lab.ID)
 	if err != nil {
@@ -239,7 +243,11 @@ func (s *LabService) LeaveLab(ctx context.Context, labID, userID uint, emailCode
 	}
 	defer s.cacheConn.Del(context.Background(), cacheKey)
 
-	return s.repo.RemoveMember(ctx, labID, userID)
+	if err := s.repo.RemoveMember(ctx, labID, userID); err != nil {
+		return err
+	}
+	_, _ = s.cacheConn.Del(ctx, labDashboardStatsKey(labID))
+	return nil
 }
 
 func (s *LabService) GetMyLabs(ctx context.Context, userID uint) ([]dto.LabListItem, error) {
@@ -288,7 +296,11 @@ func (s *LabService) KickMember(ctx context.Context, labID, requesterID, targetU
 		return app_error.ErrCannotKickOwner
 	}
 
-	return s.repo.RemoveMember(ctx, labID, targetUserID)
+	if err := s.repo.RemoveMember(ctx, labID, targetUserID); err != nil {
+		return err
+	}
+	_, _ = s.cacheConn.Del(ctx, labDashboardStatsKey(labID))
+	return nil
 }
 
 func (s *LabService) TransferOwnership(ctx context.Context, labID, requesterID, targetUserID uint) error {
