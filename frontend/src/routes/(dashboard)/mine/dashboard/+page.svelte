@@ -5,12 +5,14 @@
 		FileText,
 		HardDrive,
 		Eye,
+		Heart,
 		CircleCheck,
 		LoaderCircle,
 		CircleAlert,
 		Clock,
 		Upload,
-		ArrowRight
+		ArrowRight,
+		TrendingUp
 	} from 'lucide-svelte';
 
 	import { goto } from '$app/navigation';
@@ -22,6 +24,9 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import statsApi, { type DashboardStatsResponse } from '$lib/api/stats';
 	import { showApiErrors } from '$lib/utils/api-error';
+	import UploadsChart from '$lib/components/dashboard/uploads-chart.svelte';
+	import EngagementChart from '$lib/components/dashboard/engagement-chart.svelte';
+	import FormatDistributionChart from '$lib/components/dashboard/format-distribution-chart.svelte';
 
 	let stats = $state<DashboardStatsResponse | null>(null);
 	let isLoading = $state(true);
@@ -54,6 +59,12 @@
 	}
 
 	onMount(loadStats);
+
+	const hasUploadActivity = $derived((stats?.uploads_by_day ?? []).some((d) => d.count > 0));
+	const hasEngagementActivity = $derived(
+		(stats?.views_by_day ?? []).some((d) => d.count > 0) ||
+			(stats?.likes_by_day ?? []).some((d) => d.count > 0)
+	);
 </script>
 
 <svelte:head>
@@ -77,8 +88,8 @@
 
 	<!-- Stat Cards -->
 	{#if isLoading}
-		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-			{#each Array.from({ length: 4 }, (_, i) => i) as i (i)}
+		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+			{#each Array.from({ length: 5 }, (_, i) => i) as i (i)}
 				<Card.Root>
 					<Card.Content class="p-4">
 						<div class="flex items-center justify-between">
@@ -92,7 +103,7 @@
 			{/each}
 		</div>
 	{:else if stats}
-		<div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+		<div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
 			<!-- Total Documents -->
 			<Card.Root class="transition-shadow hover:shadow-md">
 				<Card.Content class="p-4">
@@ -157,6 +168,24 @@
 				</Card.Content>
 			</Card.Root>
 
+			<!-- Total Likes -->
+			<Card.Root class="transition-shadow hover:shadow-md">
+				<Card.Content class="p-4">
+					<div class="flex items-center justify-between">
+						<span class="text-sm font-medium text-muted-foreground"
+							>{$_('dashboard.stats.total_likes')}</span
+						>
+						<div
+							class="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-500/10 text-pink-600 transition-transform hover:scale-110 dark:text-pink-400"
+						>
+							<Heart class="h-4 w-4" />
+						</div>
+					</div>
+					<div class="mt-2 text-2xl font-bold tracking-tight">{stats.total_likes}</div>
+					<p class="mt-1 text-xs text-muted-foreground">{$_('dashboard.stats.all_time')}</p>
+				</Card.Content>
+			</Card.Root>
+
 			<!-- Enrichment Status -->
 			<Card.Root class="transition-shadow hover:shadow-md">
 				<Card.Content class="p-4">
@@ -178,6 +207,73 @@
 					<p class="mt-1 text-xs text-muted-foreground">
 						{$_('dashboard.stats.completion_rate')}
 					</p>
+				</Card.Content>
+			</Card.Root>
+		</div>
+	{/if}
+
+	<!-- Charts row -->
+	{#if isLoading}
+		<div class="grid gap-6 lg:grid-cols-2">
+			{#each Array.from({ length: 2 }, (_, i) => i) as i (i)}
+				<Card.Root>
+					<Card.Header class="pb-2">
+						<Skeleton class="h-5 w-40" />
+						<Skeleton class="mt-1 h-3 w-56" />
+					</Card.Header>
+					<Card.Content>
+						<Skeleton class="h-50 w-full" />
+					</Card.Content>
+				</Card.Root>
+			{/each}
+		</div>
+	{:else if stats}
+		<div class="grid gap-6 lg:grid-cols-2">
+			<Card.Root class="transition-shadow hover:shadow-md">
+				<Card.Header class="pb-2">
+					<Card.Title class="text-base font-semibold">
+						{$_('dashboard.charts.uploads_title')}
+					</Card.Title>
+					<Card.Description class="text-xs">
+						{$_('dashboard.charts.uploads_desc')}
+					</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					{#if hasUploadActivity}
+						<UploadsChart
+							data={stats.uploads_by_day}
+							label={$_('dashboard.charts.uploads_label')}
+						/>
+					{:else}
+						<div class="flex h-50 w-full items-center justify-center text-sm text-muted-foreground">
+							{$_('dashboard.charts.empty')}
+						</div>
+					{/if}
+				</Card.Content>
+			</Card.Root>
+
+			<Card.Root class="transition-shadow hover:shadow-md">
+				<Card.Header class="pb-2">
+					<Card.Title class="text-base font-semibold">
+						{$_('dashboard.charts.engagement_title')}
+					</Card.Title>
+					<Card.Description class="text-xs">
+						{$_('dashboard.charts.engagement_desc')}
+					</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					{#if hasEngagementActivity}
+						<EngagementChart
+							views={stats.views_by_day}
+							likes={stats.likes_by_day}
+							viewsLabel={$_('dashboard.charts.views_label')}
+							likesLabel={$_('dashboard.charts.likes_label')}
+						/>
+					{:else}
+						<div class="flex h-50 w-full items-center justify-center text-sm text-muted-foreground">
+							{$_('dashboard.charts.empty')}
+						</div>
+					{/if}
 				</Card.Content>
 			</Card.Root>
 		</div>
@@ -309,8 +405,89 @@
 			</Card.Root>
 		</div>
 
-		<!-- Enrichment Breakdown & Quick Actions -->
+		<!-- Sidebar column: Top viewed, Format distribution, Enrichment breakdown, Quick actions -->
 		<div class="col-span-1 space-y-6 md:col-span-2 xl:col-span-1">
+			<!-- Top Viewed Documents -->
+			<Card.Root class="transition-shadow hover:shadow-md">
+				<Card.Header class="pb-2">
+					<Card.Title class="text-base font-semibold">
+						{$_('dashboard.charts.top_viewed_title')}
+					</Card.Title>
+					<Card.Description class="text-xs">
+						{$_('dashboard.charts.top_viewed_desc')}
+					</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					{#if isLoading}
+						<div class="space-y-3">
+							{#each Array.from({ length: 3 }, (_, i) => i) as i (i)}
+								<div class="flex items-center gap-3">
+									<Skeleton class="h-8 w-8 rounded-lg" />
+									<div class="flex-1 space-y-1.5">
+										<Skeleton class="h-4 w-3/4" />
+										<Skeleton class="h-3 w-1/3" />
+									</div>
+								</div>
+							{/each}
+						</div>
+					{:else if stats && stats.top_viewed.some((d) => d.view_count > 0)}
+						<div class="space-y-1">
+							{#each stats.top_viewed as doc, i (doc.id)}
+								{#if doc.view_count > 0}
+									<button
+										class="group flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted/50"
+										onclick={() => goto(resolve(`/documents/${doc.id}`))}
+									>
+										<div
+											class="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground"
+										>
+											{i + 1}
+										</div>
+										<div class="min-w-0 flex-1">
+											<p
+												class="truncate text-sm font-medium transition-colors group-hover:text-primary"
+											>
+												{doc.title ?? doc.original_file_name}
+											</p>
+											<p class="text-xs text-muted-foreground">
+												<Eye class="mr-1 inline h-3 w-3" />{doc.view_count}
+												<Heart class="mr-1 ml-2 inline h-3 w-3" />{doc.like_count}
+											</p>
+										</div>
+										<TrendingUp
+											class="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary"
+										/>
+									</button>
+								{/if}
+							{/each}
+						</div>
+					{:else}
+						<p class="py-6 text-center text-sm text-muted-foreground">
+							{$_('dashboard.charts.top_viewed_empty')}
+						</p>
+					{/if}
+				</Card.Content>
+			</Card.Root>
+
+			<!-- Format Distribution -->
+			<Card.Root class="transition-shadow hover:shadow-md">
+				<Card.Header class="pb-2">
+					<Card.Title class="text-base font-semibold">
+						{$_('dashboard.charts.formats_title')}
+					</Card.Title>
+					<Card.Description class="text-xs">
+						{$_('dashboard.charts.formats_desc')}
+					</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					{#if isLoading}
+						<Skeleton class="h-50 w-full" />
+					{:else if stats}
+						<FormatDistributionChart data={stats.format_distribution} />
+					{/if}
+				</Card.Content>
+			</Card.Root>
+
 			<!-- Enrichment Breakdown -->
 			<Card.Root class="transition-shadow hover:shadow-md">
 				<Card.Header class="pb-2">

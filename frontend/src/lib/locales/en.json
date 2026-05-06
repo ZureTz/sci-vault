@@ -75,6 +75,7 @@
 			"total_documents": "Total Documents",
 			"storage_used": "Storage Used",
 			"total_views": "Total Views",
+			"total_likes": "Total Likes",
 			"enrichment": "Enrichment",
 			"enriched": "{count} enriched",
 			"across_documents": "Across {count} documents",
@@ -96,6 +97,30 @@
 			"title": "Quick Actions",
 			"upload": "Upload Document",
 			"my_documents": "My Documents"
+		},
+		"charts": {
+			"uploads_title": "Uploads (last 30 days)",
+			"uploads_desc": "Daily upload activity for the last month",
+			"engagement_title": "Engagement (last 30 days)",
+			"engagement_desc": "Views and likes on your documents",
+			"formats_title": "Format Breakdown",
+			"formats_desc": "Distribution of file types you have uploaded",
+			"top_viewed_title": "Top Viewed Documents",
+			"top_viewed_desc": "Your most-read uploads",
+			"views_label": "Views",
+			"likes_label": "Likes",
+			"uploads_label": "Uploads",
+			"empty": "Not enough data yet to display this chart.",
+			"top_viewed_empty": "No views yet."
+		},
+		"formats": {
+			"pdf": "PDF",
+			"docx": "Word",
+			"pptx": "PowerPoint",
+			"xlsx": "Excel",
+			"txt": "Plain text",
+			"md": "Markdown",
+			"other": "Other"
 		}
 	},
 	"history": {
@@ -507,6 +532,10 @@
 		"get_my_dashboard_stats": {
 			"failed": "Failed to load dashboard statistics"
 		},
+		"get_lab_dashboard_stats": {
+			"failed": "Failed to load lab dashboard statistics",
+			"forbidden": "You are not a member of this lab"
+		},
 		"get_my_labs": {
 			"failed": "Failed to load labs, please try again"
 		},
@@ -681,7 +710,18 @@
 	},
 	"lab_dashboard": {
 		"title": "Lab Dashboard",
-		"coming_soon": "Lab-level dashboard is coming soon. For now, head to \"My Dashboard\" for your personal overview.",
+		"stats_title": "Lab Activity",
+		"stats_desc": "Aggregate view of all lab-visible documents",
+		"stats": {
+			"total_documents": "Lab Documents",
+			"storage_used": "Lab Storage",
+			"total_views": "Lab Views",
+			"total_likes": "Lab Likes"
+		},
+		"top_contributors_title": "Top Contributors",
+		"top_contributors_desc": "Members with the most uploads in this lab",
+		"top_contributors_empty": "No uploads yet.",
+		"contributor_docs": "{count} documents",
 		"no_lab_selected": "No lab selected",
 		"no_lab_selected_desc": "Select a lab from the sidebar or create/join one to get started.",
 		"invite_code": "Invite Code",

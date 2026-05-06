@@ -74,6 +74,7 @@
 			"total_documents": "文献总数",
 			"storage_used": "已用存储",
 			"total_views": "总浏览量",
+			"total_likes": "总点赞数",
 			"enrichment": "数据丰富",
 			"enriched": "{count} 篇已完成",
 			"across_documents": "共 {count} 篇文献",
@@ -95,6 +96,30 @@
 			"title": "快捷操作",
 			"upload": "上传文献",
 			"my_documents": "我的文献"
+		},
+		"charts": {
+			"uploads_title": "上传趋势（近 30 天）",
+			"uploads_desc": "最近一个月每日上传量",
+			"engagement_title": "互动趋势（近 30 天）",
+			"engagement_desc": "您文献的浏览与点赞数据",
+			"formats_title": "格式分布",
+			"formats_desc": "您已上传文件类型的占比",
+			"top_viewed_title": "热门文献",
+			"top_viewed_desc": "浏览量最高的文献",
+			"views_label": "浏览",
+			"likes_label": "点赞",
+			"uploads_label": "上传",
+			"empty": "数据不足，暂无法绘制此图表。",
+			"top_viewed_empty": "暂无浏览数据。"
+		},
+		"formats": {
+			"pdf": "PDF",
+			"docx": "Word",
+			"pptx": "PowerPoint",
+			"xlsx": "Excel",
+			"txt": "纯文本",
+			"md": "Markdown",
+			"other": "其他"
 		}
 	},
 	"history": {
@@ -506,6 +531,10 @@
 		"get_my_dashboard_stats": {
 			"failed": "加载仪表盘统计数据失败"
 		},
+		"get_lab_dashboard_stats": {
+			"failed": "加载实验室仪表盘统计数据失败",
+			"forbidden": "您不是该实验室的成员"
+		},
 		"get_my_labs": {
 			"failed": "加载实验室列表失败，请稍后重试"
 		},
@@ -690,7 +719,18 @@
 	},
 	"lab_dashboard": {
 		"title": "实验室仪表盘",
-		"coming_soon": "实验室级别的仪表盘功能即将推出。您可以先访问「我的仪表盘」查看个人概览。",
+		"stats_title": "实验室动态",
+		"stats_desc": "实验室共享文献的整体情况",
+		"stats": {
+			"total_documents": "实验室文献",
+			"storage_used": "实验室存储",
+			"total_views": "实验室浏览量",
+			"total_likes": "实验室点赞数"
+		},
+		"top_contributors_title": "贡献排行",
+		"top_contributors_desc": "本实验室上传文献最多的成员",
+		"top_contributors_empty": "暂无上传记录。",
+		"contributor_docs": "{count} 篇文献",
 		"no_lab_selected": "未选择实验室",
 		"no_lab_selected_desc": "请在侧边栏中选择一个实验室，或创建/加入一个实验室。",
 		"invite_code": "邀请码",

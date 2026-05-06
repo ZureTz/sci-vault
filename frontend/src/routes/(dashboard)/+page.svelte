@@ -8,7 +8,12 @@
 		Crown,
 		ArrowRight,
 		LogOut,
-		Mail
+		Mail,
+		FileText,
+		HardDrive,
+		Eye,
+		Heart,
+		User
 	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
@@ -16,6 +21,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
+	import * as Avatar from '$lib/components/ui/avatar';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
@@ -24,8 +30,12 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Separator } from '$lib/components/ui/separator';
 	import labApi, { type LabDetailResponse } from '$lib/api/lab';
+	import statsApi, { type LabDashboardStatsResponse } from '$lib/api/stats';
 	import { getActiveLab, setActiveLab, invalidateLabs } from '$lib/stores/lab.svelte';
 	import { showApiErrors } from '$lib/utils/api-error';
+	import UploadsChart from '$lib/components/dashboard/uploads-chart.svelte';
+	import EngagementChart from '$lib/components/dashboard/engagement-chart.svelte';
+	import FormatDistributionChart from '$lib/components/dashboard/format-distribution-chart.svelte';
 
 	let activeLab = $derived(getActiveLab());
 	// Derive just the ID so the fetch effect doesn't re-fire when the sidebar
@@ -34,7 +44,9 @@
 	// output is strictly equal to the previous value.
 	let activeLabId = $derived(activeLab?.id ?? null);
 	let labDetail = $state<LabDetailResponse | null>(null);
+	let labStats = $state<LabDashboardStatsResponse | null>(null);
 	let isLoading = $state(true);
+	let isStatsLoading = $state(true);
 	let copied = $state(false);
 
 	// Leave lab state
@@ -50,12 +62,21 @@
 		leaveEmailCode = '';
 	}
 
+	function formatFileSize(bytes: number): string {
+		if (bytes < 1024) return `${bytes} B`;
+		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+		if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+		return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+	}
+
 	$effect(() => {
 		const id = activeLabId;
 		// Reset leave flow on lab switch
 		resetLeaveState();
 		if (id !== null) {
 			isLoading = true;
+			isStatsLoading = true;
+			labStats = null;
 			labApi
 				.getLab(id)
 				.then((detail) => {
@@ -67,9 +88,22 @@
 				.finally(() => {
 					isLoading = false;
 				});
+			statsApi
+				.getLabDashboardStats(id)
+				.then((stats) => {
+					labStats = stats;
+				})
+				.catch((error: unknown) => {
+					showApiErrors(error, $_('service.get_lab_dashboard_stats.failed'));
+				})
+				.finally(() => {
+					isStatsLoading = false;
+				});
 		} else {
 			labDetail = null;
+			labStats = null;
 			isLoading = false;
+			isStatsLoading = false;
 		}
 	});
 
@@ -113,6 +147,12 @@
 			confirmingLeave = false;
 		}
 	}
+
+	const hasUploadActivity = $derived((labStats?.uploads_by_day ?? []).some((d) => d.count > 0));
+	const hasEngagementActivity = $derived(
+		(labStats?.views_by_day ?? []).some((d) => d.count > 0) ||
+			(labStats?.likes_by_day ?? []).some((d) => d.count > 0)
+	);
 </script>
 
 <svelte:head>
@@ -205,7 +245,7 @@
 				</div>
 			</div>
 
-			<!-- Stat Cards -->
+			<!-- Members + Invite Code -->
 			<div class="grid gap-4 sm:grid-cols-3">
 				<!-- Members -->
 				<Card.Root class="transition-shadow hover:shadow-md">
@@ -265,6 +305,228 @@
 					</Card.Content>
 				</Card.Root>
 			{/if}
+
+			<Separator />
+
+			<!-- Lab Stats -->
+			<div class="space-y-4">
+				<div>
+					<h3 class="text-lg font-semibold tracking-tight">{$_('lab_dashboard.stats_title')}</h3>
+					<p class="text-sm text-muted-foreground">{$_('lab_dashboard.stats_desc')}</p>
+				</div>
+
+				{#if isStatsLoading}
+					<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+						{#each Array.from({ length: 4 }, (__, i) => i) as i (i)}
+							<Card.Root>
+								<Card.Content class="p-4">
+									<div class="flex items-center justify-between">
+										<Skeleton class="h-4 w-24" />
+										<Skeleton class="h-8 w-8 rounded-lg" />
+									</div>
+									<Skeleton class="mt-2 h-7 w-16" />
+								</Card.Content>
+							</Card.Root>
+						{/each}
+					</div>
+				{:else if labStats}
+					<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+						<Card.Root class="transition-shadow hover:shadow-md">
+							<Card.Content class="p-4">
+								<div class="flex items-center justify-between">
+									<span class="text-sm font-medium text-muted-foreground">
+										{$_('lab_dashboard.stats.total_documents')}
+									</span>
+									<div
+										class="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary"
+									>
+										<FileText class="size-4" />
+									</div>
+								</div>
+								<div class="mt-2 text-2xl font-bold tracking-tight">
+									{labStats.total_documents}
+								</div>
+							</Card.Content>
+						</Card.Root>
+
+						<Card.Root class="transition-shadow hover:shadow-md">
+							<Card.Content class="p-4">
+								<div class="flex items-center justify-between">
+									<span class="text-sm font-medium text-muted-foreground">
+										{$_('lab_dashboard.stats.storage_used')}
+									</span>
+									<div
+										class="flex size-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400"
+									>
+										<HardDrive class="size-4" />
+									</div>
+								</div>
+								<div class="mt-2 text-2xl font-bold tracking-tight">
+									{formatFileSize(labStats.total_storage)}
+								</div>
+							</Card.Content>
+						</Card.Root>
+
+						<Card.Root class="transition-shadow hover:shadow-md">
+							<Card.Content class="p-4">
+								<div class="flex items-center justify-between">
+									<span class="text-sm font-medium text-muted-foreground">
+										{$_('lab_dashboard.stats.total_views')}
+									</span>
+									<div
+										class="flex size-8 items-center justify-center rounded-lg bg-green-500/10 text-green-600 dark:text-green-400"
+									>
+										<Eye class="size-4" />
+									</div>
+								</div>
+								<div class="mt-2 text-2xl font-bold tracking-tight">{labStats.total_views}</div>
+							</Card.Content>
+						</Card.Root>
+
+						<Card.Root class="transition-shadow hover:shadow-md">
+							<Card.Content class="p-4">
+								<div class="flex items-center justify-between">
+									<span class="text-sm font-medium text-muted-foreground">
+										{$_('lab_dashboard.stats.total_likes')}
+									</span>
+									<div
+										class="flex size-8 items-center justify-center rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-400"
+									>
+										<Heart class="size-4" />
+									</div>
+								</div>
+								<div class="mt-2 text-2xl font-bold tracking-tight">{labStats.total_likes}</div>
+							</Card.Content>
+						</Card.Root>
+					</div>
+
+					<!-- Charts row -->
+					<div class="grid gap-4 lg:grid-cols-2">
+						<Card.Root class="transition-shadow hover:shadow-md">
+							<Card.Header class="pb-2">
+								<Card.Title class="text-base font-semibold">
+									{$_('dashboard.charts.uploads_title')}
+								</Card.Title>
+								<Card.Description class="text-xs">
+									{$_('dashboard.charts.uploads_desc')}
+								</Card.Description>
+							</Card.Header>
+							<Card.Content>
+								{#if hasUploadActivity}
+									<UploadsChart
+										data={labStats.uploads_by_day}
+										label={$_('dashboard.charts.uploads_label')}
+									/>
+								{:else}
+									<div
+										class="flex h-50 w-full items-center justify-center text-sm text-muted-foreground"
+									>
+										{$_('dashboard.charts.empty')}
+									</div>
+								{/if}
+							</Card.Content>
+						</Card.Root>
+
+						<Card.Root class="transition-shadow hover:shadow-md">
+							<Card.Header class="pb-2">
+								<Card.Title class="text-base font-semibold">
+									{$_('dashboard.charts.engagement_title')}
+								</Card.Title>
+								<Card.Description class="text-xs">
+									{$_('dashboard.charts.engagement_desc')}
+								</Card.Description>
+							</Card.Header>
+							<Card.Content>
+								{#if hasEngagementActivity}
+									<EngagementChart
+										views={labStats.views_by_day}
+										likes={labStats.likes_by_day}
+										viewsLabel={$_('dashboard.charts.views_label')}
+										likesLabel={$_('dashboard.charts.likes_label')}
+									/>
+								{:else}
+									<div
+										class="flex h-50 w-full items-center justify-center text-sm text-muted-foreground"
+									>
+										{$_('dashboard.charts.empty')}
+									</div>
+								{/if}
+							</Card.Content>
+						</Card.Root>
+					</div>
+
+					<!-- Format Distribution + Top Contributors -->
+					<div class="grid gap-4 lg:grid-cols-2">
+						<Card.Root class="transition-shadow hover:shadow-md">
+							<Card.Header class="pb-2">
+								<Card.Title class="text-base font-semibold">
+									{$_('dashboard.charts.formats_title')}
+								</Card.Title>
+								<Card.Description class="text-xs">
+									{$_('dashboard.charts.formats_desc')}
+								</Card.Description>
+							</Card.Header>
+							<Card.Content>
+								<FormatDistributionChart data={labStats.format_distribution} />
+							</Card.Content>
+						</Card.Root>
+
+						<Card.Root class="transition-shadow hover:shadow-md">
+							<Card.Header class="pb-2">
+								<Card.Title class="text-base font-semibold">
+									{$_('lab_dashboard.top_contributors_title')}
+								</Card.Title>
+								<Card.Description class="text-xs">
+									{$_('lab_dashboard.top_contributors_desc')}
+								</Card.Description>
+							</Card.Header>
+							<Card.Content>
+								{#if labStats.top_contributors.length > 0}
+									<div class="space-y-2">
+										{#each labStats.top_contributors as c, i (c.user_id)}
+											<a
+												href={resolve(`/profile/${c.user_id}`)}
+												class="group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted/50"
+											>
+												<div
+													class="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground"
+												>
+													{i + 1}
+												</div>
+												<Avatar.Root class="size-9 shrink-0">
+													{#if c.avatar_url}
+														<Avatar.Image src={c.avatar_url} alt={c.username} />
+													{/if}
+													<Avatar.Fallback>
+														<User class="size-4 text-muted-foreground" />
+													</Avatar.Fallback>
+												</Avatar.Root>
+												<div class="min-w-0 flex-1">
+													<p
+														class="truncate text-sm font-medium transition-colors group-hover:text-primary"
+													>
+														{c.nickname ?? c.username}
+													</p>
+													<p class="truncate text-xs text-muted-foreground">@{c.username}</p>
+												</div>
+												<span class="shrink-0 text-sm font-semibold tabular-nums">
+													{$_('lab_dashboard.contributor_docs', {
+														values: { count: c.doc_count }
+													})}
+												</span>
+											</a>
+										{/each}
+									</div>
+								{:else}
+									<p class="py-6 text-center text-sm text-muted-foreground">
+										{$_('lab_dashboard.top_contributors_empty')}
+									</p>
+								{/if}
+							</Card.Content>
+						</Card.Root>
+					</div>
+				{/if}
+			</div>
 
 			<Separator />
 
