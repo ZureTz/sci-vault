@@ -15,3 +15,6 @@ Icon
 
 # Docker compose in production
 docker-compose-prod*.yaml
+
+# Docs
+docs/
