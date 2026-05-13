@@ -26,7 +26,7 @@ class TranslateGenAI:
         )
 
         response = self._client.models.generate_content_stream(
-            model="gemini-3.1-flash-lite-preview",
+            model="gemini-3.1-flash-lite",
             contents=prompt,
             config=types.GenerateContentConfig(
                 thinking_config=types.ThinkingConfig(thinking_level=ThinkingLevel.LOW)
