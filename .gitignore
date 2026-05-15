@@ -18,3 +18,5 @@ docker-compose-prod*.yaml
 
 # Docs
 docs/
+# Symlinks to docs
+docs
