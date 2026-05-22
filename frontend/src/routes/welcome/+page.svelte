@@ -10,6 +10,8 @@
 		ArrowRight,
 		Upload,
 		Sparkles,
+		Users,
+		Languages,
 		ChevronRight
 	} from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -39,11 +41,32 @@
 			iconColor: 'text-blue-500'
 		},
 		{
+			icon: Sparkles,
+			titleKey: 'welcome.features.recommendations.title',
+			descKey: 'welcome.features.recommendations.description',
+			gradient: 'from-amber-500/20 to-orange-500/10',
+			iconColor: 'text-amber-500'
+		},
+		{
+			icon: Users,
+			titleKey: 'welcome.features.lab_collaboration.title',
+			descKey: 'welcome.features.lab_collaboration.description',
+			gradient: 'from-emerald-500/20 to-teal-500/10',
+			iconColor: 'text-emerald-500'
+		},
+		{
+			icon: Languages,
+			titleKey: 'welcome.features.translation.title',
+			descKey: 'welcome.features.translation.description',
+			gradient: 'from-rose-500/20 to-pink-500/10',
+			iconColor: 'text-rose-500'
+		},
+		{
 			icon: Shield,
 			titleKey: 'welcome.features.secure_storage.title',
 			descKey: 'welcome.features.secure_storage.description',
-			gradient: 'from-emerald-500/20 to-teal-500/10',
-			iconColor: 'text-emerald-500'
+			gradient: 'from-sky-500/20 to-cyan-500/10',
+			iconColor: 'text-sky-500'
 		}
 	];
 
@@ -223,7 +246,7 @@
 					</p>
 				</div>
 
-				<div class="grid gap-6 sm:grid-cols-3">
+				<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 					{#each features as feat (feat.titleKey)}
 						{@const Icon = feat.icon}
 						<div

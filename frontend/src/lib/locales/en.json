@@ -65,7 +65,6 @@
 		"navigate_to": "Navigate to",
 		"navigate_to_desc": "Select a page to navigate to."
 	},
-
 	"dashboard": {
 		"title": "Dashboard Overview",
 		"description": "Your research data at a glance.",
@@ -880,24 +879,36 @@
 			"badge": "AI-Powered Research Platform",
 			"title": "Your Intelligent",
 			"title_highlight": "Research Vault",
-			"subtitle": "Upload scientific papers and let AI automatically extract metadata, generate summaries, and build semantic connections across your knowledge base.",
+			"subtitle": "Upload research in any format and let AI extract metadata, surface related work, translate across languages, and connect you with collaborators across your lab.",
 			"cta_primary": "Get Started",
 			"cta_secondary": "Sign In"
 		},
 		"features": {
 			"title": "Everything you need for research management",
-			"subtitle": "Sci-Vault combines AI-powered enrichment with semantic search to help you organize and discover research effortlessly.",
+			"subtitle": "Sci-Vault combines AI enrichment, semantic search, and lab collaboration to help you organize, discover, and share research effortlessly.",
 			"ai_enrichment": {
 				"title": "AI Metadata Enrichment",
-				"description": "Upload a PDF and AI automatically extracts title, authors, publication year, DOI, and generates a concise summary."
+				"description": "Upload PDF, Word, PowerPoint, or Excel files — AI extracts the title, authors, publication year, and DOI, then writes a concise summary."
 			},
 			"vector_search": {
-				"title": "Semantic Discovery",
-				"description": "Find related papers using vector similarity search powered by pgvector and Google Gemini embeddings."
+				"title": "Semantic Search",
+				"description": "Find papers by meaning, not keywords, using vector similarity powered by pgvector and Google Gemini embeddings."
+			},
+			"recommendations": {
+				"title": "Smart Recommendations",
+				"description": "Get a personalized feed and similar-paper suggestions drawn from what you read, like, and search."
+			},
+			"lab_collaboration": {
+				"title": "Lab Collaboration",
+				"description": "Share documents in lab workspaces and let AI suggest collaborators who study what you study."
+			},
+			"translation": {
+				"title": "Instant Translation",
+				"description": "Translate any document with streaming AI translation between English and Chinese."
 			},
 			"secure_storage": {
-				"title": "Secure Cloud Storage",
-				"description": "All your documents stored securely with role-based access control and S3-compatible object storage."
+				"title": "Secure Storage",
+				"description": "Documents stay private or lab-scoped with role-based access control and S3-compatible object storage."
 			}
 		},
 		"workflow": {
@@ -905,17 +916,17 @@
 			"step1": {
 				"label": "01",
 				"title": "Upload",
-				"description": "Drop your PDF papers into the vault"
+				"description": "Drop in PDF, Word, PowerPoint, or Excel files"
 			},
 			"step2": {
 				"label": "02",
 				"title": "Enrich",
-				"description": "AI extracts metadata and generates vector embeddings"
+				"description": "AI enriches metadata and builds semantic embeddings"
 			},
 			"step3": {
 				"label": "03",
 				"title": "Discover",
-				"description": "Search and explore your growing knowledge base"
+				"description": "Search, get recommendations, and collaborate with your lab"
 			}
 		},
 		"footer": {
