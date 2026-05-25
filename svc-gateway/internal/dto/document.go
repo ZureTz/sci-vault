@@ -47,7 +47,7 @@ type ListMyDocumentsQuery struct {
 	SortOrder  string `form:"sort_order" binding:"omitempty,oneof=asc desc"`
 }
 
-// ListLabDocumentsQuery drives the lab-scope document management page (owner-only).
+// ListLabDocumentsQuery drives the lab-scope document list page (member-readable).
 // Visibility is implicitly 'lab' and lab_id comes from the route, so neither
 // field appears here.
 type ListLabDocumentsQuery struct {

@@ -28,7 +28,6 @@
 		ChevronsRight,
 		Ellipsis,
 		SlidersHorizontal,
-		ShieldOff,
 		Trash2,
 		User as UserIcon
 	} from 'lucide-svelte';
@@ -63,7 +62,8 @@
 	let activeLabId = $derived(getActiveLab()?.id ?? null);
 	let activeLabRole = $derived(getActiveLab()?.role ?? null);
 	let activeLabName = $derived(getActiveLab()?.name ?? '');
-	let canViewPage = $derived(activeLabId !== null && activeLabRole === 'owner');
+	let canViewPage = $derived(activeLabId !== null);
+	let canModify = $derived(activeLabRole === 'owner');
 
 	// ===== Data + server state =====
 	let documents = $state<DocumentListItem[]>([]);
@@ -112,7 +112,7 @@
 	// ===== Fetching =====
 	async function loadDocuments() {
 		const labId = activeLabId;
-		if (labId === null || activeLabRole !== 'owner') {
+		if (labId === null) {
 			documents = [];
 			total = 0;
 			isLoading = false;
@@ -179,6 +179,7 @@
 	}
 
 	async function restartEnrichment(docId: number) {
+		if (!canModify) return;
 		try {
 			await documentApi.restartEnrichment(docId);
 			toast.success($_('service.restart_enrichment.success'));
@@ -190,6 +191,7 @@
 	}
 
 	function openEditDialog(doc: DocumentListItem) {
+		if (!canModify) return;
 		editTarget = doc;
 		editTitle = doc.title ?? '';
 		editYear = '';
@@ -208,6 +210,7 @@
 	}
 
 	async function handleEditSubmit() {
+		if (!canModify) return;
 		if (!editTarget) return;
 		editSubmitting = true;
 		try {
@@ -233,11 +236,13 @@
 	}
 
 	function openDeleteDialog(doc: DocumentListItem) {
+		if (!canModify) return;
 		deleteTarget = doc;
 		deleteDialogOpen = true;
 	}
 
 	async function handleDeleteSubmit() {
+		if (!canModify) return;
 		if (!deleteTarget) return;
 		deleteSubmitting = true;
 		try {
@@ -422,19 +427,6 @@
 				<div class="text-center">
 					<p class="font-medium">{$_('document.lab.no_lab')}</p>
 					<p class="mt-1 text-sm text-muted-foreground">{$_('document.lab.no_lab_hint')}</p>
-				</div>
-			</Card.Content>
-		</Card.Root>
-	{:else if activeLabRole !== 'owner'}
-		<!-- Active lab but caller is not the owner -->
-		<Card.Root class="shadow-sm">
-			<Card.Content class="flex flex-col items-center gap-4 py-16">
-				<div class="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-					<ShieldOff class="h-8 w-8 text-muted-foreground" />
-				</div>
-				<div class="text-center">
-					<p class="font-medium">{$_('document.lab.not_owner')}</p>
-					<p class="mt-1 text-sm text-muted-foreground">{$_('document.lab.not_owner_hint')}</p>
 				</div>
 			</Card.Content>
 		</Card.Root>
@@ -702,24 +694,26 @@
 																<Eye class="mr-2 h-4 w-4" />
 																{$_('document.lab.actions.view')}
 															</DropdownMenu.Item>
-															<DropdownMenu.Item onSelect={() => openEditDialog(doc)}>
-																<Pencil class="mr-2 h-4 w-4" />
-																{$_('document.lab.actions.edit')}
-															</DropdownMenu.Item>
-															{#if doc.enrich_status === 'failed' || doc.enrich_status === 'not_started'}
-																<DropdownMenu.Item onSelect={() => restartEnrichment(doc.id)}>
-																	<RefreshCw class="mr-2 h-4 w-4" />
-																	{$_('document.lab.actions.restart')}
+															{#if canModify}
+																<DropdownMenu.Item onSelect={() => openEditDialog(doc)}>
+																	<Pencil class="mr-2 h-4 w-4" />
+																	{$_('document.lab.actions.edit')}
+																</DropdownMenu.Item>
+																{#if doc.enrich_status === 'failed' || doc.enrich_status === 'not_started'}
+																	<DropdownMenu.Item onSelect={() => restartEnrichment(doc.id)}>
+																		<RefreshCw class="mr-2 h-4 w-4" />
+																		{$_('document.lab.actions.restart')}
+																	</DropdownMenu.Item>
+																{/if}
+																<DropdownMenu.Separator />
+																<DropdownMenu.Item
+																	class="text-destructive focus:text-destructive"
+																	onSelect={() => openDeleteDialog(doc)}
+																>
+																	<Trash2 class="mr-2 h-4 w-4" />
+																	{$_('document.lab.actions.delete')}
 																</DropdownMenu.Item>
 															{/if}
-															<DropdownMenu.Separator />
-															<DropdownMenu.Item
-																class="text-destructive focus:text-destructive"
-																onSelect={() => openDeleteDialog(doc)}
-															>
-																<Trash2 class="mr-2 h-4 w-4" />
-																{$_('document.lab.actions.delete')}
-															</DropdownMenu.Item>
 														</DropdownMenu.Content>
 													</DropdownMenu.Root>
 												{/if}

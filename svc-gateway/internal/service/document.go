@@ -184,13 +184,10 @@ func (s *DocumentService) canAccessDocument(ctx context.Context, userID uint, do
 }
 
 // canManageDocument reports whether userID is allowed to mutate doc
-// (edit metadata, restart enrichment, delete). Two paths grant authority:
-// being the uploader, or being the OWNER of the lab the doc is shared into.
-// Sits alongside canAccessDocument — same shape, but for write authority.
+// (edit metadata, restart enrichment, delete).
+// For private docs, only the uploader can mutate.
+// For lab-visible docs, only the lab OWNER can mutate.
 func (s *DocumentService) canManageDocument(ctx context.Context, userID uint, doc *model.Document) (bool, error) {
-	if doc.UploadedByUserID == userID {
-		return true, nil
-	}
 	if doc.Visibility == model.DocVisibilityLab && doc.LabID != nil {
 		member, err := s.labRepo.FindMember(ctx, *doc.LabID, userID)
 		if err != nil {
@@ -202,8 +199,9 @@ func (s *DocumentService) canManageDocument(ctx context.Context, userID uint, do
 		if member.Role == model.LabRoleOwner {
 			return true, nil
 		}
+		return false, nil
 	}
-	return false, nil
+	return doc.UploadedByUserID == userID, nil
 }
 
 // resolveVisibility validates a visibility/labID pair and returns the canonical values to persist.
@@ -626,17 +624,13 @@ func (s *DocumentService) ListMyDocuments(ctx context.Context, userID uint, quer
 }
 
 // ListLabDocuments lists every lab-visible document in a lab, regardless of
-// uploader. Owner-only: members see ErrNotOwner, non-members see ErrNotMember.
+// uploader. Any member can list; non-members see ErrNotMember.
 func (s *DocumentService) ListLabDocuments(ctx context.Context, requesterID, labID uint, query dto.ListLabDocumentsQuery) (*dto.ListMyDocumentsResponse, error) {
-	member, err := s.labRepo.FindMember(ctx, labID, requesterID)
-	if err != nil {
+	if _, err := s.labRepo.FindMember(ctx, labID, requesterID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, app_error.ErrNotMember
 		}
 		return nil, fmt.Errorf("failed to load lab membership: %w", err)
-	}
-	if member.Role != model.LabRoleOwner {
-		return nil, app_error.ErrNotOwner
 	}
 
 	page := query.Page

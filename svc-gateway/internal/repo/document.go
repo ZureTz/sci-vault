@@ -128,7 +128,7 @@ func (r *documentRepo) FindByUserID(ctx context.Context, userID uint, filter Lis
 }
 
 // FindByLabID lists every lab-visible document in a lab, regardless of uploader.
-// Used by the lab-scope document management page (owner-only). The visibility
+// Used by the lab-scope document list page. The visibility
 // and lab_id predicates are baked in — no caller can widen them.
 func (r *documentRepo) FindByLabID(ctx context.Context, labID uint, filter ListLabDocumentsFilter) ([]model.Document, int64, error) {
 	var docs []model.Document
