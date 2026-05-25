@@ -626,17 +626,15 @@ func (s *DocumentService) ListMyDocuments(ctx context.Context, userID uint, quer
 }
 
 // ListLabDocuments lists every lab-visible document in a lab, regardless of
-// uploader. Owner-only: members see ErrNotOwner, non-members see ErrNotMember.
+// uploader. Any lab member can list; non-members get ErrNotMember.
+// Management actions (edit / restart / delete) are gated separately by the
+// individual document endpoints and by the frontend role-based UI.
 func (s *DocumentService) ListLabDocuments(ctx context.Context, requesterID, labID uint, query dto.ListLabDocumentsQuery) (*dto.ListMyDocumentsResponse, error) {
-	member, err := s.labRepo.FindMember(ctx, labID, requesterID)
-	if err != nil {
+	if _, err := s.labRepo.FindMember(ctx, labID, requesterID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, app_error.ErrNotMember
 		}
 		return nil, fmt.Errorf("failed to load lab membership: %w", err)
-	}
-	if member.Role != model.LabRoleOwner {
-		return nil, app_error.ErrNotOwner
 	}
 
 	page := query.Page

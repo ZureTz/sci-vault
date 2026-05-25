@@ -255,9 +255,10 @@ func (h *DocumentHandler) ListMyDocuments(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// ListLabDocuments serves the lab-scope document management page.
-// Owner-only: the service returns ErrNotMember / ErrNotOwner; this handler
-// maps both to 403 with distinct i18n codes so the frontend can react.
+// ListLabDocuments serves the lab-scope document list. Any lab member can
+// list; non-members get a 403 with service.list_lab_documents.not_member.
+// Per-row management actions (edit / restart / delete) are guarded by the
+// individual document endpoints and by the frontend role-based UI.
 func (h *DocumentHandler) ListLabDocuments(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -277,8 +278,6 @@ func (h *DocumentHandler) ListLabDocuments(c *gin.Context) {
 		switch {
 		case errors.Is(err, app_error.ErrNotMember):
 			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.list_lab_documents.not_member")))
-		case errors.Is(err, app_error.ErrNotOwner):
-			c.JSON(http.StatusForbidden, utils.ErrorResponse(fmt.Errorf("service.list_lab_documents.forbidden")))
 		default:
 			slog.Error("ListLabDocuments service error", "err", err)
 			c.JSON(http.StatusInternalServerError, utils.ErrorResponse(fmt.Errorf("service.list_lab_documents.failed")))

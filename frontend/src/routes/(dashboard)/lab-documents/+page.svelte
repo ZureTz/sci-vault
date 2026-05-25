@@ -28,7 +28,6 @@
 		ChevronsRight,
 		Ellipsis,
 		SlidersHorizontal,
-		ShieldOff,
 		Trash2,
 		User as UserIcon
 	} from 'lucide-svelte';
@@ -59,11 +58,13 @@
 
 	// ===== Active-lab gating =====
 	// Depend on the lab ID (a primitive) so the fetch effect refires on lab swap
-	// even if the ActiveLab object reference changes.
+	// even if the ActiveLab object reference changes. Any lab member can view
+	// the list; only owners see the per-row management actions.
 	let activeLabId = $derived(getActiveLab()?.id ?? null);
 	let activeLabRole = $derived(getActiveLab()?.role ?? null);
 	let activeLabName = $derived(getActiveLab()?.name ?? '');
-	let canViewPage = $derived(activeLabId !== null && activeLabRole === 'owner');
+	let canViewPage = $derived(activeLabId !== null);
+	let isOwner = $derived(activeLabRole === 'owner');
 
 	// ===== Data + server state =====
 	let documents = $state<DocumentListItem[]>([]);
@@ -112,7 +113,7 @@
 	// ===== Fetching =====
 	async function loadDocuments() {
 		const labId = activeLabId;
-		if (labId === null || activeLabRole !== 'owner') {
+		if (labId === null) {
 			documents = [];
 			total = 0;
 			isLoading = false;
@@ -145,7 +146,8 @@
 	}
 
 	// Refetch whenever any server-affecting control changes — including the
-	// active lab ID, so a lab swap reloads the table.
+	// active lab ID, so a lab swap reloads the table. Role isn't a fetch input
+	// (any member can list), so it's not tracked here.
 	$effect(() => {
 		void debouncedSearch;
 		void statusFilter;
@@ -153,7 +155,6 @@
 		void pageSize;
 		void sorting;
 		void activeLabId;
-		void activeLabRole;
 		loadDocuments();
 	});
 
@@ -394,7 +395,9 @@
 						<span class="text-muted-foreground">— {activeLabName}</span>
 					{/if}
 				</h2>
-				<p class="text-sm text-muted-foreground">{$_('document.lab.description')}</p>
+				<p class="text-sm text-muted-foreground">
+					{isOwner ? $_('document.lab.description_owner') : $_('document.lab.description_member')}
+				</p>
 			</div>
 		</div>
 		{#if canViewPage}
@@ -422,19 +425,6 @@
 				<div class="text-center">
 					<p class="font-medium">{$_('document.lab.no_lab')}</p>
 					<p class="mt-1 text-sm text-muted-foreground">{$_('document.lab.no_lab_hint')}</p>
-				</div>
-			</Card.Content>
-		</Card.Root>
-	{:else if activeLabRole !== 'owner'}
-		<!-- Active lab but caller is not the owner -->
-		<Card.Root class="shadow-sm">
-			<Card.Content class="flex flex-col items-center gap-4 py-16">
-				<div class="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-					<ShieldOff class="h-8 w-8 text-muted-foreground" />
-				</div>
-				<div class="text-center">
-					<p class="font-medium">{$_('document.lab.not_owner')}</p>
-					<p class="mt-1 text-sm text-muted-foreground">{$_('document.lab.not_owner_hint')}</p>
 				</div>
 			</Card.Content>
 		</Card.Root>
@@ -681,47 +671,59 @@
 												{:else if colId === 'created_at'}
 													{formatDate(doc.created_at)}
 												{:else if colId === 'actions'}
-													<DropdownMenu.Root>
-														<DropdownMenu.Trigger>
-															{#snippet child({ props })}
-																<Button
-																	{...props}
-																	variant="ghost"
-																	size="icon"
-																	class="h-8 w-8 data-[state=open]:bg-muted"
-																	aria-label={$_('document.lab.actions.open_menu')}
+													{#if isOwner}
+														<DropdownMenu.Root>
+															<DropdownMenu.Trigger>
+																{#snippet child({ props })}
+																	<Button
+																		{...props}
+																		variant="ghost"
+																		size="icon"
+																		class="h-8 w-8 data-[state=open]:bg-muted"
+																		aria-label={$_('document.lab.actions.open_menu')}
+																	>
+																		<Ellipsis class="h-4 w-4" />
+																	</Button>
+																{/snippet}
+															</DropdownMenu.Trigger>
+															<DropdownMenu.Content align="end" class="w-48">
+																<DropdownMenu.Item
+																	onSelect={() => goto(resolve(`/documents/${doc.id}`))}
 																>
-																	<Ellipsis class="h-4 w-4" />
-																</Button>
-															{/snippet}
-														</DropdownMenu.Trigger>
-														<DropdownMenu.Content align="end" class="w-48">
-															<DropdownMenu.Item
-																onSelect={() => goto(resolve(`/documents/${doc.id}`))}
-															>
-																<Eye class="mr-2 h-4 w-4" />
-																{$_('document.lab.actions.view')}
-															</DropdownMenu.Item>
-															<DropdownMenu.Item onSelect={() => openEditDialog(doc)}>
-																<Pencil class="mr-2 h-4 w-4" />
-																{$_('document.lab.actions.edit')}
-															</DropdownMenu.Item>
-															{#if doc.enrich_status === 'failed' || doc.enrich_status === 'not_started'}
-																<DropdownMenu.Item onSelect={() => restartEnrichment(doc.id)}>
-																	<RefreshCw class="mr-2 h-4 w-4" />
-																	{$_('document.lab.actions.restart')}
+																	<Eye class="mr-2 h-4 w-4" />
+																	{$_('document.lab.actions.view')}
 																</DropdownMenu.Item>
-															{/if}
-															<DropdownMenu.Separator />
-															<DropdownMenu.Item
-																class="text-destructive focus:text-destructive"
-																onSelect={() => openDeleteDialog(doc)}
-															>
-																<Trash2 class="mr-2 h-4 w-4" />
-																{$_('document.lab.actions.delete')}
-															</DropdownMenu.Item>
-														</DropdownMenu.Content>
-													</DropdownMenu.Root>
+																<DropdownMenu.Item onSelect={() => openEditDialog(doc)}>
+																	<Pencil class="mr-2 h-4 w-4" />
+																	{$_('document.lab.actions.edit')}
+																</DropdownMenu.Item>
+																{#if doc.enrich_status === 'failed' || doc.enrich_status === 'not_started'}
+																	<DropdownMenu.Item onSelect={() => restartEnrichment(doc.id)}>
+																		<RefreshCw class="mr-2 h-4 w-4" />
+																		{$_('document.lab.actions.restart')}
+																	</DropdownMenu.Item>
+																{/if}
+																<DropdownMenu.Separator />
+																<DropdownMenu.Item
+																	class="text-destructive focus:text-destructive"
+																	onSelect={() => openDeleteDialog(doc)}
+																>
+																	<Trash2 class="mr-2 h-4 w-4" />
+																	{$_('document.lab.actions.delete')}
+																</DropdownMenu.Item>
+															</DropdownMenu.Content>
+														</DropdownMenu.Root>
+													{:else}
+														<Button
+															variant="ghost"
+															size="icon"
+															class="h-8 w-8"
+															onclick={() => goto(resolve(`/documents/${doc.id}`))}
+															aria-label={$_('document.lab.actions.view')}
+														>
+															<Eye class="h-4 w-4" />
+														</Button>
+													{/if}
 												{/if}
 											</Table.Cell>
 										{/each}
