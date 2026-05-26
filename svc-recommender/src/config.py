@@ -2,6 +2,7 @@
 
 import logging
 import os
+import time
 from pathlib import Path
 
 import yaml
@@ -30,6 +31,8 @@ _DEFAULTS: dict = {
     "s3_private_bucket": "sci-vault",
     "google_genai_use_vertexai": True,
     "google_genai_api_key": "",
+    "google_genai_use_proxy": False,
+    "google_genai_proxy_url": "http://localhost:7897",
 }
 
 
@@ -62,6 +65,8 @@ class Config:
     s3_private_bucket: str
     google_genai_use_vertexai: bool
     google_genai_api_key: str
+    google_genai_use_proxy: bool
+    google_genai_proxy_url: str
 
     def __init__(
         self,
@@ -85,6 +90,8 @@ class Config:
         s3_private_bucket: str = _DEFAULTS["s3_private_bucket"],
         google_genai_use_vertexai: bool = _DEFAULTS["google_genai_use_vertexai"],
         google_genai_api_key: str = _DEFAULTS["google_genai_api_key"],
+        google_genai_use_proxy: bool = _DEFAULTS["google_genai_use_proxy"],
+        google_genai_proxy_url: str = _DEFAULTS["google_genai_proxy_url"],
     ) -> None:
         self.host = host
         self.port = port
@@ -106,6 +113,8 @@ class Config:
         self.s3_private_bucket = s3_private_bucket
         self.google_genai_use_vertexai = google_genai_use_vertexai
         self.google_genai_api_key = google_genai_api_key
+        self.google_genai_use_proxy = google_genai_use_proxy
+        self.google_genai_proxy_url = google_genai_proxy_url
 
     @classmethod
     def load(cls, config_path: Path | None = None) -> "Config":
@@ -115,7 +124,6 @@ class Config:
         (i.e. the directory that contains ``main.py``).  The file is optional;
         if it is missing the service falls back to built-in defaults.
         """
-        import time
 
         # Locate config.yaml: caller may supply an explicit path, otherwise
         # search the current working directory and the project root (src/../).
@@ -201,6 +209,10 @@ class Config:
         # Also accept the canonical env var name used by the Gemini SDK
         if (v := os.getenv("GEMINI_API_KEY")) is not None:
             values["google_genai_api_key"] = v
+        if (v := os.getenv("GOOGLE_GENAI_USE_PROXY")) is not None:
+            values["google_genai_use_proxy"] = v.lower() in ("true", "1", "yes")
+        if (v := os.getenv("GOOGLE_GENAI_PROXY_URL")) is not None:
+            values["google_genai_proxy_url"] = v
 
         return cls(
             host=str(values["host"]),
@@ -223,6 +235,8 @@ class Config:
             s3_private_bucket=str(values["s3_private_bucket"]),
             google_genai_use_vertexai=bool(values["google_genai_use_vertexai"]),
             google_genai_api_key=str(values["google_genai_api_key"]),
+            google_genai_use_proxy=bool(values["google_genai_use_proxy"]),
+            google_genai_proxy_url=str(values["google_genai_proxy_url"]),
         )
 
     @classmethod

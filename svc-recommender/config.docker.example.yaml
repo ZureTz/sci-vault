@@ -24,3 +24,6 @@ s3_private_bucket: "sci-vault"
 google_genai_use_vertexai: true
 # Obtain one at https://aistudio.google.com/app/api-keys or https://console.cloud.google.com/vertex-ai/studio/settings/api-keys
 google_genai_api_key: "YOUR_GEMINI_API_KEY"
+# Optional proxy settings for Google GenAI API
+google_genai_use_proxy: false
+google_genai_proxy_url: "http://your-proxy:port"

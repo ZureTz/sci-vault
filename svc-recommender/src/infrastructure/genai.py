@@ -31,11 +31,21 @@ class GenAI:
 
     def __init__(self, cfg: Config) -> None:
         def _build(timeout_ms: int) -> genai.Client:
-            opts = types.HttpOptions(timeout=timeout_ms)
+            opts: types.HttpOptions
+            if cfg.google_genai_use_proxy:
+                opts = types.HttpOptions(
+                    timeout=timeout_ms,
+                    client_args={"proxy": cfg.google_genai_proxy_url},
+                    async_client_args={"proxy": cfg.google_genai_proxy_url},
+                )
+            else:
+                opts = types.HttpOptions(timeout=timeout_ms)
+
             if cfg.google_genai_use_vertexai:
                 return genai.Client(
                     vertexai=True, api_key=cfg.google_genai_api_key, http_options=opts
                 )
+
             return genai.Client(api_key=cfg.google_genai_api_key, http_options=opts)
 
         log.info(
