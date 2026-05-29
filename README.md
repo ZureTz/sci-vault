@@ -11,8 +11,11 @@ AI-powered collaborative platform for research data management and discovery. Bu
 ## Features
 
 - **User Management** — Registration, authentication, email verification, password reset with rate limiting
-- **Smart Recommendation Engine** — AI-powered document enrichment via Gemini API and vector embeddings
+- **Labs** — Research-group workspaces with invitation codes, membership management, and lab-scoped document sharing
+- **Smart Recommendation Engine** — AI-powered document enrichment via Gemini API, personalised feeds, and similar-document suggestions
+- **Collaborator Suggestions** — Ranks lab-mates by interest-profile similarity
 - **Vector Search** — pgvector-based semantic search across research documents
+- **LLM Translation** — Streaming translation of document summaries
 - **Modern UI** — SvelteKit 5 with Tailwind CSS v4, dark/light theme, multi-language support (EN/ZH-CN)
 - **Microservices Architecture** — Scalable service design with gRPC inter-service communication
 - **Cloud Storage** — S3-compatible object storage via RustFS
@@ -191,8 +194,12 @@ sci-vault/
 │   └── nginx.conf            # Production web server config
 ├── proto/                    # Protocol Buffer definitions
 │   └── recommender/          # Recommender service specs
+├── tools/                    # Standalone utilities
+│   └── arxiv-downloader/     # arXiv paper downloader CLI
+├── docs/                     # Project documentation and figures
 ├── docker-compose.yaml       # Infrastructure services
 ├── buf.yaml & buf.gen.yaml   # Code generation config
+├── SECURITY.md               # Security policy
 └── README.md
 ```
 

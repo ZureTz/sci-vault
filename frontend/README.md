@@ -62,7 +62,9 @@ bun run preview
 - **Framework**: [SvelteKit](https://kit.svelte.dev/) with [Svelte 5](https://svelte.dev/) (Runes API)
 - **Build Tool**: [Vite](https://vitejs.dev/) - Lightning-fast build tool
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) - Utility-first CSS framework
-- **UI Components**: [Bits UI](https://bits-ui.com/) - Headless component primitives
+- **UI Components**: [Bits UI](https://bits-ui.com/) - Headless component primitives (shadcn-svelte)
+- **Data Tables**: [TanStack Table](https://tanstack.com/table) - Server-side paginated/sorted/filtered list pages
+- **Charts**: [LayerChart](https://www.layerchart.com/) - Dashboard charts (uploads, engagement, format distribution)
 - **Language**: [TypeScript](https://www.typescriptlang.org/) - Type safety and developer experience
 - **HTTP Client**: [Axios](https://axios-http.com/) - Promise-based HTTP client
 - **Authentication**: [jwt-decode](https://github.com/auth0/jwt-decode) - JWT token parsing
@@ -78,22 +80,36 @@ bun run preview
 ```text
 src/
 ├── routes/
-│   ├── (dashboard)/          # Authenticated dashboard layout
+│   ├── (dashboard)/          # Authenticated pages wrapped by AppSidebar
 │   │   ├── +layout.svelte    # Sidebar navigation layout
 │   │   ├── +page.svelte      # Home / feed page
-│   │   ├── profile/
-│   │   │   └── [user_id]/    # User profile page
-│   │   └── settings/         # Settings page
+│   │   ├── documents/        # Document library + detail
+│   │   ├── lab-documents/    # Lab-visible documents
+│   │   ├── labs/             # Lab management
+│   │   ├── lab-settings/     # Lab settings (owner)
+│   │   ├── members/          # Lab members
+│   │   ├── collaborators/    # Suggested collaborators
+│   │   ├── recommendations/  # Personalised feed
+│   │   ├── search/           # Semantic search
+│   │   ├── mine/             # Interaction history (views/likes)
+│   │   ├── profile/          # User profile pages
+│   │   └── settings/         # User settings
 │   ├── login/                # Login / registration page
+│   ├── welcome/              # Public welcome / landing page
 │   └── +layout.svelte        # Root layout
 ├── lib/
-│   ├── api/                  # API client modules (auth, user)
+│   ├── api/                  # API client modules (auth, user, document, lab, ...)
+│   ├── actions/              # Custom Svelte actions
 │   ├── components/
+│   │   ├── dashboard/        # Shared dashboard charts
 │   │   ├── layout/           # Layout components (ThemeToggle, etc.)
-│   │   └── ui/               # Reusable UI components (Bits UI based)
+│   │   └── ui/               # Reusable UI components (shadcn-svelte / Bits UI)
 │   ├── hooks/                # Client-side Svelte hooks
+│   ├── stores/               # Svelte 5 runes stores (lab, nav, search, user)
 │   ├── locales/              # i18n translation files (en.json, zh-CN.json)
-│   └── assets/               # Static assets
+│   ├── assets/               # Static assets
+│   ├── i18n.ts               # i18n setup
+│   └── utils.ts              # Shared utilities
 ├── app.d.ts                  # TypeScript ambient declarations
 └── app.html                  # HTML entry point
 ```
