@@ -1,6 +1,5 @@
 """GenAI helpers for document enrichment: metadata extraction and embedding."""
 
-
 import google.genai as genai  # noqa: PLR0402
 import numpy as np
 from google.genai import types

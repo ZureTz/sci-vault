@@ -81,6 +81,6 @@ def _decode(raw: object) -> np.ndarray | None:
     try:
         data = base64.b64decode(raw)
         return np.frombuffer(data, dtype=np.float32)
-    except (binascii.Error, ValueError):
+    except binascii.Error, ValueError:
         log.warning("failed to decode cached embedding; ignoring")
         return None
