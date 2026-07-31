@@ -117,7 +117,7 @@ class Config:
         self.google_genai_proxy_url = google_genai_proxy_url
 
     @classmethod
-    def load(cls, config_path: Path | None = None) -> "Config":
+    def load(cls, config_path: Path | None = None) -> Config:
         """Load config from YAML file then apply environment variable overrides.
 
         *config_path* defaults to ``config.yaml`` next to the project root
@@ -240,7 +240,7 @@ class Config:
         )
 
     @classmethod
-    def from_env(cls) -> "Config":
+    def from_env(cls) -> Config:
         """Backward-compatible alias for :meth:`load`."""
         return cls.load()
 

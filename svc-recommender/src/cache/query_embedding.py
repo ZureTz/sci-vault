@@ -6,6 +6,7 @@ text benefits from the same cache.
 """
 
 import base64
+import binascii
 import logging
 from typing import cast
 
@@ -47,7 +48,7 @@ class QueryEmbeddingCache:
             # redis-py types mget() as ResponseT (sync list or async awaitable);
             # the sync client always returns a list. Cast to satisfy the checker.
             raws = cast(list, self._redis.mget(keys))
-        except Exception:
+        except redis.RedisError:
             log.warning("Redis mget failed for query embeddings")
             return [None] * len(texts)
         return [_decode(r) for r in raws]
@@ -70,7 +71,7 @@ class QueryEmbeddingCache:
                     ).decode("ascii")
                     pipe.set(query_redis_key(text, task_type), encoded, ex=_TTL)
                 pipe.execute()
-        except Exception:
+        except redis.RedisError:
             log.warning("Redis pipeline set failed for query embeddings")
 
 
@@ -80,6 +81,6 @@ def _decode(raw: object) -> np.ndarray | None:
     try:
         data = base64.b64decode(raw)
         return np.frombuffer(data, dtype=np.float32)
-    except Exception:
+    except (binascii.Error, ValueError):
         log.warning("failed to decode cached embedding; ignoring")
         return None

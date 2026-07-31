@@ -4,32 +4,33 @@ import logging
 import signal
 import sys
 from concurrent import futures
+from typing import ClassVar
 
 import grpc
 
-from pb.recommender.v1 import recommender_pb2_grpc
-from config import Config
-from interceptor.logging import LoggingInterceptor
-from infrastructure.cache import Cache
-from infrastructure.genai import GenAI
-from infrastructure.database import Database
-from infrastructure.storage import Storage
 from cache.enrichment import EnrichmentStatusCache
 from cache.query_embedding import QueryEmbeddingCache
+from config import Config
 from genai.document import DocumentGenAI
-from genai.translate import TranslateGenAI
-from genai.query_embedder import QueryEmbedder
 from genai.embedding_resolver import QueryEmbeddingResolver
+from genai.query_embedder import QueryEmbedder
+from genai.translate import TranslateGenAI
+from infrastructure.cache import Cache
+from infrastructure.database import Database
+from infrastructure.genai import GenAI
+from infrastructure.storage import Storage
+from interceptor.logging import LoggingInterceptor
+from pb.recommender.v1 import recommender_pb2_grpc
 from repository.document import DocumentRepository
-from repository.search import SearchRepository
-from repository.recommend import RecommendRepository
 from repository.query_embedding import QueryEmbeddingRepository
-from storage.document import DocumentStorage
+from repository.recommend import RecommendRepository
+from repository.search import SearchRepository
 from servicer.document import DocumentServicer
 from servicer.health import HealthServicer
-from servicer.translate import TranslateServicer
-from servicer.search import SearchServicer
 from servicer.recommend import RecommendServicer
+from servicer.search import SearchServicer
+from servicer.translate import TranslateServicer
+from storage.document import DocumentStorage
 
 log = logging.getLogger(__name__)
 
@@ -117,7 +118,7 @@ class RecommenderServer:
 
 
 class ColoredFormatter(logging.Formatter):
-    COLORS = {
+    COLORS: ClassVar[dict[int, str]] = {
         logging.DEBUG: "\033[36m",  # Cyan
         logging.INFO: "\033[32m",  # Green
         logging.WARNING: "\033[33m",  # Yellow

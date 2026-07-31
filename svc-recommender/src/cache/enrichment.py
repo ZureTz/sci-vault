@@ -43,7 +43,7 @@ class EnrichmentStatusCache:
     def _set(self, doc_id: int, status: str) -> None:
         try:
             self._redis.set(_key(doc_id), status, ex=_TTL)
-        except Exception:
+        except redis.RedisError:
             log.warning(
                 "Redis status update failed: doc_id=%d status=%s", doc_id, status
             )

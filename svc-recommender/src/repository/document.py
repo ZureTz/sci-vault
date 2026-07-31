@@ -1,7 +1,6 @@
 """Document repository — database access for document enrichment."""
 
 import logging
-from typing import Optional
 
 import numpy as np
 from psycopg_pool import ConnectionPool
@@ -24,8 +23,8 @@ class DocumentRepository:
         authors: list[str],
         summary: str,
         tags: list[str],
-        year: Optional[int],
-        doi: Optional[str],
+        year: int | None,
+        doi: str | None,
         embedding: np.ndarray,
     ) -> None:
         """Write AI-extracted fields and mark enrich_status=done in one UPDATE.

@@ -3,7 +3,7 @@
 import logging
 from collections.abc import Iterator
 
-import google.genai as genai
+import google.genai as genai  # noqa: PLR0402
 from google.genai import types
 from google.genai.types import ThinkingLevel
 

@@ -230,7 +230,9 @@ class RecommendServicer:
                 query_embeddings = self._resolver.resolve_many(
                     queries, TASK_RETRIEVAL_DOCUMENT
                 )
-            except Exception:
+            # Query signals are optional; any resolver failure should degrade
+            # to document-only recommendations instead of failing the RPC.
+            except Exception:  # noqa: BLE001
                 log.warning(
                     "_build_caller_centroid: failed to resolve query "
                     "embeddings; continuing without query signal"

@@ -19,7 +19,7 @@ class Storage:
 
     def __init__(self, cfg: Config) -> None:
         log.info("building S3 client (endpoint=%s)", cfg.s3_endpoint)
-        self._client: "S3Client" = boto3.client(
+        self._client: S3Client = boto3.client(
             "s3",
             endpoint_url=cfg.s3_endpoint,
             aws_access_key_id=cfg.s3_access_key,
@@ -29,5 +29,5 @@ class Storage:
         )
 
     @property
-    def client(self) -> "S3Client":
+    def client(self) -> S3Client:
         return self._client

@@ -3,8 +3,8 @@
 import logging
 from typing import Any
 
-from psycopg_pool import ConnectionPool
 from pgvector.psycopg import register_vector
+from psycopg_pool import ConnectionPool
 
 from config import Config
 

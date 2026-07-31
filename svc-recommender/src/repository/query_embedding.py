@@ -78,16 +78,15 @@ class QueryEmbeddingRepository:
             (query_hash(text), task_type, text, embedding) for text, embedding in items
         ]
         try:
-            with self._pool.connection() as conn:
-                with conn.cursor() as cur:
-                    cur.executemany(
-                        "INSERT INTO query_embeddings"
-                        "  (query_hash, task_type, query, embedding,"
-                        "   created_at, last_used_at)"
-                        " VALUES (%s, %s, %s, %s, NOW(), NOW())"
-                        " ON CONFLICT (query_hash, task_type)"
-                        " DO UPDATE SET last_used_at = NOW()",
-                        rows,
-                    )
+            with self._pool.connection() as conn, conn.cursor() as cur:
+                cur.executemany(
+                    "INSERT INTO query_embeddings"
+                    "  (query_hash, task_type, query, embedding,"
+                    "   created_at, last_used_at)"
+                    " VALUES (%s, %s, %s, %s, NOW(), NOW())"
+                    " ON CONFLICT (query_hash, task_type)"
+                    " DO UPDATE SET last_used_at = NOW()",
+                    rows,
+                )
         except Exception:
             log.warning("query_embeddings: set_many failed", exc_info=True)

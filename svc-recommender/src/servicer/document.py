@@ -3,15 +3,14 @@
 import concurrent.futures
 import logging
 import time
-from typing import Optional
 
 import grpc
 import numpy as np
 
+from cache.enrichment import EnrichmentStatusCache
 from conversion import UnsupportedContentTypeError, to_enrichment_payload
 from genai.document import DocumentGenAI, DocumentMetadata
 from pb.recommender.v1 import recommender_pb2
-from cache.enrichment import EnrichmentStatusCache
 from repository.document import DocumentRepository
 from storage.document import DocumentStorage
 
@@ -111,8 +110,8 @@ class DocumentServicer:
             )
 
         # Cached results — each step is only called if not yet succeeded.
-        metadata: Optional[DocumentMetadata] = None
-        embedding: Optional[np.ndarray] = None
+        metadata: DocumentMetadata | None = None
+        embedding: np.ndarray | None = None
 
         last_exc: Exception | None = None
         for attempt in range(1, _ENRICH_MAX_ATTEMPTS + 1):
@@ -144,7 +143,9 @@ class DocumentServicer:
                 log.info("enrichment done: doc_id=%d", doc_id)
                 return
 
-            except Exception as exc:
+            # This is the retry boundary for independent storage, GenAI, and
+            # database operations, whose clients expose unrelated exceptions.
+            except Exception as exc:  # noqa: BLE001
                 last_exc = exc
                 if attempt < _ENRICH_MAX_ATTEMPTS:
                     delay = _ENRICH_RETRY_BASE_DELAY * (2 ** (attempt - 1))

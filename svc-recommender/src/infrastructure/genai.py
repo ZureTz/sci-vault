@@ -2,7 +2,7 @@
 
 import logging
 
-import google.genai as genai
+import google.genai as genai  # noqa: PLR0402
 from google.genai import types
 
 from config import Config

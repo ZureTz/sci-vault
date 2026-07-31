@@ -1,9 +1,8 @@
 """GenAI helpers for document enrichment: metadata extraction and embedding."""
 
-from typing import Optional
 
+import google.genai as genai  # noqa: PLR0402
 import numpy as np
-import google.genai as genai
 from google.genai import types
 from pydantic import BaseModel, Field
 
@@ -28,11 +27,11 @@ class DocumentMetadata(BaseModel):
     tags: list[str] = Field(
         description="5-10 highly relevant technical keywords or topic labels in English."
     )
-    year: Optional[int] = Field(
+    year: int | None = Field(
         None,
         description="Publication year as an integer (e.g. 2024). Null if not explicitly found.",
     )
-    doi: Optional[str] = Field(
+    doi: str | None = Field(
         None,
         description="Official DOI string exactly as found (e.g. '10.1145/1234.5678'). Null if not explicitly found.",
     )

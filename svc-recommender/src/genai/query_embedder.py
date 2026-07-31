@@ -10,8 +10,8 @@ Two flows use this:
   meaningless.
 """
 
+import google.genai as genai  # noqa: PLR0402
 import numpy as np
-import google.genai as genai
 from google.genai import types
 
 # Embedding task types we use. Names mirror Gemini's API constants so the
@@ -55,8 +55,9 @@ class QueryEmbedder:
             ),
         )
         if not response.embeddings or len(response.embeddings) != len(texts):
+            actual_count = len(response.embeddings or [])
             raise ValueError(
-                "embedding model returned %d embeddings for %d inputs"
-                % (len(response.embeddings or []), len(texts))
+                f"embedding model returned {actual_count} embeddings "
+                f"for {len(texts)} inputs"
             )
         return [np.array(emb.values, dtype=np.float32) for emb in response.embeddings]

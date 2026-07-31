@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 class DocumentStorage:
     """Wraps an S3 client and bucket name for document file operations."""
 
-    def __init__(self, s3_client: "S3Client", bucket: str) -> None:
+    def __init__(self, s3_client: S3Client, bucket: str) -> None:
         self._s3 = s3_client
         self._bucket = bucket
 

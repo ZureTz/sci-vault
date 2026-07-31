@@ -44,6 +44,7 @@ class TranslateServicer:
         try:
             for chunk in self._genai.translate_stream(text, target_language):
                 yield recommender_pb2.TranslateTextResponse(chunk=chunk)
-        except Exception as exc:
-            log.exception("TranslateText failed: %s", exc)
+        # Convert unexpected provider/stream failures at the RPC boundary.
+        except Exception:
+            log.exception("TranslateText failed")
             context.abort(grpc.StatusCode.INTERNAL, "translation failed")
